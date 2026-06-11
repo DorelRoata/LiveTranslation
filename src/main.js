@@ -586,6 +586,8 @@ function openSubtitleWindow() {
           line-height: 1.4;
           word-wrap: break-word;
           white-space: pre-wrap;
+          max-height: 14.7rem;
+          overflow: hidden;
         }
         .text.lang1 {
           color: #00f5ff;
@@ -663,7 +665,7 @@ function renderSubtitleLane(lane) {
     
   element.innerHTML = `<div>${escaped}</div>`;
   
-  // Scroll to bottom to ensure the last 2 lines are visible
+  // Scroll to bottom to ensure the last lines (max 3) are visible
   requestAnimationFrame(() => {
     element.scrollTop = element.scrollHeight;
   });
