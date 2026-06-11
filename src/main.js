@@ -925,6 +925,14 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
           return;
         }
         
+        if (sc.modelTurn) {
+          finalizeAccumulated(`lang${channelId}`);
+        }
+        
+        if (sc.turnComplete) {
+          finalizeAccumulated(`lang${channelId}`);
+        }
+        
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
