@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Real-time voice-to-voice translator powered by Google Gemini 3.5 Live Translate. Speak naturally and get instant spoken translations." />
+    <title>Gemini Live Translate - Real-time Voice Interpreter</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="glass-bg"></div>
+    <div class="app-container">
+      
+      <!-- Top Navigation/Header -->
+      <header class="app-header">
+        <div class="logo-area">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Gemini Live Translate</h1>
+            <span class="logo-subtext">Real-time Voice Interpreter</span>
+          </div>
+        </div>
+        
+        <!-- Connection Status Badge -->
+        <div class="status-badge" id="connection-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Disconnected</span>
+        </div>
+      </header>
+
+      <!-- Main Dashboard Grid -->
+      <main class="dashboard-grid">
+        
+        <!-- Left Column: Controls and Settings -->
+        <section class="control-panel glass-card" aria-label="Translation Settings">
+          <h2>Configuration</h2>
+          
+          <!-- API Key Input -->
+          <div class="input-group">
+            <label for="api-key-input">Gemini API Key</label>
+            <div class="password-wrapper">
+              <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key" />
+              <button type="button" id="toggle-api-key" class="icon-btn" aria-label="Toggle API Key visibility">
+                <!-- Eye Icon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <p class="helper-text">Key is saved locally in your browser and never shared.</p>
+          </div>
+
+          <!-- Audio Source Selection -->
+          <div class="input-group">
+            <label for="audio-source-select">Audio Source</label>
+            <select id="audio-source-select">
+              <option value="mic" selected>Microphone</option>
+              <option value="system">System Audio (Played on PC)</option>
+            </select>
+          </div>
+
+          <!-- Target Language Selection -->
+          <div class="input-group">
+            <label for="target-language-select">Translate To</label>
+            <select id="target-language-select">
+              <option value="en" selected>English (English)</option>
+              <option value="ru">Russian (Русский)</option>
+              <option value="ro">Romanian (Română)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="fr">French (Français)</option>
+              <option value="ja">Japanese (日本語)</option>
+              <option value="de">German (Deutsch)</option>
+              <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+              <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+              <option value="pt">Portuguese (Português)</option>
+              <option value="it">Italian (Italiano)</option>
+              <option value="ko">Korean (한국어)</option>
+              <option value="pl">Polish (Polski)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="ar">Arabic (العربية)</option>
+              <option value="tr">Turkish (Türkçe)</option>
+              <option value="vi">Vietnamese (Tiếng Việt)</option>
+            </select>
+          </div>
+
+          <!-- Options Toggles -->
+          <div class="input-group checkbox-group">
+            <label class="switch-container">
+              <input type="checkbox" id="echo-toggle" checked />
+              <span class="switch-slider"></span>
+              <span class="switch-label">Echo Target Language</span>
+            </label>
+            <p class="helper-text">If you speak the target language, repeat it back as-is.</p>
+          </div>
+
+          <!-- Action Button -->
+          <div class="action-wrapper">
+            <button id="start-btn" class="primary-btn pulse-glow">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </span>
+              <span class="btn-text">Start Translation</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Right Column: Visualizers & Logs -->
+        <section class="workspace" aria-label="Translation Workspace">
+          
+          <!-- Visualizers Box -->
+          <div class="visualizer-row glass-card">
+            <div class="visualizer-container">
+              <div class="visualizer-header">
+                <h3>Input Mic</h3>
+                <span class="vol-db" id="mic-db">0%</span>
+              </div>
+              <div class="visualizer-box">
+                <canvas id="mic-canvas"></canvas>
+              </div>
+            </div>
+            
+            <div class="visualizer-container">
+              <div class="visualizer-header">
+                <h3>Translation Audio</h3>
+                <span class="vol-db" id="output-db">0%</span>
+              </div>
+              <div class="visualizer-box">
+                <canvas id="output-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dual transcripts columns -->
+          <div class="transcript-grid">
+            <!-- Left Side: Source Language -->
+            <div class="transcript-col glass-card">
+              <div class="col-header">
+                <div class="col-title-area">
+                  <span class="circle-indicator input-pulse"></span>
+                  <h3>Detected Speech</h3>
+                </div>
+                <button id="clear-input-log" class="text-btn">Clear</button>
+              </div>
+              <div class="transcript-scroll" id="input-transcript-scroll">
+                <div class="transcript-placeholder" id="input-placeholder">
+                  Speak into the mic. Your transcript will appear here.
+                </div>
+                <div class="transcript-list" id="input-transcript-list"></div>
+              </div>
+            </div>
+
+            <!-- Right Side: Target Language -->
+            <div class="transcript-col glass-card">
+              <div class="col-header">
+                <div class="col-title-area">
+                  <span class="circle-indicator output-pulse"></span>
+                  <h3>Translation</h3>
+                </div>
+                <button id="clear-output-log" class="text-btn">Clear</button>
+              </div>
+              <div class="transcript-scroll" id="output-transcript-scroll">
+                <div class="transcript-placeholder" id="output-placeholder">
+                  Translated text will appear here as the voice plays.
+                </div>
+                <div class="transcript-list" id="output-transcript-list"></div>
+              </div>
+          </div>
+
+          <!-- Debug Log Box -->
+          <div class="debug-panel glass-card" style="margin-top: 1.5rem;">
+            <div class="col-header">
+              <h3>System Status Logs</h3>
+              <button id="clear-debug-log" class="text-btn">Clear Logs</button>
+            </div>
+            <div class="debug-scroll" id="debug-log-list" style="max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.4; color: #a7f3d0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
+              <div class="debug-line" style="color: #64748b;">[System] UI initialized. Ready to connect.</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Global Footer -->
+      <footer class="app-footer">
+        <p>Powered by Google Gemini 3.5 Live Translate. Requires a secure microphone context.</p>
+      </footer>
+    </div>
+
+    <!-- App Logic Module -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
