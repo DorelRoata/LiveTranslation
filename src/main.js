@@ -537,7 +537,6 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
     ts.className = "timestamp";
     ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     currentBubble.appendChild(ts);
-    
     if (channelId === 1) {
       currentStreamingBubble1 = null;
     } else {
@@ -577,7 +576,7 @@ function openSubtitleWindow() {
           color: #f1f5f9;
           font-family: 'Outfit', sans-serif;
           margin: 0;
-          padding: 2rem;
+          padding: 2.5rem;
           display: flex;
           flex-direction: column;
           height: 100vh;
@@ -588,36 +587,33 @@ function openSubtitleWindow() {
           display: flex;
           flex-direction: column;
           height: 100%;
-          gap: 1.5rem;
+          gap: 2rem;
         }
         .section {
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding: 1.5rem;
-          border-radius: 12px;
+          padding: 2rem;
+          border-radius: 16px;
           background: rgba(255, 255, 255, 0.02);
           border: 1px solid rgba(255, 255, 255, 0.05);
           transition: all 0.3s ease;
         }
         .label {
-          font-size: 0.9rem;
+          font-size: 1.1rem;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.1em;
           color: #64748b;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
+          margin-bottom: 0.75rem;
+          font-weight: 700;
         }
         .text {
-          font-size: 2.2rem;
+          font-size: 3.5rem;
           font-weight: 500;
-          line-height: 1.35;
+          line-height: 1.4;
           word-wrap: break-word;
           white-space: pre-wrap;
-        }
-        .text.detected {
-          color: #ffffff;
         }
         .text.lang1 {
           color: #00f5ff;
@@ -626,9 +622,9 @@ function openSubtitleWindow() {
           color: #a7f3d0;
         }
         .previous-line {
-          opacity: 0.4;
-          font-size: 1.6rem;
-          margin-bottom: 0.25rem;
+          opacity: 0.45;
+          font-size: 2.3rem;
+          margin-bottom: 0.5rem;
         }
         .streaming {
           opacity: 0.75;
@@ -638,10 +634,6 @@ function openSubtitleWindow() {
     </head>
     <body>
       <div class="container">
-        <div class="section" id="sec-detected">
-          <div class="label">Detected Speech</div>
-          <div class="text detected" id="sub-detected">Waiting for speech...</div>
-        </div>
         <div class="section" id="sec-lang1">
           <div class="label" id="label-lang1">Translation 1</div>
           <div class="text lang1" id="sub-lang1">-</div>
@@ -671,7 +663,6 @@ function openSubtitleWindow() {
   if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
 
   // Render histories immediately upon opening
-  renderSubtitleLane("detected");
   renderSubtitleLane("lang1");
   renderSubtitleLane("lang2");
 }
@@ -949,7 +940,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
         const text = inputTx.text;
         if (text) {
           updateInputTranscript(text, inputTx.final !== false);
-          updateSubtitleLane("detected", text, inputTx.final !== false);
         }
       }
       
@@ -1007,7 +997,6 @@ function disconnectSession() {
   });
   
   // Re-render empty subtitles (or default placeholders)
-  renderSubtitleLane("detected");
   renderSubtitleLane("lang1");
   renderSubtitleLane("lang2");
   
