@@ -7,14 +7,35 @@ const PATH = `ws/google.ai.generativelanguage.${API_VERSION}.GenerativeService.B
 const MODEL = "models/gemini-3.5-live-translate-preview";
 
 // --- State Variables ---
-let socket = null;
+let socket1 = null;
+let socket2 = null;
 let audioContextInput = null;
 let audioContextOutput = null;
 let micStream = null;
 let scriptProcessor = null;
-let nextStartTime = 0;
-let activeSources = [];
+
+let nextStartTime1 = 0;
+let nextStartTime2 = 0;
+let activeSources1 = [];
+let activeSources2 = [];
 let isRunning = false;
+let subtitleWindow = null;
+
+const SENTENCE_TERMINATORS = ['.', '?', '!', '。', '？', '！', ';', '；'];
+
+function endsWithTerminator(str) {
+  if (!str) return false;
+  const trimmed = str.trim();
+  if (trimmed.length === 0) return false;
+  const lastChar = trimmed[trimmed.length - 1];
+  return SENTENCE_TERMINATORS.includes(lastChar);
+}
+
+const subtitleState = {
+  detected: { history: [], accumulated: "", current: "", timeoutId: null },
+  lang1: { history: [], accumulated: "", current: "", timeoutId: null },
+  lang2: { history: [], accumulated: "", current: "", timeoutId: null }
+};
 
 // Audio Visualizer buffers (last 512 samples)
 const micBuffer = new Float32Array(512);
@@ -23,10 +44,16 @@ const outBuffer = new Float32Array(512);
 // UI Elements
 const apiKeyInput = document.getElementById("api-key-input");
 const toggleApiKeyBtn = document.getElementById("toggle-api-key");
-const targetLanguageSelect = document.getElementById("target-language-select");
 const audioSourceSelect = document.getElementById("audio-source-select");
+
+const targetLanguageSelect1 = document.getElementById("target-language-select-1");
+const playVoiceCheckbox1 = document.getElementById("play-voice-1");
+const targetLanguageSelect2 = document.getElementById("target-language-select-2");
+const playVoiceCheckbox2 = document.getElementById("play-voice-2");
+
 const echoToggle = document.getElementById("echo-toggle");
 const startBtn = document.getElementById("start-btn");
+const subtitlesBtn = document.getElementById("subtitles-btn");
 const connectionStatus = document.getElementById("connection-status");
 
 const micDb = document.getElementById("mic-db");
@@ -35,17 +62,22 @@ const micCanvas = document.getElementById("mic-canvas");
 const outputCanvas = document.getElementById("output-canvas");
 
 const inputList = document.getElementById("input-transcript-list");
-const outputList = document.getElementById("output-transcript-list");
 const inputPlaceholder = document.getElementById("input-placeholder");
-const outputPlaceholder = document.getElementById("output-placeholder");
+
+const outputList1 = document.getElementById("output-transcript-list-1");
+const outputPlaceholder1 = document.getElementById("output-placeholder-1");
+const outputList2 = document.getElementById("output-transcript-list-2");
+const outputPlaceholder2 = document.getElementById("output-placeholder-2");
 
 const clearInputBtn = document.getElementById("clear-input-log");
-const clearOutputBtn = document.getElementById("clear-output-log");
+const clearOutputBtn1 = document.getElementById("clear-output-log-1");
+const clearOutputBtn2 = document.getElementById("clear-output-log-2");
 const debugLogList = document.getElementById("debug-log-list");
 const clearDebugBtn = document.getElementById("clear-debug-log");
 
 const micIndicator = document.querySelector(".input-pulse");
-const outputIndicator = document.querySelector(".output-pulse");
+const outputIndicator1 = document.querySelector(".output-pulse-1");
+const outputIndicator2 = document.querySelector(".output-pulse-2");
 
 // --- API Key Local Storage ---
 if (localStorage.getItem("gemini_api_key")) {
@@ -82,9 +114,13 @@ clearInputBtn.addEventListener("click", () => {
   inputList.innerHTML = "";
   inputPlaceholder.style.display = "block";
 });
-clearOutputBtn.addEventListener("click", () => {
-  outputList.innerHTML = "";
-  outputPlaceholder.style.display = "block";
+clearOutputBtn1.addEventListener("click", () => {
+  outputList1.innerHTML = "";
+  outputPlaceholder1.style.display = "block";
+});
+clearOutputBtn2.addEventListener("click", () => {
+  outputList2.innerHTML = "";
+  outputPlaceholder2.style.display = "block";
 });
 
 // --- Helper: Convert Int16Array to Base64 ---
@@ -140,7 +176,6 @@ clearDebugBtn.addEventListener("click", () => {
 function initVisualizer(canvas, dataBuffer, color) {
   const ctx = canvas.getContext("2d");
   
-  // Resize canvas to physical display size
   const resizeCanvas = () => {
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
@@ -158,7 +193,6 @@ function initVisualizer(canvas, dataBuffer, color) {
     
     ctx.clearRect(0, 0, width, height);
     
-    // Draw background subtle grid lines
     ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -166,7 +200,6 @@ function initVisualizer(canvas, dataBuffer, color) {
     ctx.lineTo(width, height / 2);
     ctx.stroke();
 
-    // Draw waveform line
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -175,7 +208,6 @@ function initVisualizer(canvas, dataBuffer, color) {
     let x = 0;
     
     for (let i = 0; i < dataBuffer.length; i++) {
-      // Amplify values slightly for visual effect
       const v = dataBuffer[i] * 2;
       const y = (v + 1) * (height / 2);
       
@@ -191,7 +223,6 @@ function initVisualizer(canvas, dataBuffer, color) {
     ctx.lineTo(width, height / 2);
     ctx.stroke();
     
-    // Slowly decay buffer to smooth out lines when silence occurs
     for (let i = 0; i < dataBuffer.length; i++) {
       dataBuffer[i] *= 0.92;
     }
@@ -208,17 +239,20 @@ initVisualizer(outputCanvas, outBuffer, "#00f5ff");
 function initOutputAudio() {
   if (!audioContextOutput) {
     audioContextOutput = new (window.AudioContext || window.webkitAudioContext)({
-      sampleRate: 24000 // Gemini returns 24kHz audio
+      sampleRate: 24000
     });
-    nextStartTime = 0;
+    nextStartTime1 = 0;
+    nextStartTime2 = 0;
   }
   if (audioContextOutput.state === "suspended") {
     audioContextOutput.resume();
   }
 }
 
-function playPCMChunk(base64Data) {
+function playPCMChunk(base64Data, channelId) {
   initOutputAudio();
+  
+  const isPlayChecked = channelId === 1 ? playVoiceCheckbox1.checked : playVoiceCheckbox2.checked;
   
   // 1. Convert base64 back to raw binary data
   const binaryString = atob(base64Data);
@@ -240,18 +274,21 @@ function playPCMChunk(base64Data) {
     }
   }
   
-  // Feed output visualizer buffer
-  // Downsample/slice float32 array to fit visualizer buffer
+  // Feed output visualizer buffer (mix channels if both playing)
   const step = Math.max(1, Math.floor(float32.length / outBuffer.length));
   for (let i = 0; i < outBuffer.length; i++) {
     const idx = Math.min(float32.length - 1, i * step);
-    // Add new values, smoothing with current values
     outBuffer[i] = outBuffer[i] * 0.3 + float32[idx] * 0.7;
   }
   
   // Update UI volume text
   const pct = Math.round(maxVal * 100);
   outputDb.textContent = `${pct}%`;
+  
+  // If mute is active for this channel, do not schedule playing
+  if (!isPlayChecked) {
+    return;
+  }
   
   // 3. Create AudioBuffer
   const audioBuffer = audioContextOutput.createBuffer(1, float32.length, 24000);
@@ -261,43 +298,48 @@ function playPCMChunk(base64Data) {
   const sourceNode = audioContextOutput.createBufferSource();
   sourceNode.buffer = audioBuffer;
   
-  // Connect to speakers
   sourceNode.connect(audioContextOutput.destination);
   
   const now = audioContextOutput.currentTime;
-  if (nextStartTime < now) {
-    nextStartTime = now;
+  let nextStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
+  if (nextStart < now) {
+    nextStart = now;
   }
   
-  sourceNode.start(nextStartTime);
+  sourceNode.start(nextStart);
   
-  // Track this node in case of interruptions
-  activeSources.push(sourceNode);
-  
-  // Remove node from list when it ends
-  sourceNode.onended = () => {
-    activeSources = activeSources.filter(s => s !== sourceNode);
-    if (activeSources.length === 0) {
-      outputIndicator.classList.remove("active");
-      outputDb.textContent = "0%";
-    }
-  };
-  
-  nextStartTime += audioBuffer.duration;
-  outputIndicator.classList.add("active");
+  if (channelId === 1) {
+    activeSources1.push(sourceNode);
+    outputIndicator1.classList.add("active");
+    sourceNode.onended = () => {
+      activeSources1 = activeSources1.filter(s => s !== sourceNode);
+      if (activeSources1.length === 0) {
+        outputIndicator1.classList.remove("active");
+      }
+    };
+    nextStartTime1 = nextStart + audioBuffer.duration;
+  } else {
+    activeSources2.push(sourceNode);
+    outputIndicator2.classList.add("active");
+    sourceNode.onended = () => {
+      activeSources2 = activeSources2.filter(s => s !== sourceNode);
+      if (activeSources2.length === 0) {
+        outputIndicator2.classList.remove("active");
+      }
+    };
+    nextStartTime2 = nextStart + audioBuffer.duration;
+  }
 }
 
 function stopAllPlayback() {
-  activeSources.forEach(source => {
-    try {
-      source.stop();
-    } catch (e) {
-      // Ignore if already stopped
-    }
-  });
-  activeSources = [];
-  nextStartTime = 0;
-  outputIndicator.classList.remove("active");
+  activeSources1.forEach(source => { try { source.stop(); } catch (e) {} });
+  activeSources2.forEach(source => { try { source.stop(); } catch (e) {} });
+  activeSources1 = [];
+  activeSources2 = [];
+  nextStartTime1 = 0;
+  nextStartTime2 = 0;
+  outputIndicator1.classList.remove("active");
+  outputIndicator2.classList.remove("active");
   outputDb.textContent = "0%";
 }
 
@@ -311,7 +353,7 @@ async function startAudioCapture() {
   logDebug(`Initializing capture context for: ${sourceVal}...`, "info");
 
   audioContextInput = new (window.AudioContext || window.webkitAudioContext)({
-    sampleRate: 16000 // Gemini expects 16kHz audio input
+    sampleRate: 16000
   });
   
   if (sourceVal === "system") {
@@ -349,16 +391,16 @@ async function startAudioCapture() {
   }
   const source = audioContextInput.createMediaStreamSource(micStream);
   
-  // ScriptProcessor bufferSize = 2048, 1 input channel, 1 output channel
   scriptProcessor = audioContextInput.createScriptProcessor(2048, 1, 1);
   chunksSent = 0;
   
   scriptProcessor.onaudioprocess = (e) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const socket1Ready = socket1 && socket1.readyState === WebSocket.OPEN;
+    const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
+    if (!socket1Ready && !socket2Ready) return;
     
     const float32 = e.inputBuffer.getChannelData(0);
     
-    // Calculate volume level for display
     let maxVal = 0;
     const pcm16 = new Int16Array(float32.length);
     
@@ -370,14 +412,12 @@ async function startAudioCapture() {
       }
     }
     
-    // Update mic visualizer buffer
     const step = Math.max(1, Math.floor(float32.length / micBuffer.length));
     for (let i = 0; i < micBuffer.length; i++) {
       const idx = Math.min(float32.length - 1, i * step);
       micBuffer[i] = micBuffer[i] * 0.3 + float32[idx] * 0.7;
     }
     
-    // Update mic volume level UI
     const pct = Math.round(maxVal * 100);
     micDb.textContent = `${pct}%`;
     if (pct > 5) {
@@ -399,7 +439,13 @@ async function startAudioCapture() {
       }
     };
     
-    socket.send(JSON.stringify(mediaMsg));
+    const msgStr = JSON.stringify(mediaMsg);
+    if (socket1Ready) {
+      socket1.send(msgStr);
+    }
+    if (socket2Ready) {
+      socket2.send(msgStr);
+    }
     
     chunksSent++;
     if (chunksSent % 25 === 0) {
@@ -428,52 +474,331 @@ function stopAudioCapture() {
   micDb.textContent = "0%";
 }
 
-// --- UI Transcript Renderers ---
-function addInputTranscript(text) {
+let currentStreamingInputBubble = null;
+
+function updateInputTranscript(text, isFinal = false) {
   inputPlaceholder.style.display = "none";
   
-  // Check if the last item is a streaming item, or create new bubble
-  const lastBubble = inputList.lastElementChild;
-  const bubble = document.createElement("div");
-  bubble.className = "transcript-bubble";
-  bubble.textContent = text;
+  let currentBubble = currentStreamingInputBubble;
+  const scrollContainer = document.getElementById("input-transcript-scroll");
   
-  const ts = document.createElement("span");
-  ts.className = "timestamp";
-  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  bubble.appendChild(ts);
-  
-  inputList.appendChild(bubble);
-  document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
-}
-
-let currentStreamingBubble = null;
-
-function updateOutputTranscript(text, isFinal = false) {
-  outputPlaceholder.style.display = "none";
-  
-  if (!currentStreamingBubble) {
-    currentStreamingBubble = document.createElement("div");
-    currentStreamingBubble.className = "transcript-bubble";
-    outputList.appendChild(currentStreamingBubble);
+  if (!currentBubble) {
+    currentBubble = document.createElement("div");
+    currentBubble.className = "transcript-bubble";
+    inputList.appendChild(currentBubble);
+    currentStreamingInputBubble = currentBubble;
   }
   
   if (isFinal) {
-    currentStreamingBubble.textContent = text;
-    currentStreamingBubble.classList.remove("streaming-text");
+    currentBubble.textContent = text;
+    currentBubble.classList.remove("streaming-text");
     
     const ts = document.createElement("span");
     ts.className = "timestamp";
     ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    currentStreamingBubble.appendChild(ts);
+    currentBubble.appendChild(ts);
     
-    currentStreamingBubble = null;
+    currentStreamingInputBubble = null;
   } else {
-    currentStreamingBubble.textContent = text + "...";
-    currentStreamingBubble.classList.add("streaming-text");
+    currentBubble.textContent = text + "...";
+    currentBubble.classList.add("streaming-text");
   }
   
-  document.getElementById("output-transcript-scroll").scrollTop = document.getElementById("output-transcript-scroll").scrollHeight;
+  scrollContainer.scrollTop = scrollContainer.scrollHeight;
+}
+
+let currentStreamingBubble1 = null;
+let currentStreamingBubble2 = null;
+
+function updateOutputTranscript(text, channelId, isFinal = false) {
+  const placeholder = channelId === 1 ? outputPlaceholder1 : outputPlaceholder2;
+  const list = channelId === 1 ? outputList1 : outputList2;
+  let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
+  const scrollContainer = document.getElementById(`output-transcript-scroll-${channelId}`);
+  
+  placeholder.style.display = "none";
+  
+  if (!currentBubble) {
+    currentBubble = document.createElement("div");
+    currentBubble.className = "transcript-bubble";
+    list.appendChild(currentBubble);
+    if (channelId === 1) {
+      currentStreamingBubble1 = currentBubble;
+    } else {
+      currentStreamingBubble2 = currentBubble;
+    }
+  }
+  
+  if (isFinal) {
+    currentBubble.textContent = text;
+    currentBubble.classList.remove("streaming-text");
+    
+    const ts = document.createElement("span");
+    ts.className = "timestamp";
+    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    currentBubble.appendChild(ts);
+    
+    if (channelId === 1) {
+      currentStreamingBubble1 = null;
+    } else {
+      currentStreamingBubble2 = null;
+    }
+  } else {
+    currentBubble.textContent = text + "...";
+    currentBubble.classList.add("streaming-text");
+  }
+  
+  scrollContainer.scrollTop = scrollContainer.scrollHeight;
+}
+
+// --- Subtitle Presentation Window ---
+function openSubtitleWindow() {
+  if (subtitleWindow && !subtitleWindow.closed) {
+    subtitleWindow.focus();
+    return;
+  }
+  
+  subtitleWindow = window.open("", "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
+  
+  if (!subtitleWindow) {
+    alert("Popup blocker is active. Please allow popups for this site to open the subtitle window.");
+    return;
+  }
+  
+  subtitleWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Live Subtitles - Gemini Translate</title>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+      <style>
+        body {
+          background-color: #0b0f19;
+          color: #f1f5f9;
+          font-family: 'Outfit', sans-serif;
+          margin: 0;
+          padding: 2rem;
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .container {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          gap: 1.5rem;
+        }
+        .section {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          padding: 1.5rem;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          transition: all 0.3s ease;
+        }
+        .label {
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #64748b;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+        }
+        .text {
+          font-size: 2.2rem;
+          font-weight: 500;
+          line-height: 1.35;
+          word-wrap: break-word;
+          white-space: pre-wrap;
+        }
+        .text.detected {
+          color: #ffffff;
+        }
+        .text.lang1 {
+          color: #00f5ff;
+        }
+        .text.lang2 {
+          color: #a7f3d0;
+        }
+        .previous-line {
+          opacity: 0.4;
+          font-size: 1.6rem;
+          margin-bottom: 0.25rem;
+        }
+        .streaming {
+          opacity: 0.75;
+          font-style: italic;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="section" id="sec-detected">
+          <div class="label">Detected Speech</div>
+          <div class="text detected" id="sub-detected">Waiting for speech...</div>
+        </div>
+        <div class="section" id="sec-lang1">
+          <div class="label" id="label-lang1">Translation 1</div>
+          <div class="text lang1" id="sub-lang1">-</div>
+        </div>
+        <div class="section" id="sec-lang2" style="display: none;">
+          <div class="label" id="label-lang2">Translation 2</div>
+          <div class="text lang2" id="sub-lang2">-</div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+  subtitleWindow.document.close();
+  
+  // Instantly sync labels if translation is already in progress
+  const targetLanguage1 = targetLanguageSelect1.value;
+  const targetLanguage2 = targetLanguageSelect2.value;
+  const isDual = targetLanguage2 !== "none";
+  
+  const secLang2 = subtitleWindow.document.getElementById("sec-lang2");
+  if (secLang2) secLang2.style.display = isDual ? "flex" : "none";
+  
+  const lbl1 = subtitleWindow.document.getElementById("label-lang1");
+  if (lbl1) lbl1.textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
+  
+  const lbl2 = subtitleWindow.document.getElementById("label-lang2");
+  if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
+
+  // Render histories immediately upon opening
+  renderSubtitleLane("detected");
+  renderSubtitleLane("lang1");
+  renderSubtitleLane("lang2");
+}
+
+function renderSubtitleLane(lane) {
+  if (!subtitleWindow || subtitleWindow.closed) return;
+  
+  const state = subtitleState[lane];
+  let elementId = "";
+  if (lane === "detected") elementId = "sub-detected";
+  else if (lane === "lang1") elementId = "sub-lang1";
+  else if (lane === "lang2") elementId = "sub-lang2";
+  
+  const element = subtitleWindow.document.getElementById(elementId);
+  if (!element) return;
+  
+  // Construct the active/current line we are building
+  let activeLine = "";
+  if (state.accumulated) {
+    activeLine = state.accumulated;
+  }
+  if (state.current) {
+    const trimmedCurrent = state.current.trim();
+    if (trimmedCurrent) {
+      const needsSpace = activeLine.length > 0 && 
+                         !/[\s。？！.?!;；]/.test(activeLine[activeLine.length - 1]) && 
+                         !/^[。？！.?!;；\s]/.test(trimmedCurrent);
+      activeLine = activeLine + (needsSpace ? " " : "") + trimmedCurrent;
+    }
+  }
+  
+  // Collect the lines to display (up to 2: 1 history line + 1 active line)
+  let lines = [];
+  if (state.history.length > 0) {
+    lines.push(state.history[state.history.length - 1]);
+  }
+  
+  if (activeLine) {
+    lines.push(activeLine);
+  }
+  
+  // If we have no active line, and we have more than 1 history line, show the last 2 history lines
+  if (!activeLine && state.history.length > 1) {
+    lines = [state.history[state.history.length - 2], state.history[state.history.length - 1]];
+  }
+  
+  if (lines.length === 0) {
+    if (lane === "detected") {
+      element.innerHTML = `<div>Waiting for speech...</div>`;
+    } else {
+      element.innerHTML = `<div>-</div>`;
+    }
+    return;
+  }
+  
+  // Format as HTML lines with dimming for the older line
+  const htmlLines = lines.map((line, index) => {
+    const isLast = index === lines.length - 1;
+    const isStream = isLast && state.current !== "";
+    let className = "";
+    if (lines.length > 1 && index === 0) {
+      className = "previous-line";
+    } else if (isStream) {
+      className = "streaming";
+    }
+    
+    // HTML Escape
+    const escaped = line
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+      
+    return `<div class="${className}">${escaped}</div>`;
+  });
+  
+  element.innerHTML = htmlLines.join("");
+}
+
+function updateSubtitleLane(lane, text, isFinal) {
+  const state = subtitleState[lane];
+  
+  if (state.timeoutId) {
+    clearTimeout(state.timeoutId);
+    state.timeoutId = null;
+  }
+  
+  if (isFinal) {
+    state.current = "";
+    const trimmedText = text.trim();
+    if (trimmedText) {
+      const needsSpace = state.accumulated.length > 0 && 
+                         !/[\s。？！.?!;；]/.test(state.accumulated[state.accumulated.length - 1]) && 
+                         !/^[。？！.?!;；\s]/.test(trimmedText);
+      state.accumulated = state.accumulated + (needsSpace ? " " : "") + trimmedText;
+    }
+    
+    // Check if the accumulated text ends with a sentence terminator
+    if (endsWithTerminator(state.accumulated)) {
+      finalizeAccumulated(lane);
+    } else if (state.accumulated.length > 0) {
+      // Set a 3-second timeout to flush the accumulated sentence if no more chunks arrive
+      state.timeoutId = setTimeout(() => {
+        finalizeAccumulated(lane);
+      }, 3000);
+    }
+  } else {
+    state.current = text;
+  }
+  
+  renderSubtitleLane(lane);
+}
+
+function finalizeAccumulated(lane) {
+  const state = subtitleState[lane];
+  if (state.timeoutId) {
+    clearTimeout(state.timeoutId);
+    state.timeoutId = null;
+  }
+  
+  if (state.accumulated.trim()) {
+    state.history.push(state.accumulated.trim());
+    state.accumulated = "";
+    if (state.history.length > 2) {
+      state.history.shift();
+    }
+    renderSubtitleLane(lane);
+  }
 }
 
 // --- WebSocket Handlers ---
@@ -484,18 +809,54 @@ function startSession() {
     return;
   }
   
-  const targetLanguage = targetLanguageSelect.value;
+  const targetLanguage1 = targetLanguageSelect1.value;
+  const targetLanguage2 = targetLanguageSelect2.value;
   const echoTargetLanguage = echoToggle.checked;
   
+  const isDual = targetLanguage2 !== "none";
+  
+  // Show or hide Language 2 main column
+  const colLang2 = document.getElementById("col-lang-2");
+  if (isDual) {
+    colLang2.style.display = "flex";
+    document.getElementById("header-lang-1").textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
+    document.getElementById("header-lang-2").textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
+  } else {
+    colLang2.style.display = "none";
+    document.getElementById("header-lang-1").textContent = `Translation (${targetLanguage1.toUpperCase()})`;
+  }
+  
+  // Sync Presentation window labels
+  if (subtitleWindow && !subtitleWindow.closed) {
+    const secLang2 = subtitleWindow.document.getElementById("sec-lang2");
+    if (secLang2) secLang2.style.display = isDual ? "flex" : "none";
+    
+    const lbl1 = subtitleWindow.document.getElementById("label-lang1");
+    if (lbl1) lbl1.textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
+    
+    const lbl2 = subtitleWindow.document.getElementById("label-lang2");
+    if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
+  }
+  
   updateConnectionStatus("connecting", "Connecting...");
-  logDebug(`Connecting to Gemini Live API WebSocket (v1alpha) using key prefix: ${apiKey.substring(0, 5)}...`, "info");
+  logDebug(`Connecting to Gemini Live API...`, "info");
   
   const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
-  socket = new WebSocket(url);
   
-  socket.onopen = async () => {
-    updateConnectionStatus("connected", "Connected");
-    logDebug("WebSocket connection opened successfully.", "info");
+  // Create Connection 1
+  socket1 = new WebSocket(url);
+  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage);
+  
+  // Create Connection 2 if dual
+  if (isDual) {
+    socket2 = new WebSocket(url);
+    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage);
+  }
+}
+
+function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
+  ws.onopen = async () => {
+    logDebug(`WebSocket ${channelId} opened successfully.`, "info");
     
     // Send Setup Message
     const setupMsg = {
@@ -513,24 +874,33 @@ function startSession() {
       }
     };
     
-    logDebug(`Sending setup configuration for model: ${MODEL} | Target Language: ${targetLanguage}`, "ws-sent");
-    socket.send(JSON.stringify(setupMsg));
+    logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
+    ws.send(JSON.stringify(setupMsg));
     
-    // Start capturing mic once websocket is open
-    try {
-      await startAudioCapture();
-      isRunning = true;
-      startBtn.classList.add("recording");
-      startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
-    } catch (err) {
-      console.error("Failed to capture audio:", err);
-      logDebug(`Failed to capture audio: ${err.message}`, "error");
-      alert("Failed to capture audio: " + err.message);
-      disconnectSession();
+    // Start capture when all active sockets are OPEN
+    const isDual = targetLanguageSelect2.value !== "none";
+    const socket1Ready = socket1 && socket1.readyState === WebSocket.OPEN;
+    const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
+    
+    if (socket1Ready && (!isDual || socket2Ready)) {
+      updateConnectionStatus("connected", "Connected");
+      logDebug("All connections active. Starting audio capture...", "info");
+      
+      try {
+        await startAudioCapture();
+        isRunning = true;
+        startBtn.classList.add("recording");
+        startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
+      } catch (err) {
+        console.error("Failed to capture audio:", err);
+        logDebug(`Failed to capture audio: ${err.message}`, "error");
+        alert("Failed to capture audio: " + err.message);
+        disconnectSession();
+      }
     }
   };
   
-  socket.onmessage = async (event) => {
+  ws.onmessage = async (event) => {
     try {
       let text;
       if (event.data instanceof Blob) {
@@ -543,10 +913,8 @@ function startSession() {
       
       const data = JSON.parse(text);
       
-      // Log received message type
       if (data.setupComplete) {
-        logDebug("Received: setupComplete acknowledgment.", "ws-recv");
-        console.log("Gemini setup complete");
+        logDebug(`Received: WebSocket ${channelId} setupComplete acknowledgment.`, "ws-recv");
         return;
       }
       
@@ -554,18 +922,22 @@ function startSession() {
         const sc = data.serverContent;
         
         if (sc.interrupted) {
-          logDebug("Received: model interrupted event.", "audio");
-          console.log("Model interrupted!");
+          logDebug(`WebSocket ${channelId} received interruption.`, "audio");
           stopAllPlayback();
-          currentStreamingBubble = null;
+          currentStreamingBubble1 = null;
+          currentStreamingBubble2 = null;
+          currentStreamingInputBubble = null;
+          subtitleState.lang1.current = "";
+          subtitleState.lang2.current = "";
+          renderSubtitleLane("lang1");
+          renderSubtitleLane("lang2");
           return;
         }
         
         if (sc.modelTurn && sc.modelTurn.parts) {
-          logDebug(`Received: serverContent modelTurn with ${sc.modelTurn.parts.length} parts. Playing audio...`, "ws-recv");
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
-              playPCMChunk(part.inlineData.data);
+              playPCMChunk(part.inlineData.data, channelId);
             }
           });
         }
@@ -576,8 +948,8 @@ function startSession() {
       if (inputTx) {
         const text = inputTx.text;
         if (text) {
-          logDebug(`Detected input speech: "${text}"`, "audio");
-          addInputTranscript(text);
+          updateInputTranscript(text, inputTx.final !== false);
+          updateSubtitleLane("detected", text, inputTx.final !== false);
         }
       }
       
@@ -585,26 +957,26 @@ function startSession() {
       if (outputTx) {
         const text = outputTx.text;
         if (text) {
-          logDebug(`Translated output text: "${text}"`, "audio");
-          updateOutputTranscript(text, outputTx.final);
+          updateOutputTranscript(text, channelId, outputTx.final);
+          updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
       }
       
     } catch (err) {
-      console.error("Error parsing socket message:", err);
-      logDebug(`Error parsing server message: ${err.message}`, "error");
+      console.error(`Error parsing WebSocket ${channelId} message:`, err);
+      logDebug(`Error parsing server message on channel ${channelId}: ${err.message}`, "error");
     }
   };
   
-  socket.onclose = (event) => {
-    console.log("WebSocket connection closed:", event);
-    logDebug(`WebSocket connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
+  ws.onclose = (event) => {
+    console.log(`WebSocket ${channelId} connection closed:`, event);
+    logDebug(`WebSocket ${channelId} connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
     disconnectSession();
   };
   
-  socket.onerror = (err) => {
-    console.error("WebSocket error:", err);
-    logDebug(`WebSocket error: ${err.message || 'Unknown network error'}`, "error");
+  ws.onerror = (err) => {
+    console.error(`WebSocket ${channelId} error:`, err);
+    logDebug(`WebSocket ${channelId} error: ${err.message || 'Unknown network error'}`, "error");
     disconnectSession();
   };
 }
@@ -619,13 +991,38 @@ function disconnectSession() {
   logDebug("Disconnecting session...", "info");
   stopAudioCapture();
   stopAllPlayback();
-  currentStreamingBubble = null;
+  currentStreamingBubble1 = null;
+  currentStreamingBubble2 = null;
+  currentStreamingInputBubble = null;
   
-  if (socket) {
-    if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-      socket.close();
+  // Reset subtitle presentation state
+  ['detected', 'lang1', 'lang2'].forEach(lane => {
+    if (subtitleState[lane].timeoutId) {
+      clearTimeout(subtitleState[lane].timeoutId);
+      subtitleState[lane].timeoutId = null;
     }
-    socket = null;
+    subtitleState[lane].history = [];
+    subtitleState[lane].accumulated = "";
+    subtitleState[lane].current = "";
+  });
+  
+  // Re-render empty subtitles (or default placeholders)
+  renderSubtitleLane("detected");
+  renderSubtitleLane("lang1");
+  renderSubtitleLane("lang2");
+  
+  if (socket1) {
+    if (socket1.readyState === WebSocket.OPEN || socket1.readyState === WebSocket.CONNECTING) {
+      socket1.close();
+    }
+    socket1 = null;
+  }
+  
+  if (socket2) {
+    if (socket2.readyState === WebSocket.OPEN || socket2.readyState === WebSocket.CONNECTING) {
+      socket2.close();
+    }
+    socket2 = null;
   }
 }
 
@@ -641,4 +1038,9 @@ startBtn.addEventListener("click", () => {
   } else {
     startSession();
   }
+});
+
+// Subtitles Button Handler
+subtitlesBtn.addEventListener("click", () => {
+  openSubtitleWindow();
 });

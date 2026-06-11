@@ -67,10 +67,10 @@
             </select>
           </div>
 
-          <!-- Target Language Selection -->
+          <!-- Target Language 1 -->
           <div class="input-group">
-            <label for="target-language-select">Translate To</label>
-            <select id="target-language-select">
+            <label for="target-language-select-1">Translate To (Language 1)</label>
+            <select id="target-language-select-1">
               <option value="en" selected>English (English)</option>
               <option value="ru">Russian (Русский)</option>
               <option value="ro">Romanian (Română)</option>
@@ -90,6 +90,45 @@
               <option value="vi">Vietnamese (Tiếng Việt)</option>
             </select>
           </div>
+          <div class="input-group checkbox-group" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">
+            <label class="switch-container">
+              <input type="checkbox" id="play-voice-1" checked />
+              <span class="switch-slider"></span>
+              <span class="switch-label">Play Voice 1 Output</span>
+            </label>
+          </div>
+
+          <!-- Target Language 2 -->
+          <div class="input-group">
+            <label for="target-language-select-2">Translate To (Language 2)</label>
+            <select id="target-language-select-2">
+              <option value="none" selected>None (Disabled)</option>
+              <option value="en">English (English)</option>
+              <option value="ru">Russian (Русский)</option>
+              <option value="ro">Romanian (Română)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="fr">French (Français)</option>
+              <option value="ja">Japanese (日本語)</option>
+              <option value="de">German (Deutsch)</option>
+              <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+              <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+              <option value="pt">Portuguese (Português)</option>
+              <option value="it">Italian (Italiano)</option>
+              <option value="ko">Korean (한국어)</option>
+              <option value="pl">Polish (Polski)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="ar">Arabic (العربية)</option>
+              <option value="tr">Turkish (Türkçe)</option>
+              <option value="vi">Vietnamese (Tiếng Việt)</option>
+            </select>
+          </div>
+          <div class="input-group checkbox-group" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">
+            <label class="switch-container">
+              <input type="checkbox" id="play-voice-2" checked />
+              <span class="switch-slider"></span>
+              <span class="switch-label">Play Voice 2 Output</span>
+            </label>
+          </div>
 
           <!-- Options Toggles -->
           <div class="input-group checkbox-group">
@@ -102,7 +141,7 @@
           </div>
 
           <!-- Action Button -->
-          <div class="action-wrapper">
+          <div class="action-wrapper" style="display: flex; flex-direction: column; gap: 0.75rem;">
             <button id="start-btn" class="primary-btn pulse-glow">
               <span class="btn-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -113,6 +152,16 @@
                 </svg>
               </span>
               <span class="btn-text">Start Translation</span>
+            </button>
+            <button id="subtitles-btn" class="secondary-btn" type="button">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </span>
+              <span class="btn-text">Open Subtitle Monitor</span>
             </button>
           </div>
         </section>
@@ -143,7 +192,7 @@
             </div>
           </div>
 
-          <!-- Dual transcripts columns -->
+          <!-- Transcripts columns -->
           <div class="transcript-grid">
             <!-- Left Side: Source Language -->
             <div class="transcript-col glass-card">
@@ -156,27 +205,45 @@
               </div>
               <div class="transcript-scroll" id="input-transcript-scroll">
                 <div class="transcript-placeholder" id="input-placeholder">
-                  Speak into the mic. Your transcript will appear here.
+                  Speak or play audio. Detected speech will appear here.
                 </div>
                 <div class="transcript-list" id="input-transcript-list"></div>
               </div>
             </div>
 
-            <!-- Right Side: Target Language -->
+            <!-- Center: Translation 1 -->
             <div class="transcript-col glass-card">
               <div class="col-header">
                 <div class="col-title-area">
-                  <span class="circle-indicator output-pulse"></span>
-                  <h3>Translation</h3>
+                  <span class="circle-indicator output-pulse-1"></span>
+                  <h3 id="header-lang-1">Translation 1</h3>
                 </div>
-                <button id="clear-output-log" class="text-btn">Clear</button>
+                <button id="clear-output-log-1" class="text-btn">Clear</button>
               </div>
-              <div class="transcript-scroll" id="output-transcript-scroll">
-                <div class="transcript-placeholder" id="output-placeholder">
-                  Translated text will appear here as the voice plays.
+              <div class="transcript-scroll" id="output-transcript-scroll-1">
+                <div class="transcript-placeholder" id="output-placeholder-1">
+                  Translated text will appear here.
                 </div>
-                <div class="transcript-list" id="output-transcript-list"></div>
+                <div class="transcript-list" id="output-transcript-list-1"></div>
               </div>
+            </div>
+
+            <!-- Right Side: Translation 2 -->
+            <div class="transcript-col glass-card" id="col-lang-2" style="display: none;">
+              <div class="col-header">
+                <div class="col-title-area">
+                  <span class="circle-indicator output-pulse-2"></span>
+                  <h3 id="header-lang-2">Translation 2</h3>
+                </div>
+                <button id="clear-output-log-2" class="text-btn">Clear</button>
+              </div>
+              <div class="transcript-scroll" id="output-transcript-scroll-2">
+                <div class="transcript-placeholder" id="output-placeholder-2">
+                  Translated text will appear here.
+                </div>
+                <div class="transcript-list" id="output-transcript-list-2"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Debug Log Box -->

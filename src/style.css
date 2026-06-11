@@ -411,6 +411,41 @@ select {
   height: 1.25rem;
 }
 
+/* Secondary Button styling */
+.secondary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.05);
+  color: #cbd5e1;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.secondary-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  color: white;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+}
+
+.secondary-btn:active {
+  transform: translateY(1px);
+}
+
+.secondary-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 /* Workspace Right Side */
 .workspace {
   display: flex;
@@ -474,7 +509,7 @@ canvas {
 /* Transcript Area Grid */
 .transcript-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   flex: 1;
   min-height: 400px;
@@ -584,9 +619,16 @@ canvas {
   border-top-left-radius: 2px;
 }
 
-/* Translation bubble */
-.transcript-col:last-of-type .transcript-bubble {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+/* Translation bubbles */
+.transcript-col:nth-child(2) .transcript-bubble {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  color: #e2e8f0;
+  border-top-left-radius: 2px;
+}
+
+.transcript-col:nth-child(3) .transcript-bubble {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
   border: 1px solid rgba(139, 92, 246, 0.15);
   color: #e2e8f0;
   border-top-left-radius: 2px;
@@ -613,10 +655,24 @@ canvas {
   animation: pulse-red 1s infinite;
 }
 
-.output-pulse.active {
+.output-pulse-1, .output-pulse-2 {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.output-pulse-1.active {
   background-color: var(--accent-cyan);
   box-shadow: 0 0 8px var(--accent-cyan);
   animation: pulse-cyan 1s infinite;
+}
+
+.output-pulse-2.active {
+  background-color: var(--accent-purple);
+  box-shadow: 0 0 8px var(--accent-purple);
+  animation: pulse-green 1s infinite;
 }
 
 /* Footer styling */
