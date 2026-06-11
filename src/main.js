@@ -21,20 +21,9 @@ let activeSources2 = [];
 let isRunning = false;
 let subtitleWindow = null;
 
-const SENTENCE_TERMINATORS = ['.', '?', '!', '。', '？', '！', ';', '；'];
-
-function endsWithTerminator(str) {
-  if (!str) return false;
-  const trimmed = str.trim();
-  if (trimmed.length === 0) return false;
-  const lastChar = trimmed[trimmed.length - 1];
-  return SENTENCE_TERMINATORS.includes(lastChar);
-}
-
 const subtitleState = {
-  detected: { history: [], accumulated: "", current: "", timeoutId: null },
-  lang1: { history: [], accumulated: "", current: "", timeoutId: null },
-  lang2: { history: [], accumulated: "", current: "", timeoutId: null }
+  lang1: { accumulatedText: "" },
+  lang2: { accumulatedText: "" }
 };
 
 // Audio Visualizer buffers (last 512 samples)
@@ -655,145 +644,52 @@ function renderSubtitleLane(lane) {
   
   const state = subtitleState[lane];
   let elementId = "";
-  if (lane === "detected") elementId = "sub-detected";
-  else if (lane === "lang1") elementId = "sub-lang1";
+  if (lane === "lang1") elementId = "sub-lang1";
   else if (lane === "lang2") elementId = "sub-lang2";
   
   const element = subtitleWindow.document.getElementById(elementId);
   if (!element) return;
   
-  // Construct the active/current line we are building
-  let activeLine = "";
-  if (state.accumulated) {
-    activeLine = state.accumulated;
-  }
-  if (state.current) {
-    const trimmedCurrent = state.current.trim();
-    if (trimmedCurrent) {
-      const needsSpace = activeLine.length > 0 && 
-                         !/[\s。？！.?!;；]/.test(activeLine[activeLine.length - 1]) && 
-                         !/^[。？！.?!;；\s]/.test(trimmedCurrent);
-      activeLine = activeLine + (needsSpace ? " " : "") + trimmedCurrent;
-    }
-  }
-  
-  // Collect the lines to display (up to 2: 1 history line + 1 active line)
-  let lines = [];
-  if (state.history.length > 0) {
-    lines.push(state.history[state.history.length - 1]);
-  }
-  
-  if (activeLine) {
-    lines.push(activeLine);
-  }
-  
-  // If we have no active line, and we have more than 1 history line, show the last 2 history lines
-  if (!activeLine && state.history.length > 1) {
-    lines = [state.history[state.history.length - 2], state.history[state.history.length - 1]];
-  }
-  
-  if (lines.length === 0) {
-    if (lane === "detected") {
-      element.innerHTML = `<div>Waiting for speech...</div>`;
-    } else {
-      element.innerHTML = `<div>-</div>`;
-    }
+  if (!state.accumulatedText) {
+    element.innerHTML = `<div>-</div>`;
     return;
   }
   
-  // Format as HTML lines with dimming for the older line
-  const htmlLines = lines.map((line, index) => {
-    const isLast = index === lines.length - 1;
-    const isStream = isLast && state.current !== "";
-    let className = "";
-    if (lines.length > 1 && index === 0) {
-      className = "previous-line";
-    } else if (isStream) {
-      className = "streaming";
-    }
+  // HTML Escape
+  const escaped = state.accumulatedText
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
     
-    // HTML Escape
-    const escaped = line
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-      
-    return `<div class="${className}">${escaped}</div>`;
+  element.innerHTML = `<div>${escaped}</div>`;
+  
+  // Scroll to bottom to ensure the last 2 lines are visible
+  requestAnimationFrame(() => {
+    element.scrollTop = element.scrollHeight;
   });
-  
-  element.innerHTML = htmlLines.join("");
-}
-
-function extractCompleteSentences(text) {
-  const sentences = [];
-  let current = "";
-  
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    current += char;
-    if (SENTENCE_TERMINATORS.includes(char)) {
-      sentences.push(current.trim());
-      current = "";
-    }
-  }
-  
-  return {
-    sentences,
-    remaining: current
-  };
 }
 
 function updateSubtitleLane(lane, text) {
   const state = subtitleState[lane];
   
-  if (state.timeoutId) {
-    clearTimeout(state.timeoutId);
-    state.timeoutId = null;
-  }
-  
   const trimmedText = text.trim();
   if (trimmedText) {
-    const needsSpace = state.accumulated.length > 0 && 
-                       !/[\s。？！.?!;；]/.test(state.accumulated[state.accumulated.length - 1]) && 
+    const needsSpace = state.accumulatedText.length > 0 && 
+                       !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
                        !/^[。？！.?!;；\s]/.test(trimmedText);
-    state.accumulated = state.accumulated + (needsSpace ? " " : "") + trimmedText;
+    state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
   }
   
-  // Extract complete sentences from accumulated text
-  const { sentences, remaining } = extractCompleteSentences(state.accumulated);
-  if (sentences.length > 0) {
-    sentences.forEach(s => {
-      state.history.push(s);
-      if (state.history.length > 2) {
-        state.history.shift();
-      }
-    });
-    state.accumulated = remaining;
-  } else if (state.accumulated.length > 0) {
-    // Set a 3-second timeout to flush the accumulated sentence if no more chunks arrive
-    state.timeoutId = setTimeout(() => {
-      finalizeAccumulated(lane);
-    }, 3000);
+  // Limit history length to prevent excessive growth (keep last 800 chars)
+  if (state.accumulatedText.length > 800) {
+    state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
+    const spaceIdx = state.accumulatedText.indexOf(" ");
+    if (spaceIdx !== -1) {
+      state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
+    }
   }
   
   renderSubtitleLane(lane);
-}
-
-function finalizeAccumulated(lane) {
-  const state = subtitleState[lane];
-  if (state.timeoutId) {
-    clearTimeout(state.timeoutId);
-    state.timeoutId = null;
-  }
-  
-  if (state.accumulated.trim()) {
-    state.history.push(state.accumulated.trim());
-    state.accumulated = "";
-    if (state.history.length > 2) {
-      state.history.shift();
-    }
-    renderSubtitleLane(lane);
-  }
 }
 
 // --- WebSocket Handlers ---
@@ -921,15 +817,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
           stopAllPlayback();
           currentStreamingBubble1 = null;
           currentStreamingBubble2 = null;
-          currentStreamingInputBubble = null;
-          subtitleState.lang1.current = "";
-          subtitleState.lang2.current = "";
-          renderSubtitleLane("lang1");
-          renderSubtitleLane("lang2");
           return;
-        }
-        if (sc.modelTurn) {
-          finalizeAccumulated(`lang${channelId}`);
         }
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
@@ -991,14 +879,8 @@ function disconnectSession() {
   currentStreamingBubble2 = null;
   
   // Reset subtitle presentation state
-  ['detected', 'lang1', 'lang2'].forEach(lane => {
-    if (subtitleState[lane].timeoutId) {
-      clearTimeout(subtitleState[lane].timeoutId);
-      subtitleState[lane].timeoutId = null;
-    }
-    subtitleState[lane].history = [];
-    subtitleState[lane].accumulated = "";
-    subtitleState[lane].current = "";
+  ['lang1', 'lang2'].forEach(lane => {
+    subtitleState[lane].accumulatedText = "";
   });
   
   // Re-render empty subtitles (or default placeholders)
