@@ -724,7 +724,26 @@ function renderSubtitleLane(lane) {
   element.innerHTML = htmlLines.join("");
 }
 
-function updateSubtitleLane(lane, text, isFinal) {
+function extractCompleteSentences(text) {
+  const sentences = [];
+  let current = "";
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    current += char;
+    if (SENTENCE_TERMINATORS.includes(char)) {
+      sentences.push(current.trim());
+      current = "";
+    }
+  }
+  
+  return {
+    sentences,
+    remaining: current
+  };
+}
+
+function updateSubtitleLane(lane, text) {
   const state = subtitleState[lane];
   
   if (state.timeoutId) {
@@ -732,27 +751,29 @@ function updateSubtitleLane(lane, text, isFinal) {
     state.timeoutId = null;
   }
   
-  if (isFinal) {
-    state.current = "";
-    const trimmedText = text.trim();
-    if (trimmedText) {
-      const needsSpace = state.accumulated.length > 0 && 
-                         !/[\s。？！.?!;；]/.test(state.accumulated[state.accumulated.length - 1]) && 
-                         !/^[。？！.?!;；\s]/.test(trimmedText);
-      state.accumulated = state.accumulated + (needsSpace ? " " : "") + trimmedText;
-    }
-    
-    // Check if the accumulated text ends with a sentence terminator
-    if (endsWithTerminator(state.accumulated)) {
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    const needsSpace = state.accumulated.length > 0 && 
+                       !/[\s。？！.?!;；]/.test(state.accumulated[state.accumulated.length - 1]) && 
+                       !/^[。？！.?!;；\s]/.test(trimmedText);
+    state.accumulated = state.accumulated + (needsSpace ? " " : "") + trimmedText;
+  }
+  
+  // Extract complete sentences from accumulated text
+  const { sentences, remaining } = extractCompleteSentences(state.accumulated);
+  if (sentences.length > 0) {
+    sentences.forEach(s => {
+      state.history.push(s);
+      if (state.history.length > 2) {
+        state.history.shift();
+      }
+    });
+    state.accumulated = remaining;
+  } else if (state.accumulated.length > 0) {
+    // Set a 3-second timeout to flush the accumulated sentence if no more chunks arrive
+    state.timeoutId = setTimeout(() => {
       finalizeAccumulated(lane);
-    } else if (state.accumulated.length > 0) {
-      // Set a 3-second timeout to flush the accumulated sentence if no more chunks arrive
-      state.timeoutId = setTimeout(() => {
-        finalizeAccumulated(lane);
-      }, 3000);
-    }
-  } else {
-    state.current = text;
+    }, 3000);
   }
   
   renderSubtitleLane(lane);
@@ -907,6 +928,9 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
           renderSubtitleLane("lang2");
           return;
         }
+        if (sc.modelTurn) {
+          finalizeAccumulated(`lang${channelId}`);
+        }
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
@@ -930,7 +954,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
         const text = outputTx.text;
         if (text) {
           updateOutputTranscript(text, channelId, outputTx.final);
-          updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
+          updateSubtitleLane(`lang${channelId}`, text);
         }
       }
       
