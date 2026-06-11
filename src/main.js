@@ -474,37 +474,20 @@ function stopAudioCapture() {
   micDb.textContent = "0%";
 }
 
-let currentStreamingInputBubble = null;
-
-function updateInputTranscript(text, isFinal = false) {
+function addInputTranscript(text) {
   inputPlaceholder.style.display = "none";
   
-  let currentBubble = currentStreamingInputBubble;
-  const scrollContainer = document.getElementById("input-transcript-scroll");
+  const bubble = document.createElement("div");
+  bubble.className = "transcript-bubble";
+  bubble.textContent = text;
   
-  if (!currentBubble) {
-    currentBubble = document.createElement("div");
-    currentBubble.className = "transcript-bubble";
-    inputList.appendChild(currentBubble);
-    currentStreamingInputBubble = currentBubble;
-  }
+  const ts = document.createElement("span");
+  ts.className = "timestamp";
+  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  bubble.appendChild(ts);
   
-  if (isFinal) {
-    currentBubble.textContent = text;
-    currentBubble.classList.remove("streaming-text");
-    
-    const ts = document.createElement("span");
-    ts.className = "timestamp";
-    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    currentBubble.appendChild(ts);
-    
-    currentStreamingInputBubble = null;
-  } else {
-    currentBubble.textContent = text + "...";
-    currentBubble.classList.add("streaming-text");
-  }
-  
-  scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  inputList.appendChild(bubble);
+  document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
 }
 
 let currentStreamingBubble1 = null;
@@ -622,8 +605,8 @@ function openSubtitleWindow() {
           color: #a7f3d0;
         }
         .previous-line {
-          opacity: 0.45;
-          font-size: 2.3rem;
+          opacity: 0.8;
+          font-size: 3.5rem;
           margin-bottom: 0.5rem;
         }
         .streaming {
@@ -924,15 +907,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
           renderSubtitleLane("lang2");
           return;
         }
-        
-        if (sc.modelTurn) {
-          finalizeAccumulated(`lang${channelId}`);
-        }
-        
-        if (sc.turnComplete) {
-          finalizeAccumulated(`lang${channelId}`);
-        }
-        
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
@@ -947,7 +921,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
       if (inputTx) {
         const text = inputTx.text;
         if (text) {
-          updateInputTranscript(text, inputTx.final !== false);
+          addInputTranscript(text);
         }
       }
       
@@ -991,7 +965,6 @@ function disconnectSession() {
   stopAllPlayback();
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
-  currentStreamingInputBubble = null;
   
   // Reset subtitle presentation state
   ['detected', 'lang1', 'lang2'].forEach(lane => {
