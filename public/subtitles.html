@@ -5,11 +5,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     body {
-      background-color: #0b0f19;
-      color: #f1f5f9;
+      background-color: #000000;
+      color: #ffffff;
       font-family: 'Outfit', sans-serif;
       margin: 0;
-      padding: 2.5rem;
+      padding: 3rem;
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -17,29 +17,31 @@
       overflow: hidden;
       position: relative;
     }
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    .title {
-      font-size: 1.2rem;
+    .status-badge {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #000000;
+      color: #ffffff;
+      border: 1px solid #ffffff;
+      border-top: none;
+      padding: 0.5rem 1.5rem;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: #94a3b8;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .status {
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: color 0.3s ease;
+      letter-spacing: 0.1em;
+      z-index: 10;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     }
     .container {
       display: flex;
       flex-direction: column;
-      height: calc(100% - 3.5rem);
+      height: 100%;
       gap: 2rem;
+      justify-content: center;
     }
     .section {
       flex: 1;
@@ -48,48 +50,40 @@
       justify-content: center;
       padding: 2.5rem;
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
       transition: all 0.3s ease;
     }
     .label {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: #64748b;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
       font-weight: 700;
     }
     .text {
       font-size: 3.8rem;
-      font-weight: 500;
-      line-height: 1.4;
+      font-weight: 600;
+      line-height: 1.45;
       word-wrap: break-word;
       white-space: pre-wrap;
-      max-height: 16rem;
+      max-height: 16.5rem;
       overflow: hidden;
-    }
-    .text.lang1 {
-      color: #00f5ff;
-    }
-    .text.lang2 {
-      color: #a7f3d0;
+      color: #ffffff;
     }
   </style>
 </head>
 <body>
-  <div class="header-bar">
-    <div class="title">Gemini Live Translator - Projector Monitor</div>
-    <div class="status" id="status-indicator">Connecting to Host...</div>
-  </div>
+  <div class="status-badge" id="status-indicator">Connecting to Host...</div>
   <div class="container">
     <div class="section" id="sec-lang1">
       <div class="label" id="label-lang1">Translation 1</div>
-      <div class="text lang1" id="sub-lang1">-</div>
+      <div class="text" id="sub-lang1">-</div>
     </div>
     <div class="section" id="sec-lang2" style="display: none;">
       <div class="label" id="label-lang2">Translation 2</div>
-      <div class="text lang2" id="sub-lang2">-</div>
+      <div class="text" id="sub-lang2">-</div>
     </div>
   </div>
 
@@ -154,13 +148,13 @@
       const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
       
       statusIndicator.textContent = "Connecting to Host...";
-      statusIndicator.style.color = "#f59e0b";
+      statusIndicator.style.color = "#ffffff";
       
       const socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
         statusIndicator.textContent = "Connected to Host";
-        statusIndicator.style.color = "#10b981";
+        statusIndicator.style.color = "#ffffff";
       };
 
       socket.onmessage = (event) => {
@@ -179,7 +173,7 @@
 
       socket.onclose = () => {
         statusIndicator.textContent = "Disconnected (Retrying...)";
-        statusIndicator.style.color = "#ef4444";
+        statusIndicator.style.color = "#ffffff";
         setTimeout(connect, 3000);
       };
 
