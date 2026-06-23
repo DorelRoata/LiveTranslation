@@ -2,7 +2,7 @@
 
 A sleek, low-latency, real-time voice-to-voice translation web application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). 
 
-This application supports dual-language concurrent translations, visual waveform analytics, audio play/mute controls, and a dedicated multi-device projector screen for sharing rolling subtitles on another laptop over a local network.
+This application supports dual-language concurrent translations, visual waveform analytics, audio play/mute controls, and a dedicated local network projector screen for sharing rolling subtitles on another laptop in real-time.
 
 ---
 
@@ -28,18 +28,9 @@ This application supports dual-language concurrent translations, visual waveform
 
 ---
 
-## 🌿 Branches
+## 🚀 Quick Start (Local Network & Projector Mode)
 
-The repository is structured into two main branches:
-
-1. **`main`:** The standard client-only application. Best for single-laptop use, running quickly on `localhost`, and does not require local SSL certificates or network relays.
-2. **`projector-sharing`:** Enables a local WebSocket relay server and SSL configuration to stream subtitles to another laptop's browser over the local network (Wi-Fi).
-
----
-
-## 🚀 Quick Start (Standard Mode - `main` branch)
-
-To run the application locally on a single machine:
+To run the application on **Laptop A** (capturing audio) and display subtitles on **Laptop B** (connected to the projector):
 
 ```bash
 # 1. Clone the repository
@@ -47,25 +38,6 @@ git clone https://github.com/DorelRoata/LiveTranslation.git
 cd LiveTranslation
 
 # 2. Install dependencies
-npm install
-
-# 3. Start the dev server
-npm run dev
-```
-Open **`http://localhost:5173/`** in Chrome, Edge, or Safari, enter your Gemini API Key, select your target languages, and click **Start Translation**.
-
----
-
-## 📽️ Projector Mode (Local Network Broadcast - `projector-sharing` branch)
-
-To run the application on **Laptop A** (capturing audio) and display subtitles on **Laptop B** (connected to the projector):
-
-```bash
-# 1. Clone the repository and switch to the projector branch
-git clone https://github.com/DorelRoata/LiveTranslation.git -b projector-sharing
-cd LiveTranslation
-
-# 2. Install dependencies (requires 'ws' and '@vitejs/plugin-basic-ssl')
 npm install
 
 # 3. Start the local server
@@ -76,15 +48,15 @@ npm run dev
 1. In the terminal, copy the network IP printed under the `Network` heading (e.g., `https://192.168.1.67:5173/`).
 2. Open that network URL on **Laptop A**.
 3. In the configuration panel, copy the exact link shown under **Projector Screen Sharing** (e.g., `https://192.168.1.67:5173/subtitles.html`).
-4. On **Laptop B** (the projector laptop), open that subtitles URL.
+4. On **Laptop B** (the projector laptop), open that subtitles URL in Chrome, Edge, or Safari.
    * *Note: Because Vite uses a local self-signed SSL certificate, your browser will display a certificate warning. Click **Advanced** and then click **Proceed to ... (unsafe)** to open the subtitles page safely.*
-5. Once Laptop B's status bar shows **Connected to Host**, start translating on Laptop A. The subtitles will stream to Laptop B's projector screen in real-time!
+5. Once Laptop B displays a green status dot in the top-right corner (meaning it is connected to the host), start translating on Laptop A. The subtitles will stream to Laptop B's projector screen in real-time!
 
 ---
 
 ## 🔒 Recommended Browsers & macOS Settings
 
-Modern web browsers restrict microphone access and display capture (`getDisplayMedia`) to **secure contexts** (`localhost` or `https`). Because Projector Mode runs over a local IP network, the server must run over HTTPS (which Vite does automatically on the `projector-sharing` branch).
+Modern web browsers restrict microphone access and display capture (`getDisplayMedia`) to **secure contexts** (`localhost` or `https`). Because Projector Mode runs over a local IP network, the server runs over HTTPS using a self-signed certificate.
 
 For best compatibility, we recommend using **Google Chrome** or **Microsoft Edge**:
 * **Microphone Permissions:** Allow microphone access in the browser prompt. On macOS, you may also need to check Google Chrome under **System Settings ➜ Privacy & Security ➜ Microphone**.
