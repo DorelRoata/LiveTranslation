@@ -47,14 +47,6 @@
       border: 1px solid rgba(255, 255, 255, 0.03);
       transition: all 0.3s ease;
     }
-    .label {
-      font-size: 1.1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #64748b;
-      margin-bottom: 0.75rem;
-      font-weight: 700;
-    }
     .text {
       font-size: 3.8rem;
       font-weight: 600;
@@ -64,6 +56,7 @@
       max-height: 16.5rem;
       overflow: hidden;
       color: #ffffff;
+      text-align: center; /* Center-align subtitles for cinema projector style */
     }
   </style>
 </head>
@@ -71,11 +64,9 @@
   <div class="status-dot" id="status-indicator" title="Connecting to Host..."></div>
   <div class="container">
     <div class="section" id="sec-lang1">
-      <div class="label" id="label-lang1">Translation 1</div>
       <div class="text" id="sub-lang1">-</div>
     </div>
     <div class="section" id="sec-lang2" style="display: none;">
-      <div class="label" id="label-lang2">Translation 2</div>
       <div class="text" id="sub-lang2">-</div>
     </div>
   </div>
@@ -120,20 +111,6 @@
     function updateLabels() {
       const secLang2 = document.getElementById("sec-lang2");
       if (secLang2) secLang2.style.display = subtitleState.isDual ? "flex" : "none";
-      
-      const lbl1 = document.getElementById("label-lang1");
-      if (lbl1) {
-        lbl1.textContent = subtitleState.targetLanguage1 
-          ? `Translation 1 (${subtitleState.targetLanguage1.toUpperCase()})`
-          : `Translation 1`;
-      }
-      
-      const lbl2 = document.getElementById("label-lang2");
-      if (lbl2) {
-        lbl2.textContent = subtitleState.targetLanguage2
-          ? `Translation 2 (${subtitleState.targetLanguage2.toUpperCase()})`
-          : `Translation 2`;
-      }
     }
 
     function connect() {
