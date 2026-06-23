@@ -17,24 +17,17 @@
       overflow: hidden;
       position: relative;
     }
-    .status-badge {
+    .status-dot {
       position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #000000;
-      color: #ffffff;
-      border: 1px solid #ffffff;
-      border-top: none;
-      padding: 0.5rem 1.5rem;
-      border-bottom-left-radius: 12px;
-      border-bottom-right-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+      top: 1.5rem;
+      right: 1.5rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #f59e0b; /* Yellow/Amber by default (Connecting) */
       z-index: 10;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 0 8px #f59e0b;
     }
     .container {
       display: flex;
@@ -75,7 +68,7 @@
   </style>
 </head>
 <body>
-  <div class="status-badge" id="status-indicator">Connecting to Host...</div>
+  <div class="status-dot" id="status-indicator" title="Connecting to Host..."></div>
   <div class="container">
     <div class="section" id="sec-lang1">
       <div class="label" id="label-lang1">Translation 1</div>
@@ -147,14 +140,16 @@
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
       
-      statusIndicator.textContent = "Connecting to Host...";
-      statusIndicator.style.color = "#ffffff";
+      statusIndicator.style.backgroundColor = "#f59e0b"; // Yellow (Connecting)
+      statusIndicator.style.boxShadow = "0 0 8px #f59e0b";
+      statusIndicator.title = "Connecting to Host...";
       
       const socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
-        statusIndicator.textContent = "Connected to Host";
-        statusIndicator.style.color = "#ffffff";
+        statusIndicator.style.backgroundColor = "#10b981"; // Green (Connected)
+        statusIndicator.style.boxShadow = "0 0 8px #10b981";
+        statusIndicator.title = "Connected to Host";
       };
 
       socket.onmessage = (event) => {
@@ -172,8 +167,9 @@
       };
 
       socket.onclose = () => {
-        statusIndicator.textContent = "Disconnected (Retrying...)";
-        statusIndicator.style.color = "#ffffff";
+        statusIndicator.style.backgroundColor = "#ef4444"; // Red (Disconnected)
+        statusIndicator.style.boxShadow = "0 0 8px #ef4444";
+        statusIndicator.title = "Disconnected (Retrying...)";
         setTimeout(connect, 3000);
       };
 
