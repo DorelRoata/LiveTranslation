@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Projector Screen - Live Subtitles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      font-family: 'Outfit', sans-serif;
+      margin: 0;
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status {
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 3.5rem);
+      gap: 2rem;
+    }
+    .section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2.5rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+    .label {
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    .text {
+      font-size: 3.8rem;
+      font-weight: 500;
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      max-height: 16rem;
+      overflow: hidden;
+    }
+    .text.lang1 {
+      color: #00f5ff;
+    }
+    .text.lang2 {
+      color: #a7f3d0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="title">Gemini Live Translator - Projector Monitor</div>
+    <div class="status" id="status-indicator">Connecting to Host...</div>
+  </div>
+  <div class="container">
+    <div class="section" id="sec-lang1">
+      <div class="label" id="label-lang1">Translation 1</div>
+      <div class="text lang1" id="sub-lang1">-</div>
+    </div>
+    <div class="section" id="sec-lang2" style="display: none;">
+      <div class="label" id="label-lang2">Translation 2</div>
+      <div class="text lang2" id="sub-lang2">-</div>
+    </div>
+  </div>
+
+  <script>
+    let subtitleState = {
+      lang1: { accumulatedText: "" },
+      lang2: { accumulatedText: "" },
+      targetLanguage1: "",
+      targetLanguage2: "",
+      isDual: false
+    };
+
+    const statusIndicator = document.getElementById('status-indicator');
+
+    function renderSubtitleLane(lane) {
+      const state = subtitleState[lane];
+      let elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      let combinedText = state.accumulatedText;
+      if (!combinedText) {
+        element.innerHTML = `<div>-</div>`;
+        return;
+      }
+
+      // HTML Escape
+      const escaped = combinedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+        
+      element.innerHTML = `<div>${escaped}</div>`;
+      
+      // Scroll to bottom
+      requestAnimationFrame(() => {
+        element.scrollTop = element.scrollHeight;
+      });
+    }
+
+    function updateLabels() {
+      const secLang2 = document.getElementById("sec-lang2");
+      if (secLang2) secLang2.style.display = subtitleState.isDual ? "flex" : "none";
+      
+      const lbl1 = document.getElementById("label-lang1");
+      if (lbl1) {
+        lbl1.textContent = subtitleState.targetLanguage1 
+          ? `Translation 1 (${subtitleState.targetLanguage1.toUpperCase()})`
+          : `Translation 1`;
+      }
+      
+      const lbl2 = document.getElementById("label-lang2");
+      if (lbl2) {
+        lbl2.textContent = subtitleState.targetLanguage2
+          ? `Translation 2 (${subtitleState.targetLanguage2.toUpperCase()})`
+          : `Translation 2`;
+      }
+    }
+
+    function connect() {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
+      
+      statusIndicator.textContent = "Connecting to Host...";
+      statusIndicator.style.color = "#f59e0b";
+      
+      const socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        statusIndicator.textContent = "Connected to Host";
+        statusIndicator.style.color = "#10b981";
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'sync') {
+            subtitleState = data.state;
+            updateLabels();
+            renderSubtitleLane("lang1");
+            renderSubtitleLane("lang2");
+          }
+        } catch (err) {
+          console.error("Error parsing WebSocket message:", err);
+        }
+      };
+
+      socket.onclose = () => {
+        statusIndicator.textContent = "Disconnected (Retrying...)";
+        statusIndicator.style.color = "#ef4444";
+        setTimeout(connect, 3000);
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>

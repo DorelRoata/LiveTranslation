@@ -20,6 +20,7 @@ let activeSources1 = [];
 let activeSources2 = [];
 let isRunning = false;
 let subtitleWindow = null;
+let localSubtitlesWS = null;
 
 const subtitleState = {
   lang1: { accumulatedText: "" },
@@ -692,6 +693,15 @@ function updateSubtitleLane(lane, text) {
   }
   
   renderSubtitleLane(lane);
+  
+  // Send update to local subtitles broadcast server
+  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({
+      type: 'update',
+      lane: lane,
+      text: text
+    }));
+  }
 }
 
 // --- WebSocket Handlers ---
@@ -707,6 +717,12 @@ function startSession() {
   const echoTargetLanguage = echoToggle.checked;
   
   const isDual = targetLanguage2 !== "none";
+  
+  // Clear and sync local subtitles WS
+  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
+    syncLocalSubtitlesSetup();
+  }
   
   // Show or hide Language 2 main column
   const colLang2 = document.getElementById("col-lang-2");
@@ -889,6 +905,10 @@ function disconnectSession() {
   renderSubtitleLane("lang1");
   renderSubtitleLane("lang2");
   
+  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
+  }
+  
   if (socket1) {
     if (socket1.readyState === WebSocket.OPEN || socket1.readyState === WebSocket.CONNECTING) {
       socket1.close();
@@ -922,3 +942,45 @@ startBtn.addEventListener("click", () => {
 subtitlesBtn.addEventListener("click", () => {
   openSubtitleWindow();
 });
+
+// --- Local Subtitles WebSocket Broadcasting ---
+function initLocalSubtitlesWS() {
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
+  
+  localSubtitlesWS = new WebSocket(wsUrl);
+
+  localSubtitlesWS.onopen = () => {
+    logDebug("Connected to local subtitles broadcast server.", "info");
+    syncLocalSubtitlesSetup();
+  };
+
+  localSubtitlesWS.onclose = () => {
+    logDebug("Disconnected from local subtitles server. Reconnecting in 3s...", "info");
+    setTimeout(initLocalSubtitlesWS, 3000);
+  };
+
+  localSubtitlesWS.onerror = (err) => {
+    console.error("Local subtitles WebSocket error:", err);
+  };
+}
+
+function syncLocalSubtitlesSetup() {
+  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({
+      type: 'setup',
+      targetLanguage1: targetLanguageSelect1.value,
+      targetLanguage2: targetLanguageSelect2.value,
+      isDual: targetLanguageSelect2.value !== "none"
+    }));
+  }
+}
+
+// Initialize local WebSocket connection on page load
+initLocalSubtitlesWS();
+
+// Update Projector Sharing URL Tip
+const projectorTip = document.getElementById("projector-url-tip");
+if (projectorTip) {
+  projectorTip.textContent = `${window.location.protocol}//${window.location.host}/subtitles.html`;
+}
