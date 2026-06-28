@@ -804,10 +804,6 @@ function disconnectSession() {
     subtitleState[lane].accumulatedText = "";
   });
   
-  // Re-render empty subtitles (or default placeholders)
-  renderSubtitleLane("lang1");
-  renderSubtitleLane("lang2");
-  
   if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
   }
