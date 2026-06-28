@@ -39,42 +39,34 @@ function localSubtitlesPlugin() {
             
             // Update in-memory state based on messages from Laptop A (parent)
             if (data.type === 'update') {
-              const { lane, text, isFinal } = data;
+              const { lane, text } = data;
               const state = subtitleState[lane];
               const trimmedText = text.trim();
               
-              if (isFinal) {
-                if (trimmedText) {
-                  const needsSpace = state.accumulatedText.length > 0 && 
-                                     !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
-                                     !/^[。？！.?!;；\s]/.test(trimmedText);
-                  state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
-                }
-                
-                // Limit history length to keep last 800 chars
-                if (state.accumulatedText.length > 800) {
-                  state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
-                  const spaceIdx = state.accumulatedText.indexOf(" ");
-                  if (spaceIdx !== -1) {
-                    state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
-                  }
-                }
-                
-                // Broadcast sync to all clients so they synchronize their final state
-                const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
-                wss.clients.forEach((client) => {
-                  if (client.readyState === 1) {
-                    client.send(syncMsg);
-                  }
-                });
-              } else {
-                // Relay interim update directly to other client screens
-                wss.clients.forEach((client) => {
-                  if (client !== ws && client.readyState === 1) {
-                    client.send(message.toString());
-                  }
-                });
+              // Always accumulate every text fragment
+              if (trimmedText) {
+                const needsSpace = state.accumulatedText.length > 0 && 
+                                   !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
+                                   !/^[。？！.?!;；\s]/.test(trimmedText);
+                state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
               }
+              
+              // Limit history length to keep last 800 chars
+              if (state.accumulatedText.length > 800) {
+                state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
+                const spaceIdx = state.accumulatedText.indexOf(" ");
+                if (spaceIdx !== -1) {
+                  state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
+                }
+              }
+              
+              // Always broadcast full state to all other clients
+              const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
+              wss.clients.forEach((client) => {
+                if (client !== ws && client.readyState === 1) {
+                  client.send(syncMsg);
+                }
+              });
             } else if (data.type === 'setup') {
               subtitleState.targetLanguage1 = data.targetLanguage1;
               subtitleState.targetLanguage2 = data.targetLanguage2;
