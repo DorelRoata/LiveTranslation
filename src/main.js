@@ -539,151 +539,15 @@ function openSubtitleWindow() {
     return;
   }
   
-  subtitleWindow = window.open("", "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
+  subtitleWindow = window.open("/subtitles.html", "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
   
   if (!subtitleWindow) {
     alert("Popup blocker is active. Please allow popups for this site to open the subtitle window.");
-    return;
   }
-  
-  subtitleWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Live Subtitles - Gemini Translate</title>
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-      <style>
-        body {
-          background-color: #0b0f19;
-          color: #f1f5f9;
-          font-family: 'Outfit', sans-serif;
-          margin: 0;
-          padding: 2.5rem;
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          box-sizing: border-box;
-          overflow: hidden;
-        }
-        .container {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          gap: 2rem;
-        }
-        .section {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 2rem;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          transition: all 0.3s ease;
-        }
-        .label {
-          font-size: 1.1rem;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: #64748b;
-          margin-bottom: 0.75rem;
-          font-weight: 700;
-        }
-        .text {
-          font-size: 3.5rem;
-          font-weight: 500;
-          line-height: 1.4;
-          word-wrap: break-word;
-          white-space: pre-wrap;
-          max-height: 14.7rem;
-          overflow: hidden;
-        }
-        .text.lang1 {
-          color: #00f5ff;
-        }
-        .text.lang2 {
-          color: #a7f3d0;
-        }
-        .previous-line {
-          opacity: 0.8;
-          font-size: 3.5rem;
-          margin-bottom: 0.5rem;
-        }
-        .streaming {
-          opacity: 0.75;
-          font-style: italic;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="section" id="sec-lang1">
-          <div class="label" id="label-lang1">Translation 1</div>
-          <div class="text lang1" id="sub-lang1">-</div>
-        </div>
-        <div class="section" id="sec-lang2" style="display: none;">
-          <div class="label" id="label-lang2">Translation 2</div>
-          <div class="text lang2" id="sub-lang2">-</div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `);
-  subtitleWindow.document.close();
-  
-  // Instantly sync labels if translation is already in progress
-  const targetLanguage1 = targetLanguageSelect1.value;
-  const targetLanguage2 = targetLanguageSelect2.value;
-  const isDual = targetLanguage2 !== "none";
-  
-  const secLang2 = subtitleWindow.document.getElementById("sec-lang2");
-  if (secLang2) secLang2.style.display = isDual ? "flex" : "none";
-  
-  const lbl1 = subtitleWindow.document.getElementById("label-lang1");
-  if (lbl1) lbl1.textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
-  
-  const lbl2 = subtitleWindow.document.getElementById("label-lang2");
-  if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
-
-  // Render histories immediately upon opening
-  renderSubtitleLane("lang1");
-  renderSubtitleLane("lang2");
-}
-
-function renderSubtitleLane(lane) {
-  if (!subtitleWindow || subtitleWindow.closed) return;
-  
-  const state = subtitleState[lane];
-  let elementId = "";
-  if (lane === "lang1") elementId = "sub-lang1";
-  else if (lane === "lang2") elementId = "sub-lang2";
-  
-  const element = subtitleWindow.document.getElementById(elementId);
-  if (!element) return;
-  
-  if (!state.accumulatedText) {
-    element.innerHTML = `<div>-</div>`;
-    return;
-  }
-  
-  // HTML Escape
-  const escaped = state.accumulatedText
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-    
-  element.innerHTML = `<div>${escaped}</div>`;
-  
-  // Scroll to bottom to ensure the last lines (max 3) are visible
-  requestAnimationFrame(() => {
-    element.scrollTop = element.scrollHeight;
-  });
 }
 
 function updateSubtitleLane(lane, text, isFinal = false) {
   const state = subtitleState[lane];
-  let displayText = state.accumulatedText;
   
   const trimmedText = text.trim();
   if (isFinal) {
@@ -701,31 +565,6 @@ function updateSubtitleLane(lane, text, isFinal = false) {
       if (spaceIdx !== -1) {
         state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
       }
-    }
-    displayText = state.accumulatedText;
-  } else {
-    // For interim updates, show progress draft but do not commit to memory
-    if (trimmedText) {
-      const needsSpace = state.accumulatedText.length > 0 && 
-                         !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
-                         !/^[。？！.?!;；\s]/.test(trimmedText);
-      displayText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText + "...";
-    }
-  }
-  
-  // Render local projector window if open
-  if (subtitleWindow && !subtitleWindow.closed) {
-    const elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
-    const element = subtitleWindow.document.getElementById(elementId);
-    if (element) {
-      const escaped = displayText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-      element.innerHTML = `<div>${escaped}</div>`;
-      requestAnimationFrame(() => {
-        element.scrollTop = element.scrollHeight;
-      });
     }
   }
   
@@ -769,18 +608,6 @@ async function startSession() {
   } else {
     colLang2.style.display = "none";
     document.getElementById("header-lang-1").textContent = `Translation (${targetLanguage1.toUpperCase()})`;
-  }
-  
-  // Sync Presentation window labels
-  if (subtitleWindow && !subtitleWindow.closed) {
-    const secLang2 = subtitleWindow.document.getElementById("sec-lang2");
-    if (secLang2) secLang2.style.display = isDual ? "flex" : "none";
-    
-    const lbl1 = subtitleWindow.document.getElementById("label-lang1");
-    if (lbl1) lbl1.textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
-    
-    const lbl2 = subtitleWindow.document.getElementById("label-lang2");
-    if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
   }
   
   // Disable button and update UI state immediately
