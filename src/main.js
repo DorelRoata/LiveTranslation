@@ -681,34 +681,61 @@ function renderSubtitleLane(lane) {
   });
 }
 
-function updateSubtitleLane(lane, text) {
+function updateSubtitleLane(lane, text, isFinal = false) {
   const state = subtitleState[lane];
+  let displayText = state.accumulatedText;
   
   const trimmedText = text.trim();
-  if (trimmedText) {
-    const needsSpace = state.accumulatedText.length > 0 && 
-                       !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
-                       !/^[。？！.?!;；\s]/.test(trimmedText);
-    state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
-  }
-  
-  // Limit history length to prevent excessive growth (keep last 800 chars)
-  if (state.accumulatedText.length > 800) {
-    state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
-    const spaceIdx = state.accumulatedText.indexOf(" ");
-    if (spaceIdx !== -1) {
-      state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
+  if (isFinal) {
+    if (trimmedText) {
+      const needsSpace = state.accumulatedText.length > 0 && 
+                         !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
+                         !/^[。？！.?!;；\s]/.test(trimmedText);
+      state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
+    }
+    
+    // Limit history length to prevent excessive growth (keep last 800 chars)
+    if (state.accumulatedText.length > 800) {
+      state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
+      const spaceIdx = state.accumulatedText.indexOf(" ");
+      if (spaceIdx !== -1) {
+        state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
+      }
+    }
+    displayText = state.accumulatedText;
+  } else {
+    // For interim updates, show progress draft but do not commit to memory
+    if (trimmedText) {
+      const needsSpace = state.accumulatedText.length > 0 && 
+                         !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
+                         !/^[。？！.?!;；\s]/.test(trimmedText);
+      displayText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText + "...";
     }
   }
   
-  renderSubtitleLane(lane);
+  // Render local projector window if open
+  if (subtitleWindow && !subtitleWindow.closed) {
+    const elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
+    const element = subtitleWindow.document.getElementById(elementId);
+    if (element) {
+      const escaped = displayText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      element.innerHTML = `<div>${escaped}</div>`;
+      requestAnimationFrame(() => {
+        element.scrollTop = element.scrollHeight;
+      });
+    }
+  }
   
   // Send update to local subtitles broadcast server
   if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
     localSubtitlesWS.send(JSON.stringify({
       type: 'update',
       lane: lane,
-      text: text
+      text: text,
+      isFinal: isFinal
     }));
   }
 }
@@ -878,7 +905,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
         const text = outputTx.text;
         if (text) {
           updateOutputTranscript(text, channelId, outputTx.final);
-          updateSubtitleLane(`lang${channelId}`, text);
+          updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
       }
       
