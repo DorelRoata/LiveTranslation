@@ -57,27 +57,42 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      align-items: stretch;
+      align-items: center;
       max-height: 16.5rem;
       overflow: hidden;
       color: #ffffff;
-      width: 90%;
-      margin: 0 auto;
     }
     .sub-line {
       font-size: 3.2rem;
       font-weight: 600;
       line-height: 1.5;
-      text-align: left;
-      opacity: 0.45;
-      transition: opacity 0.3s ease;
+      text-align: center;
+      opacity: 0.4;
+      transition: opacity 0.4s ease;
+      animation: fadeUp 0.4s ease;
     }
     .sub-line:last-child {
       opacity: 1;
       font-weight: 700;
     }
     .sub-line:nth-last-child(2) {
-      opacity: 0.65;
+      opacity: 0.6;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(0.5rem); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .typing-indicator {
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.25);
+      text-align: center;
+      margin-top: 0.8rem;
+      letter-spacing: 0.3em;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.6; }
     }
 
     /* Floating Control Bar Styles */
@@ -293,9 +308,9 @@
       }
     }
 
-    // Split accumulated text into stable lines of ~55 chars at word boundaries
-    function splitIntoLines(text, maxChars = 55) {
-      if (!text) return ["-"];
+    // Split accumulated text into stable lines of ~50 chars at word boundaries
+    function splitIntoLines(text, maxChars = 50) {
+      if (!text) return { complete: [], partial: "" };
       const words = text.split(/\s+/);
       const lines = [];
       let current = "";
@@ -307,8 +322,8 @@
           current = current ? current + " " + word : word;
         }
       }
-      if (current) lines.push(current);
-      return lines.length > 0 ? lines : ["-"];
+      // 'current' is the partial (incomplete) line still being typed
+      return { complete: lines, partial: current || "" };
     }
 
     function renderSubtitleLane(lane) {
@@ -319,11 +334,17 @@
       const element = document.getElementById(`sub-${lane}`);
       if (!element) return;
 
-      const allLines = splitIntoLines(state.accumulatedText);
-      // Show only the last 3 lines
-      const visible = allLines.slice(-3);
+      const { complete, partial } = splitIntoLines(state.accumulatedText);
       
-      element.innerHTML = visible
+      if (complete.length === 0 && !partial) {
+        element.innerHTML = '<div class="sub-line">-</div>';
+        return;
+      }
+
+      // Show only the last 3 COMPLETE lines (these never change once shown)
+      const visible = complete.slice(-3);
+      
+      let html = visible
         .map(line => {
           const escaped = line
             .replace(/&/g, "&amp;")
@@ -332,6 +353,13 @@
           return `<div class="sub-line">${escaped}</div>`;
         })
         .join("");
+      
+      // Show a subtle typing indicator when words are being buffered
+      if (partial) {
+        html += '<div class="typing-indicator">• • •</div>';
+      }
+      
+      element.innerHTML = html;
     }
 
     function renderInterimSubtitle(lane, text) {
