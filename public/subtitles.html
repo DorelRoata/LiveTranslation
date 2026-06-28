@@ -278,31 +278,25 @@
       }
     }
 
-    function getLastSentence(text) {
-      if (!text) return "-";
-      const trimmed = text.trim();
-      if (!trimmed) return "-";
-      
-      // Split by sentence ending punctuation and keep them
-      const sentences = trimmed.split(/(?<=[。？！.?!])\s+/);
-      if (sentences.length === 0) return "-";
-      
-      // Get last non-empty sentence
-      let last = sentences[sentences.length - 1];
-      if (!last.trim() && sentences.length > 1) {
-        last = sentences[sentences.length - 2];
+    function getActiveSubtitle(accumulatedText, interimText = "") {
+      let combined = accumulatedText;
+      if (interimText.trim()) {
+        const needsSpace = combined.length > 0 && 
+                           !/[\s。？！.?!;；]/.test(combined[combined.length - 1]) && 
+                           !/^[。？！.?!;；\s]/.test(interimText);
+        combined = combined + (needsSpace ? " " : "") + interimText + "...";
       }
       
-      // Limit length to keep text screen-bound
-      if (last.length > 160) {
-        last = last.substring(last.length - 160);
-        const spaceIdx = last.indexOf(" ");
+      // Limit to last 220 characters so it always fits on screen (2-3 lines max)
+      if (combined.length > 220) {
+        combined = combined.substring(combined.length - 220);
+        const spaceIdx = combined.indexOf(" ");
         if (spaceIdx !== -1) {
-          last = last.substring(spaceIdx + 1);
+          combined = combined.substring(spaceIdx + 1);
         }
       }
       
-      return last || "-";
+      return combined || "-";
     }
 
     function renderSubtitleLane(lane) {
@@ -314,8 +308,15 @@
       const element = document.getElementById(`sub-${lane}`);
       if (!element) return;
 
-      const finalSentence = getLastSentence(state.accumulatedText);
-      element.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+      const combinedText = getActiveSubtitle(state.accumulatedText, "");
+      
+      // HTML Escape
+      const escaped = combinedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+        
+      element.innerHTML = `<div>${escaped}</div>`;
     }
 
     function renderInterimSubtitle(lane, text) {
@@ -323,11 +324,19 @@
       if (viewMode === 'lang1' && lane !== 'lang1') return;
       if (viewMode === 'lang2' && lane !== 'lang2') return;
 
+      const state = subtitleState[lane];
       const element = document.getElementById(`sub-${lane}`);
       if (!element) return;
 
-      const liveText = text.trim() ? text.trim() + "..." : "";
-      element.innerHTML = `<div>${liveText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+      const combinedText = getActiveSubtitle(state.accumulatedText, text);
+
+      // HTML Escape
+      const escaped = combinedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+        
+      element.innerHTML = `<div>${escaped}</div>`;
     }
 
     function updateUIElements() {
