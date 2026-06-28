@@ -33,6 +33,9 @@ function localSubtitlesPlugin() {
         ws.on('message', (message) => {
           try {
             const data = JSON.parse(message.toString());
+            if (data.type !== 'audio') {
+              console.log("[WS Server Recv]", data.type, "isFinal:", data.isFinal, "text:", data.text);
+            }
             
             // Update in-memory state based on messages from Laptop A (parent)
             if (data.type === 'update') {
