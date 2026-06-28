@@ -532,6 +532,31 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
   scrollContainer.scrollTop = scrollContainer.scrollHeight;
 }
 
+function finalizeOutputTranscript(channelId) {
+  let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
+  if (currentBubble) {
+    const text = currentBubble.textContent.endsWith("...") ? 
+                 currentBubble.textContent.slice(0, -3) : 
+                 currentBubble.textContent;
+    
+    currentBubble.textContent = text;
+    currentBubble.classList.remove("streaming-text");
+    
+    const ts = document.createElement("span");
+    ts.className = "timestamp";
+    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    currentBubble.appendChild(ts);
+    
+    if (channelId === 1) {
+      currentStreamingBubble1 = null;
+    } else {
+      currentStreamingBubble2 = null;
+    }
+    
+    updateSubtitleLane(`lang${channelId}`, text, true);
+  }
+}
+
 // --- Subtitle Presentation Window ---
 function openSubtitleWindow() {
   if (subtitleWindow && !subtitleWindow.closed) {
@@ -708,6 +733,10 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
           currentStreamingBubble1 = null;
           currentStreamingBubble2 = null;
           return;
+        }
+        if (sc.turnComplete) {
+          logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
+          finalizeOutputTranscript(channelId);
         }
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
