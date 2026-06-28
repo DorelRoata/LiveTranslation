@@ -731,6 +731,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
       if (outputTx) {
         const text = outputTx.text;
         if (text) {
+          console.log("[Gemini OutputTx]", "channel:", channelId, "final:", outputTx.final, "keys:", Object.keys(outputTx), "text:", text);
           updateOutputTranscript(text, channelId, outputTx.final);
           updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
