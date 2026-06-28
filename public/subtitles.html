@@ -58,32 +58,25 @@
       flex-direction: column;
       justify-content: flex-end;
       align-items: center;
+      min-height: 10rem;
       max-height: 16.5rem;
       overflow: hidden;
       color: #ffffff;
     }
     .sub-line {
-      font-size: 3.2rem;
+      font-size: 3rem;
       font-weight: 600;
       line-height: 1.5;
       text-align: center;
-      opacity: 1;
+      color: rgba(255,255,255,0.5);
     }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(0.5rem); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .typing-indicator {
-      font-size: 1.2rem;
-      color: rgba(255,255,255,0.25);
+    .sub-line-active {
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1.5;
       text-align: center;
-      margin-top: 0.8rem;
-      letter-spacing: 0.3em;
-      animation: pulse 1s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 0.6; }
+      color: #ffffff;
+      min-height: 4.8rem;
     }
 
     /* Floating Control Bar Styles */
@@ -313,11 +306,14 @@
           current = current ? current + " " + word : word;
         }
       }
-      // 'current' is the partial (incomplete) line still being typed
       return { complete: lines, partial: current || "" };
     }
 
-    // Track what's currently on screen to avoid unnecessary DOM thrashing
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Track what's on screen to avoid unnecessary DOM updates
     const lastRendered = { lang1: "", lang2: "" };
 
     function renderSubtitleLane(lane) {
@@ -329,37 +325,21 @@
       if (!element) return;
 
       const { complete, partial } = splitIntoLines(state.accumulatedText);
-      
-      // Build a cache key from the complete lines + whether there's a partial
-      const cacheKey = complete.slice(-3).join("|") + (partial ? "|..." : "");
-      
-      // Skip DOM update if nothing visible changed
+
+      // Cache key includes complete lines AND the partial text
+      const cacheKey = complete.slice(-2).join("|") + "||" + partial;
       if (lastRendered[lane] === cacheKey) return;
       lastRendered[lane] = cacheKey;
 
-      if (complete.length === 0 && !partial) {
-        element.innerHTML = '<div class="sub-line">-</div>';
-        return;
-      }
-
-      // Show only the last 3 COMPLETE lines (these never change once shown)
-      const visible = complete.slice(-3);
-      
-      let html = visible
-        .map(line => {
-          const escaped = line
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-          return `<div class="sub-line">${escaped}</div>`;
-        })
+      // Build HTML: up to 2 stable history lines + 1 active typing line
+      const historyLines = complete.slice(-2);
+      let html = historyLines
+        .map(line => `<div class="sub-line">${escapeHtml(line)}</div>`)
         .join("");
-      
-      // Show a subtle typing indicator when words are being buffered
-      if (partial) {
-        html += '<div class="typing-indicator">• • •</div>';
-      }
-      
+
+      // Active line — shows the partial text being typed right now
+      html += `<div class="sub-line-active">${partial ? escapeHtml(partial) : "&nbsp;"}</div>`;
+
       element.innerHTML = html;
     }
 
