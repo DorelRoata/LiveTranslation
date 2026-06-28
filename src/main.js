@@ -705,7 +705,7 @@ function updateSubtitleLane(lane, text) {
 }
 
 // --- WebSocket Handlers ---
-function startSession() {
+async function startSession() {
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     alert("Please enter a valid Gemini API Key.");
@@ -747,6 +747,22 @@ function startSession() {
     if (lbl2) lbl2.textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
   }
   
+  // Disable button and update UI state immediately
+  startBtn.disabled = true;
+  startBtn.querySelector(".btn-text").textContent = "Starting...";
+  
+  // Capture audio immediately from user gesture before WebSocket async calls
+  try {
+    await startAudioCapture();
+  } catch (err) {
+    console.error("Failed to capture audio:", err);
+    logDebug(`Failed to capture audio: ${err.message}`, "error");
+    alert("Failed to capture audio: " + err.message);
+    startBtn.disabled = false;
+    startBtn.querySelector(".btn-text").textContent = "Start Translation";
+    return;
+  }
+  
   updateConnectionStatus("connecting", "Connecting...");
   logDebug(`Connecting to Gemini Live API...`, "info");
   
@@ -786,26 +802,19 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
     logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
     
-    // Start capture when all active sockets are OPEN
+    // Start session when all active sockets are OPEN
     const isDual = targetLanguageSelect2.value !== "none";
     const socket1Ready = socket1 && socket1.readyState === WebSocket.OPEN;
     const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
     
     if (socket1Ready && (!isDual || socket2Ready)) {
       updateConnectionStatus("connected", "Connected");
-      logDebug("All connections active. Starting audio capture...", "info");
+      logDebug("All connections active. Ready.", "info");
       
-      try {
-        await startAudioCapture();
-        isRunning = true;
-        startBtn.classList.add("recording");
-        startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
-      } catch (err) {
-        console.error("Failed to capture audio:", err);
-        logDebug(`Failed to capture audio: ${err.message}`, "error");
-        alert("Failed to capture audio: " + err.message);
-        disconnectSession();
-      }
+      isRunning = true;
+      startBtn.disabled = false;
+      startBtn.classList.add("recording");
+      startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
     }
   };
   
@@ -885,6 +894,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
 
 function disconnectSession() {
   isRunning = false;
+  startBtn.disabled = false;
   startBtn.classList.remove("recording");
   startBtn.querySelector(".btn-text").textContent = "Start Translation";
   
