@@ -244,6 +244,15 @@ function playPCMChunk(base64Data, channelId) {
   
   const isPlayChecked = channelId === 1 ? playVoiceCheckbox1.checked : playVoiceCheckbox2.checked;
   
+  // Stream to subtitles screen if enabled on main page
+  if (isPlayChecked && localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({
+      type: 'audio',
+      channelId: channelId,
+      audioData: base64Data
+    }));
+  }
+  
   // 1. Convert base64 back to raw binary data
   const binaryString = atob(base64Data);
   const len = binaryString.length;

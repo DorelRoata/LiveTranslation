@@ -57,18 +57,30 @@ function localSubtitlesPlugin() {
               subtitleState.targetLanguage1 = data.targetLanguage1;
               subtitleState.targetLanguage2 = data.targetLanguage2;
               subtitleState.isDual = data.isDual;
+              
+              const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
+              wss.clients.forEach((client) => {
+                if (client.readyState === 1) {
+                  client.send(syncMsg);
+                }
+              });
             } else if (data.type === 'clear') {
               subtitleState.lang1 = { accumulatedText: "" };
               subtitleState.lang2 = { accumulatedText: "" };
+              
+              const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
+              wss.clients.forEach((client) => {
+                if (client.readyState === 1) {
+                  client.send(syncMsg);
+                }
+              });
+            } else if (data.type === 'audio') {
+              wss.clients.forEach((client) => {
+                if (client !== ws && client.readyState === 1) {
+                  client.send(message.toString());
+                }
+              });
             }
-
-            // Broadcast the updated state to all connected clients
-            const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
-            wss.clients.forEach((client) => {
-              if (client.readyState === 1) { // OPEN
-                client.send(syncMsg);
-              }
-            });
           } catch (e) {
             console.error('Error handling WebSocket message in plugin:', e);
           }
