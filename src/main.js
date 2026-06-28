@@ -38,6 +38,7 @@ const toggleApiKeyBtn = document.getElementById("toggle-api-key");
 const audioSourceSelect = document.getElementById("audio-source-select");
 const micDeviceGroup = document.getElementById("mic-device-group");
 const micDeviceSelect = document.getElementById("mic-device-select");
+const systemInstructionInput = document.getElementById("system-instruction-input");
 
 const targetLanguageSelect1 = document.getElementById("target-language-select-1");
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
@@ -79,6 +80,14 @@ if (localStorage.getItem("gemini_api_key")) {
 
 apiKeyInput.addEventListener("input", () => {
   localStorage.setItem("gemini_api_key", apiKeyInput.value.trim());
+});
+
+// --- System Instruction Local Storage ---
+if (localStorage.getItem("gemini_system_instruction")) {
+  systemInstructionInput.value = localStorage.getItem("gemini_system_instruction");
+}
+systemInstructionInput.addEventListener("input", () => {
+  localStorage.setItem("gemini_system_instruction", systemInstructionInput.value);
 });
 
 // Toggle API Key Visibility
@@ -718,6 +727,8 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
   ws.onopen = async () => {
     logDebug(`WebSocket ${channelId} opened successfully.`, "info");
     
+    const systemInstructionText = systemInstructionInput.value.trim();
+
     // Send Setup Message
     const setupMsg = {
       setup: {
@@ -733,6 +744,12 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
         outputAudioTranscription: {}
       }
     };
+
+    if (systemInstructionText) {
+      setupMsg.setup.systemInstruction = {
+        parts: [{ text: systemInstructionText }]
+      };
+    }
     
     logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
