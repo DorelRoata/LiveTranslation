@@ -253,17 +253,55 @@
       }
     }
 
+    function getActiveSubtitle(accumulatedText, interimText = "") {
+      let combined = accumulatedText;
+      if (interimText.trim()) {
+        const needsSpace = combined.length > 0 && 
+                           !/[\s。？！.?!;；]/.test(combined[combined.length - 1]) && 
+                           !/^[。？！.?!;；\s]/.test(interimText);
+        combined = combined + (needsSpace ? " " : "") + interimText + "...";
+      }
+      
+      // Limit to last 220 characters so it always fits on screen (2-3 lines max)
+      if (combined.length > 220) {
+        combined = combined.substring(combined.length - 220);
+        const spaceIdx = combined.indexOf(" ");
+        if (spaceIdx !== -1) {
+          combined = combined.substring(spaceIdx + 1);
+        }
+      }
+      
+      return combined || "-";
+    }
+
     function renderSubtitleLane(lane) {
       const state = subtitleState[lane];
       let elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
       const element = document.getElementById(elementId);
       if (!element) return;
 
-      let combinedText = state.accumulatedText;
-      if (!combinedText) {
-        element.innerHTML = `<div>-</div>`;
-        return;
-      }
+      const combinedText = getActiveSubtitle(state.accumulatedText, "");
+      
+      // HTML Escape
+      const escaped = combinedText
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+        
+      element.innerHTML = `<div>${escaped}</div>`;
+    }
+
+    function renderInterimSubtitle(lane, text) {
+      // Drop updates if layout hides it
+      if (viewMode === 'lang1' && lane !== 'lang1') return;
+      if (viewMode === 'lang2' && lane !== 'lang2') return;
+
+      const state = subtitleState[lane];
+      let elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const combinedText = getActiveSubtitle(state.accumulatedText, text);
 
       // HTML Escape
       const escaped = combinedText
@@ -391,6 +429,8 @@
             updateUIElements();
             renderSubtitleLane("lang1");
             renderSubtitleLane("lang2");
+          } else if (data.type === 'update') {
+            renderInterimSubtitle(data.lane, data.text);
           } else if (data.type === 'audio') {
             playPCMChunk(data.audioData, data.channelId);
           }
