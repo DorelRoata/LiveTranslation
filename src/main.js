@@ -564,7 +564,7 @@ function openSubtitleWindow() {
     return;
   }
   
-  subtitleWindow = window.open("/subtitles.html", "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
+  subtitleWindow = window.open(`/subtitles.html?v=${Date.now()}`, "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
   
   if (!subtitleWindow) {
     alert("Popup blocker is active. Please allow popups for this site to open the subtitle window.");
