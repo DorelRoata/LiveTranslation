@@ -148,13 +148,6 @@
   </style>
 </head>
 <body>
-  <div id="debug-dashboard" style="position: absolute; top: 1.5rem; left: 1.5rem; font-family: monospace; font-size: 0.75rem; color: rgba(255,255,255,0.4); pointer-events: none; z-index: 10; text-align: left; line-height: 1.4;">
-    Ws Connected: <span id="dbg-connected" style="color: #ef4444; font-weight: bold;">No</span><br/>
-    Total Msgs: <span id="dbg-total" style="color: #60a5fa; font-weight: bold;">0</span><br/>
-    Last Msg: <span id="dbg-last" style="color: #34d399; font-weight: bold;">None</span><br/>
-    Text 1 Length: <span id="dbg-len1" style="color: #a7f3d0; font-weight: bold;">0</span><br/>
-    Text 2 Length: <span id="dbg-len2" style="color: #a7f3d0; font-weight: bold;">0</span>
-  </div>
   <div class="status-dot" id="status-indicator" title="Connecting to Host..."></div>
 
   <!-- Floating Navigation Controls -->
@@ -504,29 +497,16 @@
         statusIndicator.style.backgroundColor = "#10b981"; // Green (Connected)
         statusIndicator.style.boxShadow = "0 0 8px #10b981";
         statusIndicator.title = "Connected to Host";
-        const connEl = document.getElementById("dbg-connected");
-        if (connEl) {
-          connEl.textContent = "Yes";
-          connEl.style.color = "#10b981";
-        }
       };
 
       socket.onmessage = (event) => {
         totalMsgs++;
-        const totEl = document.getElementById("dbg-total");
-        if (totEl) totEl.textContent = totalMsgs;
 
         try {
           const data = JSON.parse(event.data);
-          const lastEl = document.getElementById("dbg-last");
-          if (lastEl) lastEl.textContent = `${data.type} (lane: ${data.lane || 'N/A'})`;
           
           if (data.type === 'sync') {
             subtitleState = data.state;
-            const l1El = document.getElementById("dbg-len1");
-            const l2El = document.getElementById("dbg-len2");
-            if (l1El) l1El.textContent = subtitleState.lang1.accumulatedText.length;
-            if (l2El) l2El.textContent = subtitleState.lang2.accumulatedText.length;
             
             updateUIElements();
             renderSubtitleLane("lang1");
