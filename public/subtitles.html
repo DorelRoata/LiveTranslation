@@ -54,15 +54,28 @@
       opacity: 0;
     }
     .text {
-      font-size: 3.8rem;
-      font-weight: 600;
-      line-height: 1.45;
-      word-wrap: break-word;
-      white-space: pre-wrap;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
       max-height: 16.5rem;
       overflow: hidden;
       color: #ffffff;
-      text-align: center; /* Center-align subtitles for cinema projector style */
+    }
+    .sub-line {
+      font-size: 3.2rem;
+      font-weight: 600;
+      line-height: 1.5;
+      text-align: center;
+      opacity: 0.45;
+      transition: opacity 0.3s ease;
+    }
+    .sub-line:last-child {
+      opacity: 1;
+      font-weight: 700;
+    }
+    .sub-line:nth-last-child(2) {
+      opacity: 0.65;
     }
 
     /* Floating Control Bar Styles */
@@ -278,29 +291,25 @@
       }
     }
 
-    function getActiveSubtitle(accumulatedText, interimText = "") {
-      let combined = accumulatedText;
-      if (interimText.trim()) {
-        const needsSpace = combined.length > 0 && 
-                           !/[\s。？！.?!;；]/.test(combined[combined.length - 1]) && 
-                           !/^[。？！.?!;；\s]/.test(interimText);
-        combined = combined + (needsSpace ? " " : "") + interimText + "...";
-      }
-      
-      // Limit to last 220 characters so it always fits on screen (2-3 lines max)
-      if (combined.length > 220) {
-        combined = combined.substring(combined.length - 220);
-        const spaceIdx = combined.indexOf(" ");
-        if (spaceIdx !== -1) {
-          combined = combined.substring(spaceIdx + 1);
+    // Split accumulated text into stable lines of ~55 chars at word boundaries
+    function splitIntoLines(text, maxChars = 55) {
+      if (!text) return ["-"];
+      const words = text.split(/\s+/);
+      const lines = [];
+      let current = "";
+      for (const word of words) {
+        if (current.length + word.length + 1 > maxChars && current.length > 0) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = current ? current + " " + word : word;
         }
       }
-      
-      return combined || "-";
+      if (current) lines.push(current);
+      return lines.length > 0 ? lines : ["-"];
     }
 
     function renderSubtitleLane(lane) {
-      // Drop updates if layout hides it
       if (viewMode === 'lang1' && lane !== 'lang1') return;
       if (viewMode === 'lang2' && lane !== 'lang2') return;
 
@@ -308,35 +317,23 @@
       const element = document.getElementById(`sub-${lane}`);
       if (!element) return;
 
-      const combinedText = getActiveSubtitle(state.accumulatedText, "");
+      const allLines = splitIntoLines(state.accumulatedText);
+      // Show only the last 3 lines
+      const visible = allLines.slice(-3);
       
-      // HTML Escape
-      const escaped = combinedText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-        
-      element.innerHTML = `<div>${escaped}</div>`;
+      element.innerHTML = visible
+        .map(line => {
+          const escaped = line
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+          return `<div class="sub-line">${escaped}</div>`;
+        })
+        .join("");
     }
 
     function renderInterimSubtitle(lane, text) {
-      // Drop updates if layout hides it
-      if (viewMode === 'lang1' && lane !== 'lang1') return;
-      if (viewMode === 'lang2' && lane !== 'lang2') return;
-
-      const state = subtitleState[lane];
-      const element = document.getElementById(`sub-${lane}`);
-      if (!element) return;
-
-      const combinedText = getActiveSubtitle(state.accumulatedText, text);
-
-      // HTML Escape
-      const escaped = combinedText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-        
-      element.innerHTML = `<div>${escaped}</div>`;
+      renderSubtitleLane(lane);
     }
 
     function updateUIElements() {
