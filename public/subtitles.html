@@ -248,19 +248,7 @@
       return LANG_NAMES[code.toLowerCase()] || code.toUpperCase();
     }
 
-    // Auto-hide controls bar on mouse inactivity
-    let mouseTimeout;
-    function resetMouseTimer() {
-      controlBar.classList.remove('hidden');
-      clearTimeout(mouseTimeout);
-      mouseTimeout = setTimeout(() => {
-        if (!controlBar.matches(':hover')) {
-          controlBar.classList.add('hidden');
-        }
-      }, 3000);
-    }
-    window.addEventListener('mousemove', resetMouseTimer);
-    resetMouseTimer();
+
 
     // View toggling logic
     btnViewBoth.addEventListener('click', () => {
