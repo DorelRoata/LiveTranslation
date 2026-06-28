@@ -19,6 +19,7 @@ let nextStartTime2 = 0;
 let activeSources1 = [];
 let activeSources2 = [];
 let isRunning = false;
+let reconnectTimeout = null;
 let subtitleWindow = null;
 let localSubtitlesWS = null;
 
@@ -821,18 +822,85 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
   ws.onclose = (event) => {
     console.log(`WebSocket ${channelId} connection closed:`, event);
     logDebug(`WebSocket ${channelId} connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
-    disconnectSession();
+    
+    if (isRunning) {
+      logDebug(`Connection dropped on channel ${channelId}. Attempting auto-reconnect in 3s...`, "warning");
+      updateConnectionStatus("connecting", "Reconnecting...");
+      
+      if (socket1 && socket1.readyState !== WebSocket.CLOSED) {
+        try { socket1.close(); } catch(e){}
+      }
+      if (socket2 && socket2.readyState !== WebSocket.CLOSED) {
+        try { socket2.close(); } catch(e){}
+      }
+      
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = setTimeout(reconnectSession, 3000);
+    } else {
+      disconnectSession();
+    }
   };
   
   ws.onerror = (err) => {
     console.error(`WebSocket ${channelId} error:`, err);
     logDebug(`WebSocket ${channelId} error: ${err.message || 'Unknown network error'}`, "error");
-    disconnectSession();
+    
+    if (isRunning) {
+      logDebug(`Connection error on channel ${channelId}. Attempting auto-reconnect in 3s...`, "warning");
+      updateConnectionStatus("connecting", "Reconnecting...");
+      
+      if (socket1 && socket1.readyState !== WebSocket.CLOSED) {
+        try { socket1.close(); } catch(e){}
+      }
+      if (socket2 && socket2.readyState !== WebSocket.CLOSED) {
+        try { socket2.close(); } catch(e){}
+      }
+      
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = setTimeout(reconnectSession, 3000);
+    } else {
+      disconnectSession();
+    }
   };
+}
+
+function reconnectSession() {
+  if (!isRunning) return;
+  
+  logDebug("Attempting auto-reconnect to Gemini Live API...", "info");
+  updateConnectionStatus("connecting", "Reconnecting...");
+  
+  if (socket1) {
+    try { socket1.close(); } catch(e){}
+    socket1 = null;
+  }
+  if (socket2) {
+    try { socket2.close(); } catch(e){}
+    socket2 = null;
+  }
+  
+  const apiKey = apiKeyInput.value.trim();
+  const targetLanguage1 = targetLanguageSelect1.value;
+  const targetLanguage2 = targetLanguageSelect2.value;
+  const echoTargetLanguage = echoToggle.checked;
+  const isDual = targetLanguage2 !== "none";
+  
+  const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
+  
+  // Create Connection 1
+  socket1 = new WebSocket(url);
+  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage);
+  
+  // Create Connection 2 if dual
+  if (isDual) {
+    socket2 = new WebSocket(url);
+    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage);
+  }
 }
 
 function disconnectSession() {
   isRunning = false;
+  clearTimeout(reconnectTimeout);
   startBtn.disabled = false;
   startBtn.classList.remove("recording");
   startBtn.querySelector(".btn-text").textContent = "Start Translation";
