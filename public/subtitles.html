@@ -53,16 +53,37 @@
       display: none !important;
       opacity: 0;
     }
-    .text {
-      font-size: 3.8rem;
-      font-weight: 600;
-      line-height: 1.45;
+    .subtitle-container-lane {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    .final-box {
+      font-size: 2.6rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.4;
+      max-height: 7.5rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
       word-wrap: break-word;
       white-space: pre-wrap;
-      max-height: 16.5rem;
+    }
+    .live-box {
+      font-size: 3.6rem;
+      font-weight: 700;
+      color: #fbbf24; /* Amber yellow for live active speech */
+      line-height: 1.45;
+      min-height: 5.5rem;
+      max-height: 11rem;
       overflow: hidden;
-      color: #ffffff;
-      text-align: center; /* Center-align subtitles for cinema projector style */
+      transition: all 0.3s ease;
+      word-wrap: break-word;
+      white-space: pre-wrap;
     }
 
     /* Floating Control Bar Styles */
@@ -159,10 +180,16 @@
 
   <div class="container" id="subtitles-container">
     <div class="section" id="sec-lang1">
-      <div class="text" id="sub-lang1">-</div>
+      <div class="subtitle-container-lane">
+        <div class="final-box" id="final-lang1">-</div>
+        <div class="live-box" id="live-lang1">-</div>
+      </div>
     </div>
     <div class="section" id="sec-lang2" style="display: none;">
-      <div class="text" id="sub-lang2">-</div>
+      <div class="subtitle-container-lane">
+        <div class="final-box" id="final-lang2">-</div>
+        <div class="live-box" id="live-lang2">-</div>
+      </div>
     </div>
   </div>
 
@@ -278,42 +305,46 @@
       }
     }
 
-    function getActiveSubtitle(accumulatedText, interimText = "") {
-      let combined = accumulatedText;
-      if (interimText.trim()) {
-        const needsSpace = combined.length > 0 && 
-                           !/[\s。？！.?!;；]/.test(combined[combined.length - 1]) && 
-                           !/^[。？！.?!;；\s]/.test(interimText);
-        combined = combined + (needsSpace ? " " : "") + interimText + "...";
+    function getLastSentence(text) {
+      if (!text) return "-";
+      const trimmed = text.trim();
+      if (!trimmed) return "-";
+      
+      // Split by sentence ending punctuation and keep them
+      const sentences = trimmed.split(/(?<=[。？！.?!])\s+/);
+      if (sentences.length === 0) return "-";
+      
+      // Get last non-empty sentence
+      let last = sentences[sentences.length - 1];
+      if (!last.trim() && sentences.length > 1) {
+        last = sentences[sentences.length - 2];
       }
       
-      // Limit to last 220 characters so it always fits on screen (2-3 lines max)
-      if (combined.length > 220) {
-        combined = combined.substring(combined.length - 220);
-        const spaceIdx = combined.indexOf(" ");
+      // Limit length to keep text screen-bound
+      if (last.length > 160) {
+        last = last.substring(last.length - 160);
+        const spaceIdx = last.indexOf(" ");
         if (spaceIdx !== -1) {
-          combined = combined.substring(spaceIdx + 1);
+          last = last.substring(spaceIdx + 1);
         }
       }
       
-      return combined || "-";
+      return last || "-";
     }
 
     function renderSubtitleLane(lane) {
-      const state = subtitleState[lane];
-      let elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
-      const element = document.getElementById(elementId);
-      if (!element) return;
+      // Drop updates if layout hides it
+      if (viewMode === 'lang1' && lane !== 'lang1') return;
+      if (viewMode === 'lang2' && lane !== 'lang2') return;
 
-      const combinedText = getActiveSubtitle(state.accumulatedText, "");
-      
-      // HTML Escape
-      const escaped = combinedText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-        
-      element.innerHTML = `<div>${escaped}</div>`;
+      const state = subtitleState[lane];
+      const finalEl = document.getElementById(`final-${lane}`);
+      const liveEl = document.getElementById(`live-${lane}`);
+      if (!finalEl || !liveEl) return;
+
+      const finalSentence = getLastSentence(state.accumulatedText);
+      finalEl.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+      liveEl.innerHTML = `<div>&nbsp;</div>`;
     }
 
     function renderInterimSubtitle(lane, text) {
@@ -322,19 +353,15 @@
       if (viewMode === 'lang2' && lane !== 'lang2') return;
 
       const state = subtitleState[lane];
-      let elementId = lane === "lang1" ? "sub-lang1" : "sub-lang2";
-      const element = document.getElementById(elementId);
-      if (!element) return;
+      const finalEl = document.getElementById(`final-${lane}`);
+      const liveEl = document.getElementById(`live-${lane}`);
+      if (!finalEl || !liveEl) return;
 
-      const combinedText = getActiveSubtitle(state.accumulatedText, text);
-
-      // HTML Escape
-      const escaped = combinedText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-        
-      element.innerHTML = `<div>${escaped}</div>`;
+      const finalSentence = getLastSentence(state.accumulatedText);
+      finalEl.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+      
+      const liveText = text.trim() ? text.trim() + "..." : "&nbsp;";
+      liveEl.innerHTML = `<div>${liveText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
 
     function updateUIElements() {
