@@ -53,37 +53,16 @@
       display: none !important;
       opacity: 0;
     }
-    .subtitle-container-lane {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      gap: 1.5rem;
-      text-align: center;
-    }
-    .final-box {
-      font-size: 2.6rem;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.4);
-      line-height: 1.4;
-      max-height: 7.5rem;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-    .live-box {
-      font-size: 3.6rem;
-      font-weight: 700;
-      color: #ffffff; /* Clean white as requested */
+    .text {
+      font-size: 3.8rem;
+      font-weight: 600;
       line-height: 1.45;
-      min-height: 5.5rem;
-      max-height: 11rem;
-      overflow: hidden;
-      transition: all 0.3s ease;
       word-wrap: break-word;
       white-space: pre-wrap;
+      max-height: 16.5rem;
+      overflow: hidden;
+      color: #ffffff;
+      text-align: center; /* Center-align subtitles for cinema projector style */
     }
 
     /* Floating Control Bar Styles */
@@ -180,16 +159,10 @@
 
   <div class="container" id="subtitles-container">
     <div class="section" id="sec-lang1">
-      <div class="subtitle-container-lane">
-        <div class="final-box" id="final-lang1">-</div>
-        <div class="live-box" id="live-lang1">-</div>
-      </div>
+      <div class="text" id="sub-lang1">-</div>
     </div>
     <div class="section" id="sec-lang2" style="display: none;">
-      <div class="subtitle-container-lane">
-        <div class="final-box" id="final-lang2">-</div>
-        <div class="live-box" id="live-lang2">-</div>
-      </div>
+      <div class="text" id="sub-lang2">-</div>
     </div>
   </div>
 
@@ -338,13 +311,11 @@
       if (viewMode === 'lang2' && lane !== 'lang2') return;
 
       const state = subtitleState[lane];
-      const finalEl = document.getElementById(`final-${lane}`);
-      const liveEl = document.getElementById(`live-${lane}`);
-      if (!finalEl || !liveEl) return;
+      const element = document.getElementById(`sub-${lane}`);
+      if (!element) return;
 
       const finalSentence = getLastSentence(state.accumulatedText);
-      finalEl.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
-      liveEl.innerHTML = `<div>&nbsp;</div>`;
+      element.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
 
     function renderInterimSubtitle(lane, text) {
@@ -352,16 +323,11 @@
       if (viewMode === 'lang1' && lane !== 'lang1') return;
       if (viewMode === 'lang2' && lane !== 'lang2') return;
 
-      const state = subtitleState[lane];
-      const finalEl = document.getElementById(`final-${lane}`);
-      const liveEl = document.getElementById(`live-${lane}`);
-      if (!finalEl || !liveEl) return;
+      const element = document.getElementById(`sub-${lane}`);
+      if (!element) return;
 
-      const finalSentence = getLastSentence(state.accumulatedText);
-      finalEl.innerHTML = `<div>${finalSentence.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
-      
-      const liveText = text.trim() ? text.trim() + "..." : "&nbsp;";
-      liveEl.innerHTML = `<div>${liveText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
+      const liveText = text.trim() ? text.trim() + "..." : "";
+      element.innerHTML = `<div>${liveText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>`;
     }
 
     function updateUIElements() {
