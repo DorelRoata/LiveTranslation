@@ -160,6 +160,24 @@
   </div>
 
   <script>
+    window.onerror = function (msg, url, line) {
+      const errDiv = document.getElementById('debug-error-log') || document.createElement('div');
+      errDiv.id = 'debug-error-log';
+      errDiv.style.position = 'absolute';
+      errDiv.style.bottom = '1rem';
+      errDiv.style.left = '1rem';
+      errDiv.style.background = 'rgba(239, 68, 68, 0.9)';
+      errDiv.style.color = '#fff';
+      errDiv.style.padding = '0.5rem 1rem';
+      errDiv.style.borderRadius = '8px';
+      errDiv.style.fontSize = '0.8rem';
+      errDiv.style.zIndex = '9999';
+      errDiv.style.fontFamily = 'monospace';
+      errDiv.textContent = `JS Error: ${msg} at line ${line}`;
+      document.body.appendChild(errDiv);
+      return false;
+    };
+
     let subtitleState = {
       lang1: { accumulatedText: "" },
       lang2: { accumulatedText: "" },
@@ -436,6 +454,7 @@
           }
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
+          window.onerror(err.message, "", 0);
         }
       };
 
