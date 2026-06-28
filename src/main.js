@@ -35,6 +35,8 @@ const outBuffer = new Float32Array(512);
 const apiKeyInput = document.getElementById("api-key-input");
 const toggleApiKeyBtn = document.getElementById("toggle-api-key");
 const audioSourceSelect = document.getElementById("audio-source-select");
+const micDeviceGroup = document.getElementById("mic-device-group");
+const micDeviceSelect = document.getElementById("mic-device-select");
 
 const targetLanguageSelect1 = document.getElementById("target-language-select-1");
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
@@ -98,6 +100,46 @@ toggleApiKeyBtn.addEventListener("click", () => {
     `;
   }
 });
+
+// --- Microphone Input Device Selector ---
+audioSourceSelect.addEventListener("change", () => {
+  if (audioSourceSelect.value === "mic") {
+    micDeviceGroup.style.display = "block";
+  } else {
+    micDeviceGroup.style.display = "none";
+  }
+});
+
+async function populateMicDevices() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    micDeviceSelect.innerHTML = "";
+    
+    // Add default option
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "default";
+    defaultOpt.textContent = "Default System Microphone";
+    micDeviceSelect.appendChild(defaultOpt);
+    
+    devices.forEach(device => {
+      if (device.kind === 'audioinput') {
+        const option = document.createElement("option");
+        option.value = device.deviceId;
+        option.textContent = device.label || `Microphone (${device.deviceId.substring(0, 5)})`;
+        if (device.deviceId !== 'default' && device.deviceId !== '') {
+          micDeviceSelect.appendChild(option);
+        }
+      }
+    });
+  } catch (err) {
+    console.warn("Unable to list microphone devices:", err);
+  }
+}
+
+// Request permissions on first load to populate labels, otherwise fallback to enumerate
+navigator.mediaDevices.getUserMedia({ audio: true })
+  .then(() => populateMicDevices())
+  .catch(() => populateMicDevices());
 
 // Clear Logs
 clearInputBtn.addEventListener("click", () => {
@@ -374,14 +416,18 @@ async function startAudioCapture() {
     logDebug("System audio loopback track captured successfully.", "info");
   } else {
     logDebug("Requesting getUserMedia for microphone access...", "info");
-    micStream = await navigator.mediaDevices.getUserMedia({
+    const micConstraints = {
       audio: {
         channelCount: 1,
         sampleRate: 16000,
         echoCancellation: true,
         noiseSuppression: true
       }
-    });
+    };
+    if (micDeviceSelect.value && micDeviceSelect.value !== 'default') {
+      micConstraints.audio.deviceId = { exact: micDeviceSelect.value };
+    }
+    micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
     logDebug("Microphone captured successfully.", "info");
   }
   
