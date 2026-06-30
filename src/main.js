@@ -1,4 +1,5 @@
 import './style.css';
+import QRCode from 'qrcode';
 
 // --- Constants ---
 const HOST = "generativelanguage.googleapis.com";
@@ -1012,5 +1013,22 @@ initLocalSubtitlesWS();
 // Update Projector Sharing URL Tip
 const projectorTip = document.getElementById("projector-url-tip");
 if (projectorTip) {
-  projectorTip.textContent = `${window.location.protocol}//${window.location.host}/subtitles.html`;
+  const subtitlesUrl = `${window.location.protocol}//${window.location.host}/subtitles.html`;
+  projectorTip.textContent = subtitlesUrl;
+
+  // Render sharing QR Code
+  const qrCanvas = document.getElementById("projector-qr-canvas");
+  if (qrCanvas) {
+    QRCode.toCanvas(qrCanvas, subtitlesUrl, {
+      width: 116,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      },
+      errorCorrectionLevel: 'M'
+    }, function (error) {
+      if (error) console.error("QR Code generation error:", error);
+    });
+  }
 }

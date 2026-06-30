@@ -182,8 +182,16 @@
           <!-- Projector Screen Sharing Tip -->
           <div class="network-info-box" style="margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--panel-border); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
             <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Projector Screen Sharing:</p>
-            <p>To display subtitles on another laptop, open this URL on that laptop's browser:</p>
-            <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
+            <p>Scan the QR code below or open the URL on another device/phone connected to the same local network:</p>
+            <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+              <div style="background: white; padding: 6px; border-radius: 8px; width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
+                <canvas id="projector-qr-canvas" style="width: 116px; height: 116px; display: block;"></canvas>
+              </div>
+              <p style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin: 0; max-width: 180px; line-height: 1.2;">
+                Note: Accept the browser SSL privacy warning on your phone if prompted.
+              </p>
+            </div>
           </div>
         </section>
 

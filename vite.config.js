@@ -113,5 +113,13 @@ export default defineConfig({
     host: true, // Listen on all network interfaces (0.0.0.0)
     port: 5173,
     https: true
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        subtitles: 'subtitles.html'
+      }
+    }
   }
 });

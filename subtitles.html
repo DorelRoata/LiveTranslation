@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Projector Screen - Live Subtitles</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #000000;
+      color: #ffffff;
+      font-family: 'Outfit', sans-serif;
+      margin: 0;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+    }
+    .status-dot {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #f59e0b; /* Yellow/Amber by default (Connecting) */
+      z-index: 10;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 2rem;
+      justify-content: center;
+      transition: all 0.5s ease;
+    }
+    .section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2.5rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      transition: all 0.5s ease;
+      opacity: 1;
+    }
+    .section.hidden {
+      display: none !important;
+      opacity: 0;
+    }
+    .text {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: stretch;
+      min-height: 10rem;
+      max-height: 16.5rem;
+      overflow: hidden;
+      color: #ffffff;
+      padding: 0 10%;
+    }
+    .sub-line {
+      font-size: 3rem;
+      font-weight: 600;
+      line-height: 1.5;
+      text-align: left;
+      color: rgba(255,255,255,0.5);
+    }
+    .sub-line-active {
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1.5;
+      text-align: left;
+      color: #ffffff;
+      min-height: 4.8rem;
+    }
+
+    /* Floating Control Bar Styles */
+    .control-bar {
+      position: absolute;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 1.5rem;
+      background: rgba(18, 18, 29, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.5rem 1.5rem;
+      border-radius: 30px;
+      z-index: 100;
+      align-items: center;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .control-bar.hidden {
+      opacity: 0;
+      transform: translate(-50%, -20px);
+      pointer-events: none;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .control-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 700;
+    }
+    .control-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      padding: 0.35rem 1.2rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      outline: none;
+    }
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .control-btn.active {
+      background: #6366f1;
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+    }
+    .control-btn.audio-active {
+      background: #10b981;
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* QR Overlay Modal Styles */
+    .qr-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      transition: opacity 0.3s ease;
+    }
+    .qr-overlay.hidden {
+      display: none !important;
+    }
+    .qr-card {
+      background: #111827;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2.5rem;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      max-width: 90%;
+    }
+    .qr-card h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .qr-card canvas {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 12px;
+      width: 250px;
+      height: 250px;
+    }
+    .qr-url {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #6366f1;
+      word-break: break-all;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="status-dot" id="status-indicator" title="Connecting to Host..."></div>
+
+  <!-- Floating Navigation Controls -->
+  <div class="control-bar" id="control-bar">
+    <div class="control-group">
+      <span class="control-label">Layout:</span>
+      <button class="control-btn active" id="btn-view-both">Both</button>
+      <button class="control-btn" id="btn-view-lang1">Language 1</button>
+      <button class="control-btn" id="btn-view-lang2" style="display: none;">Language 2</button>
+    </div>
+    <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
+    <div class="control-group">
+      <span class="control-label">Audio:</span>
+      <button class="control-btn" id="btn-audio-toggle">🔇 Disabled</button>
+    </div>
+    <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
+    <div class="control-group">
+      <span class="control-label">Share:</span>
+      <button class="control-btn" id="btn-qr-toggle">📱 Share QR</button>
+    </div>
+  </div>
+
+  <div class="container" id="subtitles-container">
+    <div class="section" id="sec-lang1">
+      <div class="text" id="sub-lang1">-</div>
+    </div>
+    <div class="section" id="sec-lang2" style="display: none;">
+      <div class="text" id="sub-lang2">-</div>
+    </div>
+  </div>
+
+  <!-- QR Code Modal Overlay -->
+  <div class="qr-overlay hidden" id="qr-overlay">
+    <div class="qr-card">
+      <h3>Scan to view subtitles on your phone</h3>
+      <div style="background: white; padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+        <canvas id="qr-canvas-projector" style="width: 250px; height: 250px; display: block;"></canvas>
+      </div>
+      <p class="qr-url" id="qr-url-text"></p>
+      <p style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin: 0; max-width: 280px; line-height: 1.3;">
+        Note: If your browser shows a "Not Private" warning, tap "Advanced" -> "Proceed" to connect.
+      </p>
+      <button class="control-btn active" id="btn-qr-close" style="padding: 0.5rem 2rem; border-radius: 30px; font-size: 0.9rem;">Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/subtitles.js"></script>
+</body>
+</html>
