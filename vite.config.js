@@ -82,10 +82,10 @@ function localSubtitlesPlugin() {
               subtitleState.lang1 = { accumulatedText: "" };
               subtitleState.lang2 = { accumulatedText: "" };
               
-              const syncMsg = JSON.stringify({ type: 'sync', state: subtitleState });
+              // Broadcast the explicit clear command so clients can reset their DOM
               wss.clients.forEach((client) => {
                 if (client.readyState === 1) {
-                  client.send(syncMsg);
+                  client.send(JSON.stringify({ type: 'clear' }));
                 }
               });
             } else if (data.type === 'audio') {

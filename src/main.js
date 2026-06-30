@@ -166,6 +166,26 @@ clearOutputBtn2.addEventListener("click", () => {
   outputPlaceholder2.style.display = "block";
 });
 
+const clearProjectorBtn = document.getElementById("btn-clear-projector");
+clearProjectorBtn?.addEventListener("click", () => {
+  // Clear local host UI
+  inputList.innerHTML = "";
+  inputPlaceholder.style.display = "block";
+  outputList1.innerHTML = "";
+  outputPlaceholder1.style.display = "block";
+  outputList2.innerHTML = "";
+  outputPlaceholder2.style.display = "block";
+  
+  // Clear local subtitle state
+  subtitleState.lang1.accumulatedText = "";
+  subtitleState.lang2.accumulatedText = "";
+  
+  // Broadcast clear command
+  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+    localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
+  }
+});
+
 // --- Helper: Convert Int16Array to Base64 ---
 function base64ArrayBuffer(arrayBuffer) {
   let binary = "";
@@ -350,7 +370,11 @@ function playPCMChunk(base64Data, channelId) {
   const sourceNode = audioContextOutput.createBufferSource();
   sourceNode.buffer = audioBuffer;
   
-  sourceNode.connect(audioContextOutput.destination);
+  const hostVolume = parseFloat(document.getElementById('host-volume-slider')?.value ?? 1);
+  const gainNode = audioContextOutput.createGain();
+  gainNode.gain.value = hostVolume;
+  sourceNode.connect(gainNode);
+  gainNode.connect(audioContextOutput.destination);
   
   const now = audioContextOutput.currentTime;
   let nextStart = channelId === 1 ? nextStartTime1 : nextStartTime2;

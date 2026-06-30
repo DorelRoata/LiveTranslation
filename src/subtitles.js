@@ -370,10 +370,23 @@ function connect() {
         renderInterimSubtitle(data.lane, data.text);
       } else if (data.type === 'audio') {
         playPCMChunk(data.audioData, data.channelId);
+      } else if (data.type === 'clear') {
+        if (subtitleState && subtitleState.lang1) {
+          subtitleState.lang1.accumulatedText = "";
+        }
+        if (subtitleState && subtitleState.lang2) {
+          subtitleState.lang2.accumulatedText = "";
+        }
+        displayState.lang1 = { lines: [], activeLine: "", lastText: "" };
+        displayState.lang2 = { lines: [], activeLine: "", lastText: "" };
+        
+        const sec1 = document.getElementById("sub-lang1");
+        if (sec1) sec1.innerHTML = "-";
+        const sec2 = document.getElementById("sub-lang2");
+        if (sec2) sec2.innerHTML = "-";
       }
     } catch (err) {
       console.error("Error parsing WebSocket message:", err);
-      window.onerror(err.message, "", 0);
     }
   };
 

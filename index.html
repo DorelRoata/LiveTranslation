@@ -177,6 +177,15 @@
               </span>
               <span class="btn-text">Open Subtitle Monitor</span>
             </button>
+            <button id="btn-clear-projector" class="secondary-btn" type="button" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5;">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </span>
+              <span class="btn-text">Clear Projector Screen</span>
+            </button>
           </div>
 
           <!-- Projector Screen Sharing Tip -->
@@ -211,9 +220,13 @@
             </div>
             
             <div class="visualizer-container">
-              <div class="visualizer-header">
-                <h3>Translation Audio</h3>
-                <span class="vol-db" id="output-db">0%</span>
+              <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h3 style="margin: 0;">Translation Audio</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Vol:</span>
+                  <input type="range" id="host-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px; accent-color: var(--accent-cyan); cursor: pointer;" title="Local Playback Volume">
+                  <span class="vol-db" id="output-db">0%</span>
+                </div>
               </div>
               <div class="visualizer-box">
                 <canvas id="output-canvas"></canvas>
