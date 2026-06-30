@@ -115,10 +115,10 @@ btnAudioToggle.addEventListener('click', () => {
   if (audioEnabled) {
     initAudioContext();
     btnAudioToggle.classList.add('audio-active');
-    btnAudioToggle.textContent = '🔊 Enabled';
+    btnAudioToggle.textContent = 'Enabled';
   } else {
     btnAudioToggle.classList.remove('audio-active');
-    btnAudioToggle.textContent = '🔇 Disabled';
+    btnAudioToggle.textContent = 'Disabled';
   }
 });
 
@@ -178,21 +178,43 @@ function renderSubtitleLane(lane) {
     if (appended) {
       displayState[lane].activeLine += appended;
       
-      // Split active line into locked lines if it exceeds maxChars
-      const maxChars = 50;
-      while (displayState[lane].activeLine.length > maxChars) {
-        let breakIdx = displayState[lane].activeLine.lastIndexOf(" ", maxChars);
-        if (breakIdx === -1 || breakIdx < 10) {
-          breakIdx = maxChars;
-        }
+      // Split active line into locked lines based on natural punctuation pauses
+      const fallbackMaxChars = 80;
+      let active = displayState[lane].activeLine;
+      
+      while (true) {
+        const punctuationRegex = /([.?!,;:])(\s+|$)/;
+        const match = active.match(punctuationRegex);
         
-        const completedLine = displayState[lane].activeLine.substring(0, breakIdx).trim();
-        displayState[lane].activeLine = displayState[lane].activeLine.substring(breakIdx).trim();
-        
-        if (completedLine) {
-          displayState[lane].lines.push(completedLine);
+        if (match && match.index < fallbackMaxChars) {
+          // Found a natural pause before the limit
+          const breakIdx = match.index + match[1].length;
+          const completedLine = active.substring(0, breakIdx).trim();
+          active = active.substring(breakIdx).trim();
+          
+          if (completedLine) {
+            displayState[lane].lines.push(completedLine);
+          }
+        } else if (active.length > fallbackMaxChars) {
+          // Force a split if sentence goes on too long without punctuation
+          let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
+          if (breakIdx === -1 || breakIdx < 10) {
+            breakIdx = fallbackMaxChars;
+          }
+          
+          const completedLine = active.substring(0, breakIdx).trim();
+          active = active.substring(breakIdx).trim();
+          
+          if (completedLine) {
+            displayState[lane].lines.push(completedLine);
+          }
+        } else {
+          // Under limit and no punctuation found yet
+          break;
         }
       }
+      
+      displayState[lane].activeLine = active;
     }
   }
 
