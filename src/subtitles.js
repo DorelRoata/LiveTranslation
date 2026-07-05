@@ -160,7 +160,7 @@ function getAppendedText(oldStr, newStr) {
 // Tracks the active-line DOM element per lane so we can append words incrementally
 const activeDOMLine = { lang1: null, lang2: null };
 
-function rebuildSubtitleDOM(lane) {
+function rebuildSubtitleDOM(lane, populateActive = true) {
   if (viewMode === 'lang1' && lane !== 'lang1') return;
   if (viewMode === 'lang2' && lane !== 'lang2') return;
 
@@ -181,11 +181,13 @@ function rebuildSubtitleDOM(lane) {
   // Cache reference to the active line element for incremental appends
   activeDOMLine[lane] = element.querySelector('.sub-line-active');
 
-  // Re-populate active line words that already exist in state (after a line break)
-  const activeWords = displayState[lane].activeLine.split(/\s+/).filter(Boolean);
-  activeWords.forEach(word => {
-    appendWordSpan(lane, word, false); // no animation for already-visible words
-  });
+  if (populateActive) {
+    // Re-populate active line words that already exist in state (after a line break)
+    const activeWords = displayState[lane].activeLine.split(/\s+/).filter(Boolean);
+    activeWords.forEach(word => {
+      appendWordSpan(lane, word, false); // no animation for already-visible words
+    });
+  }
 }
 
 function appendWordSpan(lane, word, animate = true) {
@@ -214,39 +216,25 @@ function appendWordSpan(lane, word, animate = true) {
 
 function appendWordToDisplayState(lane, word) {
   let active = displayState[lane].activeLine;
-  active = active ? active + " " + word : word;
-
   const fallbackMaxChars = 60;
   let didBreakLine = false;
-  
-  // Only split on sentence endings (. ? !) followed by space or end
-  const punctuationRegex = /([.?!])(\s+|$)/;
-  const match = active.match(punctuationRegex);
 
-  if (match && match.index < fallbackMaxChars) {
-    const breakIdx = match.index + match[1].length;
-    const completedLine = active.substring(0, breakIdx).trim();
-    active = active.substring(breakIdx).trim();
-    
-    if (completedLine) {
-      displayState[lane].lines.push(completedLine);
-      didBreakLine = true;
-    }
-  } else if (active.length > fallbackMaxChars) {
-    let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
-    if (breakIdx === -1 || breakIdx < 10) {
-      breakIdx = fallbackMaxChars;
-    }
-    
-    const completedLine = active.substring(0, breakIdx).trim();
-    active = active.substring(breakIdx).trim();
-    
-    if (completedLine) {
-      displayState[lane].lines.push(completedLine);
+  if (active) {
+    // Check if the current active line ends with sentence punctuation (. ? !)
+    const endsWithPunctuation = /[.?!]$/.test(active);
+
+    // Check if adding the new word would exceed the character limit
+    const wouldExceedLimit = (active.length + 1 + word.length) > fallbackMaxChars;
+
+    if (endsWithPunctuation || wouldExceedLimit) {
+      displayState[lane].lines.push(active);
+      active = "";
       didBreakLine = true;
     }
   }
 
+  // Append the new word
+  active = active ? active + " " + word : word;
   displayState[lane].activeLine = active;
 
   while (displayState[lane].lines.length > 10) {
@@ -281,7 +269,13 @@ function tickLane(lane, now) {
 
   if (didBreak) {
     // Line was finalized → full DOM rebuild (history changed)
-    rebuildSubtitleDOM(lane);
+    rebuildSubtitleDOM(lane, false);
+    appendWordSpan(lane, nextWord, true);
+
+    // Add an extra pause after a line break so the user can read the completed line
+    const qLen = wordQueue[lane].length;
+    const breakPause = qLen > 10 ? 150 : 350;
+    lastTickTime[lane] += breakPause;
   } else {
     // Just append a single word span (no layout thrashing)
     appendWordSpan(lane, nextWord);
