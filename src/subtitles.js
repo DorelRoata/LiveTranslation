@@ -157,30 +157,59 @@ function getAppendedText(oldStr, newStr) {
   return newStr;
 }
 
-// Tracks what's currently rendered to prevent excessive DOM thrashing
-const lastRendered = { lang1: "", lang2: "" };
+// Tracks the active-line DOM element per lane so we can append words incrementally
+const activeDOMLine = { lang1: null, lang2: null };
 
-function renderSubtitleUI(lane) {
+function rebuildSubtitleDOM(lane) {
   if (viewMode === 'lang1' && lane !== 'lang1') return;
   if (viewMode === 'lang2' && lane !== 'lang2') return;
 
   const element = document.getElementById(`sub-${lane}`);
   if (!element) return;
 
-  const cacheKey = displayState[lane].lines.slice(-2).join("|") + "||" + displayState[lane].activeLine;
-  if (lastRendered[lane] === cacheKey) return;
-  lastRendered[lane] = cacheKey;
-
-  // Render the last 2 finalized lines + 1 active line
+  // Full rebuild: history lines + fresh active line element
   const historyLines = displayState[lane].lines.slice(-2);
   let html = historyLines
     .map(line => `<div class="sub-line">${escapeHtml(line)}</div>`)
     .join("");
 
-  // Active line
-  html += `<div class="sub-line-active">${displayState[lane].activeLine ? escapeHtml(displayState[lane].activeLine) : "&nbsp;"}</div>`;
+  // Create an empty active line container
+  html += `<div class="sub-line-active"></div>`;
 
   element.innerHTML = html;
+
+  // Cache reference to the active line element for incremental appends
+  activeDOMLine[lane] = element.querySelector('.sub-line-active');
+
+  // Re-populate active line words that already exist in state (after a line break)
+  const activeWords = displayState[lane].activeLine.split(/\s+/).filter(Boolean);
+  activeWords.forEach(word => {
+    appendWordSpan(lane, word, false); // no animation for already-visible words
+  });
+}
+
+function appendWordSpan(lane, word, animate = true) {
+  if (viewMode === 'lang1' && lane !== 'lang1') return;
+  if (viewMode === 'lang2' && lane !== 'lang2') return;
+
+  const container = activeDOMLine[lane];
+  if (!container) {
+    // Fallback: if no cached container, do a full rebuild
+    rebuildSubtitleDOM(lane);
+    return;
+  }
+
+  // Add a space before the word if there are already children
+  if (container.childNodes.length > 0) {
+    container.appendChild(document.createTextNode(' '));
+  }
+
+  const span = document.createElement('span');
+  span.textContent = word;
+  if (animate) {
+    span.className = 'sub-word';
+  }
+  container.appendChild(span);
 }
 
 function appendWordToDisplayState(lane, word) {
@@ -188,6 +217,7 @@ function appendWordToDisplayState(lane, word) {
   active = active ? active + " " + word : word;
 
   const fallbackMaxChars = 60;
+  let didBreakLine = false;
   
   // Only split on sentence endings (. ? !) followed by space or end
   const punctuationRegex = /([.?!])(\s+|$)/;
@@ -200,6 +230,7 @@ function appendWordToDisplayState(lane, word) {
     
     if (completedLine) {
       displayState[lane].lines.push(completedLine);
+      didBreakLine = true;
     }
   } else if (active.length > fallbackMaxChars) {
     let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
@@ -212,6 +243,7 @@ function appendWordToDisplayState(lane, word) {
     
     if (completedLine) {
       displayState[lane].lines.push(completedLine);
+      didBreakLine = true;
     }
   }
 
@@ -220,35 +252,50 @@ function appendWordToDisplayState(lane, word) {
   while (displayState[lane].lines.length > 10) {
     displayState[lane].lines.shift();
   }
+
+  return didBreakLine;
 }
 
-function processWordQueueTick(lane) {
-  if (wordQueue[lane].length === 0) {
-    setTimeout(() => processWordQueueTick(lane), 80);
-    return;
-  }
+// rAF-based ticker state: last word timestamp per lane
+const lastTickTime = { lang1: 0, lang2: 0 };
 
-  // Dynamic speed adjustment based on queue length to avoid lag
+function getTickDelay(lane) {
   const qLen = wordQueue[lane].length;
-  let delay = 160; // Natural pacing (approx 370 wpm)
-  if (qLen > 10) {
-    delay = 30;  // High speed catch-up
-  } else if (qLen > 5) {
-    delay = 70;  // Medium speed catch-up
-  } else if (qLen > 2) {
-    delay = 110; // Low speed catch-up
-  }
+  if (qLen > 10) return 30;   // High speed catch-up
+  if (qLen > 5)  return 70;   // Medium speed catch-up
+  if (qLen > 2)  return 110;  // Low speed catch-up
+  if (qLen > 0)  return 160;  // Natural pacing (~370 wpm)
+  return 0; // Nothing to do
+}
+
+function tickLane(lane, now) {
+  if (wordQueue[lane].length === 0) return;
+
+  const delay = getTickDelay(lane);
+  if (now - lastTickTime[lane] < delay) return;
+
+  lastTickTime[lane] = now;
 
   const nextWord = wordQueue[lane].shift();
-  appendWordToDisplayState(lane, nextWord);
-  renderSubtitleUI(lane);
+  const didBreak = appendWordToDisplayState(lane, nextWord);
 
-  setTimeout(() => processWordQueueTick(lane), delay);
+  if (didBreak) {
+    // Line was finalized → full DOM rebuild (history changed)
+    rebuildSubtitleDOM(lane);
+  } else {
+    // Just append a single word span (no layout thrashing)
+    appendWordSpan(lane, nextWord);
+  }
 }
 
-// Start queue ticker loops
-setTimeout(() => processWordQueueTick("lang1"), 100);
-setTimeout(() => processWordQueueTick("lang2"), 100);
+function rafLoop(timestamp) {
+  tickLane('lang1', timestamp);
+  tickLane('lang2', timestamp);
+  requestAnimationFrame(rafLoop);
+}
+
+// Start the vsync-locked render loop
+requestAnimationFrame(rafLoop);
 
 function renderSubtitleLane(lane) {
   const state = subtitleState[lane];
@@ -260,7 +307,7 @@ function renderSubtitleLane(lane) {
       lastText: ""
     };
     wordQueue[lane] = [];
-    renderSubtitleUI(lane);
+    rebuildSubtitleDOM(lane);
   } else {
     const oldText = displayState[lane].lastText;
     const newText = state.accumulatedText;
@@ -413,6 +460,10 @@ function connect() {
         }
         displayState.lang1 = { lines: [], activeLine: "", lastText: "" };
         displayState.lang2 = { lines: [], activeLine: "", lastText: "" };
+        wordQueue.lang1 = [];
+        wordQueue.lang2 = [];
+        activeDOMLine.lang1 = null;
+        activeDOMLine.lang2 = null;
         
         const sec1 = document.getElementById("sub-lang1");
         if (sec1) sec1.innerHTML = "-";

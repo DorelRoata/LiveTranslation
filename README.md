@@ -23,8 +23,13 @@ This application supports dual-language concurrent translations, visual waveform
 * **Concurrent Dual-Language Translation:** Connects to two parallel Gemini Live WebSocket sessions to translate speech into two languages at the same time.
 * **Visual Waveform Analysis:** Live HTML5 canvas waveforms showing microphone input volume and translation audio output.
 * **Independent Mute Controls:** Toggle spoken translation audio for Language 1 and Language 2 independently.
-* **Natural-Flow Subtitles:** Continuous text wrapping and automatic scroll-to-bottom subtitles, showing up to 3 lines max of active rolling history.
 * **Multi-Laptop Screen Sharing (Projector Support):** Expose a local network server over HTTPS and stream live subtitles to a second laptop connected to a projector.
+* **Smart Dynamic QR Code:** Automatically resolves the host's local network IP to generate a scannable QR code directly on the dashboard. Any attendee or secondary device can scan it to instantly join the live translation session.
+* **AI Translation Hints:** Provide real-time "system instructions" to the AI interpreter via the dashboard before connecting (e.g. teaching it specific theological terminology, preacher's name, or formal translation styles).
+* **Broadcast-Grade Subtitles Engine:** 
+  * **Smooth-Typing Ticker Queue:** Instead of raw API text chunks popping onto the screen at once (causing jarring flashes), incoming text is buffered into a client-side queue and rendered smoothly word-by-word. The queue calculates dynamic backpressure speeds (e.g., automatically speeding up from 160ms/word to 30ms/word) to ensure zero lag.
+  * **Semantic Line Locking:** Sentences are intelligently locked into an immutable visual history buffer. Line breaks are strictly calculated at true sentence boundaries (`.?!`), ensuring phrases stay naturally grouped together without choppy fragmentation.
+  * **Visual Hierarchy:** Premium high-contrast layout where the active typing line glows in bright white while historical lines recede into a dim 30% opacity.
 
 ---
 
