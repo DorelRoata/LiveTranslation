@@ -1034,14 +1034,28 @@ function syncLocalSubtitlesSetup() {
 // Initialize local WebSocket connection on page load
 initLocalSubtitlesWS();
 
-// Update Projector Sharing URL Tip
-const projectorTip = document.getElementById("projector-url-tip");
-if (projectorTip) {
-  const subtitlesUrl = `${window.location.protocol}//${window.location.host}/subtitles.html`;
+// Update Projector Sharing URL Tip & QR Code
+async function initProjectorSharingQR() {
+  const projectorTip = document.getElementById("projector-url-tip");
+  const qrCanvas = document.getElementById("projector-qr-canvas");
+  if (!projectorTip) return;
+
+  let networkIP = window.location.hostname; // Fallback to current browser host (e.g. 192.168.x.x)
+  const port = window.location.port ? `:${window.location.port}` : '';
+
+  try {
+    const res = await fetch('/api/network-ip');
+    const data = await res.json();
+    if (data.ip && data.ip !== 'localhost') {
+      networkIP = data.ip;
+    }
+  } catch (err) {
+    console.warn("Failed to fetch local network IP from server API:", err);
+  }
+
+  const subtitlesUrl = `${window.location.protocol}//${networkIP}${port}/subtitles.html`;
   projectorTip.textContent = subtitlesUrl;
 
-  // Render sharing QR Code
-  const qrCanvas = document.getElementById("projector-qr-canvas");
   if (qrCanvas) {
     QRCode.toCanvas(qrCanvas, subtitlesUrl, {
       width: 116,
@@ -1056,3 +1070,5 @@ if (projectorTip) {
     });
   }
 }
+
+initProjectorSharingQR();

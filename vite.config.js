@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { WebSocketServer } from 'ws';
+import os from 'os';
 
 // In-memory state for subtitles so new connections receive the latest text immediately
 const subtitleState = {
@@ -16,6 +17,26 @@ function localSubtitlesPlugin() {
     name: 'local-subtitles-plugin',
     configureServer(server) {
       const wss = new WebSocketServer({ noServer: true });
+
+      // Helper function to get local network IP address
+      function getNetworkIP() {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+          for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+              return iface.address;
+            }
+          }
+        }
+        return 'localhost';
+      }
+
+      // Serve local network IP to the frontend
+      server.middlewares.use('/api/network-ip', (req, res) => {
+        const ip = getNetworkIP();
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ ip }));
+      });
 
       server.httpServer.on('upgrade', (request, socket, head) => {
         const { pathname } = new URL(request.url, 'http://localhost');
