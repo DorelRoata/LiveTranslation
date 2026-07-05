@@ -179,15 +179,16 @@ function renderSubtitleLane(lane) {
       displayState[lane].activeLine += appended;
       
       // Split active line into locked lines based on natural punctuation pauses
-      const fallbackMaxChars = 80;
+      const fallbackMaxChars = 60;
       let active = displayState[lane].activeLine;
       
       while (true) {
-        const punctuationRegex = /([.?!,;:])(\s+|$)/;
+        // Only split on sentence endings (. ? !) followed by spaces or end of string
+        const punctuationRegex = /([.?!])(\s+|$)/;
         const match = active.match(punctuationRegex);
         
         if (match && match.index < fallbackMaxChars) {
-          // Found a natural pause before the limit
+          // Found a natural sentence boundary before the limit
           const breakIdx = match.index + match[1].length;
           const completedLine = active.substring(0, breakIdx).trim();
           active = active.substring(breakIdx).trim();
@@ -196,7 +197,7 @@ function renderSubtitleLane(lane) {
             displayState[lane].lines.push(completedLine);
           }
         } else if (active.length > fallbackMaxChars) {
-          // Force a split if sentence goes on too long without punctuation
+          // Force a split if the sentence goes on too long without ending punctuation
           let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
           if (breakIdx === -1 || breakIdx < 10) {
             breakIdx = fallbackMaxChars;
@@ -209,7 +210,7 @@ function renderSubtitleLane(lane) {
             displayState[lane].lines.push(completedLine);
           }
         } else {
-          // Under limit and no punctuation found yet
+          // Under limit and no sentence endings found yet
           break;
         }
       }
