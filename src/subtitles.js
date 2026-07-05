@@ -41,6 +41,12 @@ let displayState = {
   }
 };
 
+// Queues to store incoming words for smooth streaming
+let wordQueue = {
+  lang1: [],
+  lang2: []
+};
+
 // DOM Elements
 const statusIndicator = document.getElementById('status-indicator');
 const controlBar = document.getElementById('control-bar');
@@ -154,77 +160,13 @@ function getAppendedText(oldStr, newStr) {
 // Tracks what's currently rendered to prevent excessive DOM thrashing
 const lastRendered = { lang1: "", lang2: "" };
 
-function renderSubtitleLane(lane) {
+function renderSubtitleUI(lane) {
   if (viewMode === 'lang1' && lane !== 'lang1') return;
   if (viewMode === 'lang2' && lane !== 'lang2') return;
 
-  const state = subtitleState[lane];
   const element = document.getElementById(`sub-${lane}`);
   if (!element) return;
 
-  // If the server state has reset or cleared, clear our local display state
-  if (!state.accumulatedText || state.accumulatedText === "-" || state.accumulatedText === "") {
-    displayState[lane] = {
-      lines: [],
-      activeLine: "",
-      lastText: ""
-    };
-  } else {
-    const oldText = displayState[lane].lastText;
-    const newText = state.accumulatedText;
-    displayState[lane].lastText = newText;
-    
-    const appended = getAppendedText(oldText, newText);
-    if (appended) {
-      displayState[lane].activeLine += appended;
-      
-      // Split active line into locked lines based on natural punctuation pauses
-      const fallbackMaxChars = 60;
-      let active = displayState[lane].activeLine;
-      
-      while (true) {
-        // Only split on sentence endings (. ? !) followed by spaces or end of string
-        const punctuationRegex = /([.?!])(\s+|$)/;
-        const match = active.match(punctuationRegex);
-        
-        if (match && match.index < fallbackMaxChars) {
-          // Found a natural sentence boundary before the limit
-          const breakIdx = match.index + match[1].length;
-          const completedLine = active.substring(0, breakIdx).trim();
-          active = active.substring(breakIdx).trim();
-          
-          if (completedLine) {
-            displayState[lane].lines.push(completedLine);
-          }
-        } else if (active.length > fallbackMaxChars) {
-          // Force a split if the sentence goes on too long without ending punctuation
-          let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
-          if (breakIdx === -1 || breakIdx < 10) {
-            breakIdx = fallbackMaxChars;
-          }
-          
-          const completedLine = active.substring(0, breakIdx).trim();
-          active = active.substring(breakIdx).trim();
-          
-          if (completedLine) {
-            displayState[lane].lines.push(completedLine);
-          }
-        } else {
-          // Under limit and no sentence endings found yet
-          break;
-        }
-      }
-      
-      displayState[lane].activeLine = active;
-    }
-  }
-
-  // Keep only last 10 historical lines locally
-  while (displayState[lane].lines.length > 10) {
-    displayState[lane].lines.shift();
-  }
-
-  // Skip DOM update if content hasn't changed
   const cacheKey = displayState[lane].lines.slice(-2).join("|") + "||" + displayState[lane].activeLine;
   if (lastRendered[lane] === cacheKey) return;
   lastRendered[lane] = cacheKey;
@@ -239,6 +181,97 @@ function renderSubtitleLane(lane) {
   html += `<div class="sub-line-active">${displayState[lane].activeLine ? escapeHtml(displayState[lane].activeLine) : "&nbsp;"}</div>`;
 
   element.innerHTML = html;
+}
+
+function appendWordToDisplayState(lane, word) {
+  let active = displayState[lane].activeLine;
+  active = active ? active + " " + word : word;
+
+  const fallbackMaxChars = 60;
+  
+  // Only split on sentence endings (. ? !) followed by space or end
+  const punctuationRegex = /([.?!])(\s+|$)/;
+  const match = active.match(punctuationRegex);
+
+  if (match && match.index < fallbackMaxChars) {
+    const breakIdx = match.index + match[1].length;
+    const completedLine = active.substring(0, breakIdx).trim();
+    active = active.substring(breakIdx).trim();
+    
+    if (completedLine) {
+      displayState[lane].lines.push(completedLine);
+    }
+  } else if (active.length > fallbackMaxChars) {
+    let breakIdx = active.lastIndexOf(" ", fallbackMaxChars);
+    if (breakIdx === -1 || breakIdx < 10) {
+      breakIdx = fallbackMaxChars;
+    }
+    
+    const completedLine = active.substring(0, breakIdx).trim();
+    active = active.substring(breakIdx).trim();
+    
+    if (completedLine) {
+      displayState[lane].lines.push(completedLine);
+    }
+  }
+
+  displayState[lane].activeLine = active;
+
+  while (displayState[lane].lines.length > 10) {
+    displayState[lane].lines.shift();
+  }
+}
+
+function processWordQueueTick(lane) {
+  if (wordQueue[lane].length === 0) {
+    setTimeout(() => processWordQueueTick(lane), 80);
+    return;
+  }
+
+  // Dynamic speed adjustment based on queue length to avoid lag
+  const qLen = wordQueue[lane].length;
+  let delay = 160; // Natural pacing (approx 370 wpm)
+  if (qLen > 10) {
+    delay = 30;  // High speed catch-up
+  } else if (qLen > 5) {
+    delay = 70;  // Medium speed catch-up
+  } else if (qLen > 2) {
+    delay = 110; // Low speed catch-up
+  }
+
+  const nextWord = wordQueue[lane].shift();
+  appendWordToDisplayState(lane, nextWord);
+  renderSubtitleUI(lane);
+
+  setTimeout(() => processWordQueueTick(lane), delay);
+}
+
+// Start queue ticker loops
+setTimeout(() => processWordQueueTick("lang1"), 100);
+setTimeout(() => processWordQueueTick("lang2"), 100);
+
+function renderSubtitleLane(lane) {
+  const state = subtitleState[lane];
+  
+  if (!state.accumulatedText || state.accumulatedText === "-" || state.accumulatedText === "") {
+    displayState[lane] = {
+      lines: [],
+      activeLine: "",
+      lastText: ""
+    };
+    wordQueue[lane] = [];
+    renderSubtitleUI(lane);
+  } else {
+    const oldText = displayState[lane].lastText;
+    const newText = state.accumulatedText;
+    displayState[lane].lastText = newText;
+    
+    const appended = getAppendedText(oldText, newText);
+    if (appended) {
+      const newWords = appended.split(/\s+/).filter(Boolean);
+      wordQueue[lane].push(...newWords);
+    }
+  }
 }
 
 function renderInterimSubtitle(lane, text) {
