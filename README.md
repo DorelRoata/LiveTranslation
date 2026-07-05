@@ -59,6 +59,21 @@ npm run dev
 
 ---
 
+## 🎥 OBS Live Stream Integration (YouTube / Twitch)
+
+You can overlay the live translated subtitles directly onto a video feed in OBS Studio for live broadcasting. We have built a dedicated **OBS Broadcast Mode** that automatically hides the UI controls and sets a perfectly transparent background.
+
+### How to set it up:
+1. Open **OBS Studio** and add a new **Browser** source to your scene.
+2. Set the **URL** to your local subtitle link, but add `?obs=true` to the end. 
+   *(Example: `https://192.168.1.67:5173/subtitles.html?obs=true` or `https://localhost:5173/subtitles.html?obs=true`)*
+3. Set the **Width** to `1920` and **Height** to `1080` (or match your stream's canvas resolution).
+4. *(Optional)* If you want the translated text-to-speech audio to play through the stream, check **"Control audio via OBS"**. Otherwise, leave it unchecked if you only want the text overlay.
+
+The subtitles will now perfectly float over your camera feed with smooth typing animations!
+
+---
+
 ## 🔒 Recommended Browsers & macOS Settings
 
 Modern web browsers restrict microphone access and display capture (`getDisplayMedia`) to **secure contexts** (`localhost` or `https`). Because Projector Mode runs over a local IP network, the server runs over HTTPS using a self-signed certificate.

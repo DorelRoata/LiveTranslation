@@ -520,4 +520,11 @@ qrOverlay.addEventListener('click', (event) => {
   }
 });
 
+// --- OBS Broadcast Mode ---
+// If the URL contains ?obs=true, enable transparent backgrounds and hide controls
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('obs') === 'true') {
+  document.body.classList.add('obs-mode');
+}
+
 connect();
