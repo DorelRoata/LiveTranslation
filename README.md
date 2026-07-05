@@ -28,7 +28,8 @@ This application supports dual-language concurrent translations, visual waveform
 * **AI Translation Hints:** Provide real-time "system instructions" to the AI interpreter via the dashboard before connecting (e.g. teaching it specific theological terminology, preacher's name, or formal translation styles).
 * **Broadcast-Grade Subtitles Engine:** 
   * **Smooth-Typing Ticker Queue:** Instead of raw API text chunks popping onto the screen at once (causing jarring flashes), incoming text is buffered into a client-side queue and rendered smoothly word-by-word. The queue calculates dynamic backpressure speeds (e.g., automatically speeding up from 160ms/word to 30ms/word) to ensure zero lag.
-  * **Semantic Line Locking:** Sentences are intelligently locked into an immutable visual history buffer. Line breaks are strictly calculated at true sentence boundaries (`.?!`), ensuring phrases stay naturally grouped together without choppy fragmentation.
+  * **Semantic Line Locking & Pacing Pause:** Sentences are intelligently locked into an immutable visual history buffer. Line breaks are strictly calculated at true sentence boundaries (`.?!`), and the engine introduces a dynamic post-break pause (150ms to 350ms depending on queue depth) to give the reader a stable moment to digest the completed sentence before it shifts up.
+  * **Active-Line Highlight Preservation:** The sentence-final word (e.g., ending with a period) is rendered and fully highlighted in bright white on the active line, only moving to dimmed history when the next sentence actually begins.
   * **Visual Hierarchy:** Premium high-contrast layout where the active typing line glows in bright white while historical lines recede into a dim 30% opacity.
 
 ---
