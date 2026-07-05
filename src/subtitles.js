@@ -482,8 +482,22 @@ function connect() {
 }
 
 // --- QR Code Toggle and Render Code ---
-const subtitlesUrl = `${window.location.protocol}//${window.location.host}/subtitles.html`;
+let subtitlesUrl = `${window.location.protocol}//${window.location.host}/subtitles.html`;
 qrUrlText.textContent = subtitlesUrl;
+
+// Fetch network IP to use for QR codes instead of localhost
+async function initProjectorSharingQR() {
+  try {
+    const res = await fetch('/api/network-ip');
+    const data = await res.json();
+    const port = window.location.port ? `:${window.location.port}` : '';
+    subtitlesUrl = `${window.location.protocol}//${data.ip}${port}/subtitles.html`;
+    qrUrlText.textContent = subtitlesUrl;
+  } catch (err) {
+    console.error("Could not fetch network IP for QR code:", err);
+  }
+}
+initProjectorSharingQR();
 
 btnQrToggle.addEventListener('click', () => {
   qrOverlay.classList.remove('hidden');

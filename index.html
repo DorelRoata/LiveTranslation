@@ -64,6 +64,7 @@
             <select id="audio-source-select">
               <option value="mic" selected>Microphone</option>
               <option value="system">System Audio (Played on PC)</option>
+              <option value="network">Network Audio (Stream from another PC)</option>
             </select>
           </div>
 
@@ -177,6 +178,17 @@
               </span>
               <span class="btn-text">Open Subtitle Monitor</span>
             </button>
+            <button id="streamer-btn" class="secondary-btn" type="button">
+              <span class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </span>
+              <span class="btn-text">Open Audio Streamer</span>
+            </button>
             <button id="btn-clear-projector" class="secondary-btn" type="button" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5;">
               <span class="btn-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -202,11 +214,36 @@
               </p>
             </div>
           </div>
+
+          <!-- Network Audio Sender Sharing Tip -->
+          <div class="network-info-box" id="network-audio-info-box" style="display: none; margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--panel-border); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+            <p style="font-weight: 600; color: var(--accent-amber); margin-bottom: 0.25rem;">Network Audio Mode Active:</p>
+            <p>Scan this QR code or open the URL on the other PC to start sending audio:</p>
+            <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+              <div style="background: white; padding: 6px; border-radius: 8px; width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
+                <canvas id="streamer-qr-canvas" style="width: 116px; height: 116px; display: block;"></canvas>
+              </div>
+              <p style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin: 0; max-width: 180px; line-height: 1.2;">
+                Note: Accept the browser SSL privacy warning on the other PC to allow microphone access.
+              </p>
+            </div>
+          </div>
         </section>
 
         <!-- Right Column: Visualizers & Logs -->
         <section class="workspace" aria-label="Translation Workspace">
           
+          <!-- Disconnect Warning Banner -->
+          <div id="network-disconnect-warning" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 0.9rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <span>⚠️ Remote audio stream disconnected. Waiting for reconnect...</span>
+          </div>
+
           <!-- Visualizers Box -->
           <div class="visualizer-row glass-card">
             <div class="visualizer-container">

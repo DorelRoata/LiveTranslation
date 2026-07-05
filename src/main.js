@@ -49,7 +49,10 @@ const playVoiceCheckbox2 = document.getElementById("play-voice-2");
 const echoToggle = document.getElementById("echo-toggle");
 const startBtn = document.getElementById("start-btn");
 const subtitlesBtn = document.getElementById("subtitles-btn");
+const streamerBtn = document.getElementById("streamer-btn");
 const connectionStatus = document.getElementById("connection-status");
+const networkAudioInfoBox = document.getElementById("network-audio-info-box");
+const networkDisconnectWarning = document.getElementById("network-disconnect-warning");
 
 const micDb = document.getElementById("mic-db");
 const outputDb = document.getElementById("output-db");
@@ -118,6 +121,14 @@ audioSourceSelect.addEventListener("change", () => {
     micDeviceGroup.style.display = "block";
   } else {
     micDeviceGroup.style.display = "none";
+  }
+  
+  if (networkAudioInfoBox) {
+    if (audioSourceSelect.value === "network") {
+      networkAudioInfoBox.style.display = "block";
+    } else {
+      networkAudioInfoBox.style.display = "none";
+    }
   }
 });
 
@@ -421,11 +432,16 @@ function stopAllPlayback() {
 
 // --- Audio Capture Pipeline (Mic Input) ---
 async function startAudioCapture() {
+  const sourceVal = audioSourceSelect.value;
+  if (sourceVal === "network") {
+    logDebug("Network audio source selected. Ready to receive audio stream from another PC...", "info");
+    return;
+  }
+  
   if (!navigator.mediaDevices) {
     throw new Error("navigator.mediaDevices is not available. Please make sure you are accessing this application via http://localhost:5173/ in your browser URL bar. Browsers block microphone and audio sharing on local file:// files for security.");
   }
 
-  const sourceVal = audioSourceSelect.value;
   logDebug(`Initializing capture context for: ${sourceVal}...`, "info");
 
   audioContextInput = new (window.AudioContext || window.webkitAudioContext)({
@@ -538,6 +554,13 @@ async function startAudioCapture() {
 }
 
 function stopAudioCapture() {
+  if (audioSourceSelect.value === "network") {
+    logDebug("Stopped listening for network audio stream.", "info");
+    micIndicator.classList.remove("active");
+    micDb.textContent = "0%";
+    return;
+  }
+  
   if (scriptProcessor) {
     scriptProcessor.disconnect();
     scriptProcessor = null;
@@ -998,6 +1021,12 @@ subtitlesBtn.addEventListener("click", () => {
   openSubtitleWindow();
 });
 
+if (streamerBtn) {
+  streamerBtn.addEventListener("click", () => {
+    window.open('/audio-sender.html', 'AudioSenderWindow', 'width=800,height=850');
+  });
+}
+
 // --- Local Subtitles WebSocket Broadcasting ---
 function initLocalSubtitlesWS() {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1018,6 +1047,77 @@ function initLocalSubtitlesWS() {
   localSubtitlesWS.onerror = (err) => {
     console.error("Local subtitles WebSocket error:", err);
   };
+  
+  localSubtitlesWS.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'input-audio') {
+        handleIncomingNetworkAudio(data.audioData);
+      } else if (data.type === 'audio-sender-connected') {
+        if (networkDisconnectWarning && networkDisconnectWarning.style.display !== "none") {
+          networkDisconnectWarning.style.display = "none";
+          logDebug("Remote audio stream reconnected.", "info");
+        }
+      } else if (data.type === 'audio-sender-disconnected') {
+        const isNetworkSource = audioSourceSelect.value === 'network';
+        const isTranslating = (socket1 && socket1.readyState === WebSocket.OPEN) || (socket2 && socket2.readyState === WebSocket.OPEN);
+        if (isNetworkSource && isTranslating) {
+          if (networkDisconnectWarning) networkDisconnectWarning.style.display = "flex";
+          logDebug("Remote audio stream disconnected!", "error");
+          micIndicator.classList.remove("active");
+          micDb.textContent = "0%";
+        }
+      }
+    } catch (err) {
+      // ignore non-json messages
+    }
+  };
+}
+
+function handleIncomingNetworkAudio(base64Data) {
+  const isNetworkSource = audioSourceSelect.value === 'network';
+  const isTranslating = (socket1 && socket1.readyState === WebSocket.OPEN) || (socket2 && socket2.readyState === WebSocket.OPEN);
+  if (!isNetworkSource || !isTranslating) return;
+
+  const mediaMsg = {
+    realtimeInput: {
+      mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: base64Data }]
+    }
+  };
+  const msgStr = JSON.stringify(mediaMsg);
+  
+  if (socket1 && socket1.readyState === WebSocket.OPEN) socket1.send(msgStr);
+  if (socket2 && socket2.readyState === WebSocket.OPEN) socket2.send(msgStr);
+  
+  chunksSent++;
+  if (chunksSent % 25 === 0) {
+    logDebug(`Sent ${chunksSent} network audio chunks to Google...`, "ws-sent");
+  }
+
+  const binaryString = atob(base64Data);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+  const int16Array = new Int16Array(bytes.buffer);
+  
+  const float32 = new Float32Array(int16Array.length);
+  let maxVal = 0;
+  for (let i = 0; i < int16Array.length; i++) {
+    const s = int16Array[i] / 32768.0;
+    float32[i] = s;
+    if (Math.abs(s) > maxVal) maxVal = Math.abs(s);
+  }
+
+  const step = Math.max(1, Math.floor(float32.length / micBuffer.length));
+  for (let i = 0; i < micBuffer.length; i++) {
+    const idx = Math.min(float32.length - 1, i * step);
+    micBuffer[i] = micBuffer[i] * 0.3 + float32[idx] * 0.7;
+  }
+
+  const pct = Math.round(maxVal * 100);
+  micDb.textContent = `${pct}%`;
+  if (pct > 5) micIndicator.classList.add("active");
+  else micIndicator.classList.remove("active");
 }
 
 function syncLocalSubtitlesSetup() {
@@ -1060,10 +1160,23 @@ async function initProjectorSharingQR() {
     QRCode.toCanvas(qrCanvas, subtitlesUrl, {
       width: 116,
       margin: 1,
-      color: {
-        dark: '#000000',
-        light: '#ffffff'
-      },
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    }, function (error) {
+      if (error) console.error("QR Code generation error:", error);
+    });
+  }
+
+  const streamerTip = document.getElementById("streamer-url-tip");
+  const streamerQrCanvas = document.getElementById("streamer-qr-canvas");
+  const streamerUrl = `${window.location.protocol}//${networkIP}${port}/audio-sender.html`;
+  if (streamerTip) streamerTip.textContent = streamerUrl;
+  
+  if (streamerQrCanvas) {
+    QRCode.toCanvas(streamerQrCanvas, streamerUrl, {
+      width: 116,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
       errorCorrectionLevel: 'M'
     }, function (error) {
       if (error) console.error("QR Code generation error:", error);

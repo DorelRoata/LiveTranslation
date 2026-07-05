@@ -2,7 +2,7 @@
 
 A sleek, low-latency, real-time voice-to-voice translation web application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). 
 
-This application supports dual-language concurrent translations, visual waveform analytics, audio play/mute controls, and a dedicated local network projector screen for sharing rolling subtitles on another laptop in real-time.
+This application supports dual-language concurrent translations, visual waveform analytics, audio play/mute controls, remote network audio streaming from a separate computer, and a dedicated local network projector screen for sharing rolling subtitles on another laptop in real-time.
 
 ---
 
@@ -24,6 +24,8 @@ This application supports dual-language concurrent translations, visual waveform
 * **Visual Waveform Analysis:** Live HTML5 canvas waveforms showing microphone input volume and translation audio output.
 * **Independent Mute Controls:** Toggle spoken translation audio for Language 1 and Language 2 independently.
 * **Multi-Laptop Screen Sharing (Projector Support):** Expose a local network server over HTTPS and stream live subtitles to a second laptop connected to a projector.
+* **Remote Network Audio Streaming:** Capture audio on a separate computer and stream it over the local network to the main translation server. Ideal for setups where the microphone is far from the translation laptop — just open the Audio Streamer page on the remote PC and select "Network Audio" on the dashboard.
+* **Disconnect Detection:** When the remote audio sender disconnects unexpectedly, the dashboard instantly displays a warning banner so the operator knows the stream was interrupted.
 * **Smart Dynamic QR Code:** Automatically resolves the host's local network IP to generate a scannable QR code directly on the dashboard. Any attendee or secondary device can scan it to instantly join the live translation session.
 * **AI Translation Hints:** Provide real-time "system instructions" to the AI interpreter via the dashboard before connecting (e.g. teaching it specific theological terminology, preacher's name, or formal translation styles).
 * **Broadcast-Grade Subtitles Engine:** 
@@ -57,6 +59,14 @@ npm run dev
 4. On **Laptop B** (the projector laptop), open that subtitles URL in Chrome, Edge, or Safari.
    * *Note: Because Vite uses a local self-signed SSL certificate, your browser will display a certificate warning. Click **Advanced** and then click **Proceed to ... (unsafe)** to open the subtitles page safely.*
 5. Once Laptop B displays a green status dot in the top-right corner (meaning it is connected to the host), start translating on Laptop A. The subtitles will stream to Laptop B's projector screen in real-time!
+
+### Remote Audio Setup (Optional):
+If the microphone is on a **different computer** than the one running the translation server:
+1. On the dashboard, select **"Network Audio (Stream from another PC)"** from the Audio Source dropdown.
+2. A QR code and URL will appear for the **Audio Streamer** page (e.g., `https://192.168.1.67:5173/audio-sender.html`).
+3. On the remote computer, open that URL in a browser. Accept the SSL certificate warning and grant microphone access.
+4. Click **"Start Streaming"** on the Audio Streamer page. You should see the mic visualizer light up on both the streamer and the main dashboard.
+5. Press **"Start Translation"** on the dashboard — audio from the remote PC will be translated in real-time!
 
 ---
 

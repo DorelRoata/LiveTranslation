@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Audio Streamer - Live Translation</title>
+    <link rel="stylesheet" href="/src/index.css">
+    <style>
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: var(--bg-dark);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        overflow: hidden;
+      }
+      .streamer-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 12px;
+        padding: 2rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        text-align: center;
+      }
+      .status-dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #ef4444;
+        margin-right: 8px;
+        box-shadow: 0 0 8px #ef4444;
+      }
+      .status-dot.active {
+        background-color: #22c55e;
+        box-shadow: 0 0 12px #22c55e;
+      }
+      .mic-visualizer {
+        width: 100%;
+        height: 60px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .mic-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 0%;
+        width: 100%;
+        background: linear-gradient(to top, var(--accent-cyan), var(--accent-blue));
+        transition: height 0.05s ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="streamer-card">
+      <h2 style="margin-top: 0; font-size: 1.4rem;">Audio Streamer</h2>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem;">
+        Capture microphone audio on this device and stream it to the main dashboard.
+      </p>
+
+      <div style="margin-bottom: 1.5rem;">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text" style="font-weight: 500;">Disconnected</span>
+      </div>
+      
+      <div class="input-group" style="text-align: left; margin-bottom: 1.5rem;">
+        <label for="mic-device-select">Microphone Device</label>
+        <select id="mic-device-select" style="width: 100%; box-sizing: border-box;">
+          <option value="default">Default System Microphone</option>
+        </select>
+      </div>
+
+      <div class="mic-visualizer">
+        <div class="mic-bar" id="mic-bar"></div>
+      </div>
+      <p id="mic-db" style="font-family: var(--font-mono); color: var(--accent-cyan); margin-bottom: 1.5rem;">0%</p>
+
+      <button id="toggle-stream-btn" class="primary-btn" style="width: 100%; box-sizing: border-box;">
+        <span class="btn-text">Start Streaming</span>
+      </button>
+    </div>
+    
+    <script type="module" src="/src/audio-sender.js"></script>
+  </body>
+</html>

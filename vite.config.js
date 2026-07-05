@@ -54,7 +54,7 @@ function localSubtitlesPlugin() {
         ws.on('message', (message) => {
           try {
             const data = JSON.parse(message.toString());
-            if (data.type !== 'audio') {
+            if (data.type !== 'audio' && data.type !== 'input-audio') {
               console.log("[WS Server Recv]", data.type, "isFinal:", data.isFinal, "text:", data.text);
             }
             
@@ -109,15 +109,32 @@ function localSubtitlesPlugin() {
                   client.send(JSON.stringify({ type: 'clear' }));
                 }
               });
-            } else if (data.type === 'audio') {
+            } else if (data.type === 'audio' || data.type === 'input-audio') {
               wss.clients.forEach((client) => {
                 if (client !== ws && client.readyState === 1) {
                   client.send(message.toString());
                 }
               });
+            } else if (data.type === 'audio-sender-hello') {
+              ws.isAudioSender = true;
+              wss.clients.forEach((client) => {
+                if (client !== ws && client.readyState === 1) {
+                  client.send(JSON.stringify({ type: 'audio-sender-connected' }));
+                }
+              });
             }
           } catch (e) {
             console.error('Error handling WebSocket message in plugin:', e);
+          }
+        });
+
+        ws.on('close', () => {
+          if (ws.isAudioSender) {
+            wss.clients.forEach((client) => {
+              if (client !== ws && client.readyState === 1) {
+                client.send(JSON.stringify({ type: 'audio-sender-disconnected' }));
+              }
+            });
           }
         });
       });
@@ -139,7 +156,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        subtitles: 'subtitles.html'
+        subtitles: 'subtitles.html',
+        'audio-sender': 'audio-sender.html'
       }
     }
   }
