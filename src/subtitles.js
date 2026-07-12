@@ -307,6 +307,22 @@ function renderSubtitleLane(lane) {
     const newText = state.accumulatedText;
     displayState[lane].lastText = newText;
     
+    // If this is an initial sync (page refresh / first connect), populate the
+    // display state directly so the text appears instantly instead of fast-
+    // forwarding hundreds of words through the animation queue.
+    if (!oldText && newText.length > 0) {
+      const allWords = newText.split(/\s+/).filter(Boolean);
+      displayState[lane].lines = [];
+      displayState[lane].activeLine = "";
+      
+      for (const word of allWords) {
+        appendWordToDisplayState(lane, word);
+      }
+      
+      rebuildSubtitleDOM(lane);
+      return;
+    }
+    
     const appended = getAppendedText(oldText, newText);
     if (appended) {
       const newWords = appended.split(/\s+/).filter(Boolean);

@@ -38,200 +38,194 @@
       <!-- Main Dashboard Grid -->
       <main class="dashboard-grid">
         
-        <!-- Left Column: Controls and Settings -->
+        <!-- Top Section: Controls and Settings -->
         <section class="control-panel glass-card" aria-label="Translation Settings">
           <h2>Configuration</h2>
           
-          <!-- API Key Input -->
-          <div class="input-group">
-            <label for="api-key-input">Gemini API Key</label>
-            <div class="password-wrapper">
-              <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key" />
-              <button type="button" id="toggle-api-key" class="icon-btn" aria-label="Toggle API Key visibility">
-                <!-- Eye Icon -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-            </div>
-            <p class="helper-text">Key is saved locally in your browser and never shared.</p>
-          </div>
-
-          <!-- Audio Source Selection -->
-          <div class="input-group">
-            <label for="audio-source-select">Audio Source</label>
-            <select id="audio-source-select">
-              <option value="mic" selected>Microphone</option>
-              <option value="system">System Audio (Played on PC)</option>
-              <option value="network">Network Audio (Stream from another PC)</option>
-            </select>
-          </div>
-
-          <!-- Microphone Device Selection -->
-          <div class="input-group" id="mic-device-group">
-            <label for="mic-device-select">Microphone Input Device</label>
-            <select id="mic-device-select">
-              <option value="default">Default System Microphone</option>
-            </select>
-          </div>
-
-          <!-- Target Language 1 -->
-          <div class="input-group">
-            <label for="target-language-select-1">Translate To (Language 1)</label>
-            <select id="target-language-select-1">
-              <option value="en" selected>English (English)</option>
-              <option value="ru">Russian (Русский)</option>
-              <option value="ro">Romanian (Română)</option>
-              <option value="es">Spanish (Español)</option>
-              <option value="fr">French (Français)</option>
-              <option value="ja">Japanese (日本語)</option>
-              <option value="de">German (Deutsch)</option>
-              <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
-              <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
-              <option value="pt">Portuguese (Português)</option>
-              <option value="it">Italian (Italiano)</option>
-              <option value="ko">Korean (한국어)</option>
-              <option value="pl">Polish (Polski)</option>
-              <option value="hi">Hindi (हिन्दी)</option>
-              <option value="ar">Arabic (العربية)</option>
-              <option value="tr">Turkish (Türkçe)</option>
-              <option value="vi">Vietnamese (Tiếng Việt)</option>
-            </select>
-          </div>
-          <div class="input-group checkbox-group" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">
-            <label class="switch-container">
-              <input type="checkbox" id="play-voice-1" checked />
-              <span class="switch-slider"></span>
-              <span class="switch-label">Play Voice 1 Output</span>
-            </label>
-          </div>
-
-          <!-- Target Language 2 -->
-          <div class="input-group">
-            <label for="target-language-select-2">Translate To (Language 2)</label>
-            <select id="target-language-select-2">
-              <option value="none" selected>None (Disabled)</option>
-              <option value="en">English (English)</option>
-              <option value="ru">Russian (Русский)</option>
-              <option value="ro">Romanian (Română)</option>
-              <option value="es">Spanish (Español)</option>
-              <option value="fr">French (Français)</option>
-              <option value="ja">Japanese (日本語)</option>
-              <option value="de">German (Deutsch)</option>
-              <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
-              <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
-              <option value="pt">Portuguese (Português)</option>
-              <option value="it">Italian (Italiano)</option>
-              <option value="ko">Korean (한국어)</option>
-              <option value="pl">Polish (Polski)</option>
-              <option value="hi">Hindi (हिन्दी)</option>
-              <option value="ar">Arabic (العربية)</option>
-              <option value="tr">Turkish (Türkçe)</option>
-              <option value="vi">Vietnamese (Tiếng Việt)</option>
-            </select>
-          </div>
-          <div class="input-group checkbox-group" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">
-            <label class="switch-container">
-              <input type="checkbox" id="play-voice-2" checked />
-              <span class="switch-slider"></span>
-              <span class="switch-label">Play Voice 2 Output</span>
-            </label>
-          </div>
-
-          <!-- Translation System Instructions & Hints -->
-          <div class="input-group">
-            <label for="system-instruction-input">Translation System Instructions & Hints</label>
-            <textarea id="system-instruction-input" rows="3" style="width: 100%; box-sizing: border-box; padding: 0.75rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.85rem; resize: vertical;" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.</textarea>
-          </div>
-
-          <!-- Options Toggles -->
-          <div class="input-group checkbox-group">
-            <label class="switch-container">
-              <input type="checkbox" id="echo-toggle" checked />
-              <span class="switch-slider"></span>
-              <span class="switch-label">Echo Target Language</span>
-            </label>
-            <p class="helper-text">If you speak the target language, repeat it back as-is.</p>
-          </div>
-
-          <!-- Action Button -->
-          <div class="action-wrapper" style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <button id="start-btn" class="primary-btn pulse-glow">
-              <span class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              </span>
-              <span class="btn-text">Start Translation</span>
-            </button>
-            <button id="subtitles-btn" class="secondary-btn" type="button">
-              <span class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-              </span>
-              <span class="btn-text">Open Subtitle Monitor</span>
-            </button>
-            <button id="streamer-btn" class="secondary-btn" type="button">
-              <span class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              </span>
-              <span class="btn-text">Open Audio Streamer</span>
-            </button>
-            <button id="btn-clear-projector" class="secondary-btn" type="button" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5;">
-              <span class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 6h18"></path>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-              </span>
-              <span class="btn-text">Clear Projector Screen</span>
-            </button>
-          </div>
-
-          <!-- Projector Screen Sharing Tip -->
-          <div class="network-info-box" style="margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--panel-border); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
-            <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Projector Screen Sharing:</p>
-            <p>Scan the QR code below or open the URL on another device/phone connected to the same local network:</p>
-            <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-              <div style="background: white; padding: 6px; border-radius: 8px; width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                <canvas id="projector-qr-canvas" style="width: 116px; height: 116px; display: block;"></canvas>
+          <div class="config-grid">
+            <!-- Column 1: Connection & Audio Source -->
+            <div class="config-col">
+              <!-- API Key Input -->
+              <div class="input-group">
+                <label for="api-key-input">Gemini API Key</label>
+                <div class="password-wrapper">
+                  <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key" />
+                  <button type="button" id="toggle-api-key" class="icon-btn" aria-label="Toggle API Key visibility">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <p style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin: 0; max-width: 180px; line-height: 1.2;">
-                Note: Accept the browser SSL privacy warning on your phone if prompted.
-              </p>
+
+              <!-- Audio Source Selection -->
+              <div class="input-group">
+                <label for="audio-source-select">Audio Source</label>
+                <select id="audio-source-select">
+                  <option value="mic" selected>Microphone</option>
+                  <option value="system">System Audio (Played on PC)</option>
+                  <option value="network">Network Audio (Stream from another PC)</option>
+                </select>
+              </div>
+
+              <!-- Microphone Device Selection -->
+              <div class="input-group" id="mic-device-group">
+                <label for="mic-device-select">Microphone Input Device</label>
+                <select id="mic-device-select">
+                  <option value="default">Default System Microphone</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Column 2: Target Languages -->
+            <div class="config-col">
+              <!-- Target Language 1 -->
+              <div class="input-group">
+                <label for="target-language-select-1">Translate To (Language 1)</label>
+                <select id="target-language-select-1">
+                  <option value="en" selected>English (English)</option>
+                  <option value="ru">Russian (Русский)</option>
+                  <option value="ro">Romanian (Română)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="ja">Japanese (日本語)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+                  <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+                  <option value="pt">Portuguese (Português)</option>
+                  <option value="it">Italian (Italiano)</option>
+                  <option value="ko">Korean (한국어)</option>
+                  <option value="pl">Polish (Polski)</option>
+                  <option value="hi">Hindi (हिन्दी)</option>
+                  <option value="ar">Arabic (العربية)</option>
+                  <option value="tr">Turkish (Türkçe)</option>
+                  <option value="vi">Vietnamese (Tiếng Việt)</option>
+                </select>
+              </div>
+              <div class="input-group checkbox-group" style="margin-top: -0.25rem; margin-bottom: 0.5rem;">
+                <label class="switch-container">
+                  <input type="checkbox" id="play-voice-1" checked />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">Play Voice 1 Output</span>
+                </label>
+              </div>
+
+              <!-- Target Language 2 -->
+              <div class="input-group">
+                <label for="target-language-select-2">Translate To (Language 2)</label>
+                <select id="target-language-select-2">
+                  <option value="none" selected>None (Disabled)</option>
+                  <option value="en">English (English)</option>
+                  <option value="ru">Russian (Русский)</option>
+                  <option value="ro">Romanian (Română)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="ja">Japanese (日本語)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+                  <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+                  <option value="pt">Portuguese (Português)</option>
+                  <option value="it">Italian (Italiano)</option>
+                  <option value="ko">Korean (한국어)</option>
+                  <option value="pl">Polish (Polski)</option>
+                  <option value="hi">Hindi (हिन्दी)</option>
+                  <option value="ar">Arabic (العربية)</option>
+                  <option value="tr">Turkish (Türkçe)</option>
+                  <option value="vi">Vietnamese (Tiếng Việt)</option>
+                </select>
+              </div>
+              <div class="input-group checkbox-group" style="margin-top: -0.25rem; margin-bottom: 0.5rem;">
+                <label class="switch-container">
+                  <input type="checkbox" id="play-voice-2" checked />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">Play Voice 2 Output</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Column 3: Instructions & Echo -->
+            <div class="config-col">
+              <!-- Translation System Instructions & Hints -->
+              <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
+                <label for="system-instruction-input">System Instructions & Hints</label>
+                <textarea id="system-instruction-input" style="width: 100%; flex: 1; box-sizing: border-box; padding: 0.75rem; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.85rem; resize: none;" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.</textarea>
+              </div>
+
+              <!-- Options Toggles -->
+              <div class="input-group checkbox-group" style="margin-top: 0.5rem;">
+                <label class="switch-container">
+                  <input type="checkbox" id="echo-toggle" checked />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">Echo Target Language</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Column 4: Action Buttons -->
+            <div class="config-col actions-col">
+              <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.15rem;">Controls</label>
+              <div class="action-wrapper" style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1; justify-content: space-between;">
+                <button id="start-btn" class="primary-btn">
+                  <span class="btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                  </span>
+                  <span class="btn-text">Start Translation</span>
+                </button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <button id="subtitles-btn" class="secondary-btn" type="button" style="padding: 0.75rem 0.5rem; font-size: 0.85rem;">
+                    <span class="btn-text">Monitor</span>
+                  </button>
+                  <button id="streamer-btn" class="secondary-btn" type="button" style="padding: 0.75rem 0.5rem; font-size: 0.85rem;">
+                    <span class="btn-text">Streamer</span>
+                  </button>
+                </div>
+                <button id="btn-clear-projector" class="secondary-btn" type="button" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.75rem 0.5rem; font-size: 0.85rem;">
+                  <span class="btn-text">Clear Projector Screen</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Network Audio Sender Sharing Tip -->
-          <div class="network-info-box" id="network-audio-info-box" style="display: none; margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--panel-border); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
-            <p style="font-weight: 600; color: var(--accent-amber); margin-bottom: 0.25rem;">Network Audio Mode Active:</p>
-            <p>Scan this QR code or open the URL on the other PC to start sending audio:</p>
-            <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-              <div style="background: white; padding: 6px; border-radius: 8px; width: 128px; height: 128px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                <canvas id="streamer-qr-canvas" style="width: 116px; height: 116px; display: block;"></canvas>
+          <!-- Collapsible QR Code details section -->
+          <details class="qr-details">
+            <summary class="qr-summary">
+              Show QR Connection Codes & URLs (for Projectors / External Microphones)
+            </summary>
+            <div class="qr-grid-layout">
+              <!-- Projector Screen Sharing Tip -->
+              <div class="network-info-box">
+                <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Projector Screen URL:</p>
+                <p>Scan to show subtitles on another computer/projector connected to the same network:</p>
+                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                  <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
+                    <canvas id="projector-qr-canvas" style="width: 88px; height: 88px; display: block;"></canvas>
+                  </div>
+                </div>
               </div>
-              <p style="font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin: 0; max-width: 180px; line-height: 1.2;">
-                Note: Accept the browser SSL privacy warning on the other PC to allow microphone access.
-              </p>
+
+              <!-- Network Audio Sender Sharing Tip -->
+              <div class="network-info-box" id="network-audio-info-box" style="display: none;">
+                <p style="font-weight: 600; color: var(--accent-amber); margin-bottom: 0.25rem;">Network Audio Sender URL:</p>
+                <p>Scan to stream audio from another PC or phone to this dashboard:</p>
+                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                  <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
+                    <canvas id="streamer-qr-canvas" style="width: 88px; height: 88px; display: block;"></canvas>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </details>
         </section>
 
-        <!-- Right Column: Visualizers & Logs -->
+        <!-- Bottom Section: Visualizers & Logs -->
         <section class="workspace" aria-label="Translation Workspace">
           
           <!-- Disconnect Warning Banner -->
@@ -260,6 +254,11 @@
               <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <h3 style="margin: 0;">Translation Audio</h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label class="switch-container" style="margin-right: 0.5rem;" title="Play audio on this computer's speakers">
+                    <input type="checkbox" id="local-playback-toggle" checked />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label" style="font-size: 0.75rem;">Local Speaker</span>
+                  </label>
                   <span style="font-size: 0.75rem; color: var(--text-secondary);">Vol:</span>
                   <input type="range" id="host-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px; accent-color: var(--accent-cyan); cursor: pointer;" title="Local Playback Volume">
                   <span class="vol-db" id="output-db">0%</span>

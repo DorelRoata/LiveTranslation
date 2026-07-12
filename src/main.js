@@ -116,7 +116,7 @@ toggleApiKeyBtn.addEventListener("click", () => {
 });
 
 // --- Microphone Input Device Selector ---
-audioSourceSelect.addEventListener("change", () => {
+audioSourceSelect.addEventListener("change", async () => {
   if (audioSourceSelect.value === "mic") {
     micDeviceGroup.style.display = "block";
   } else {
@@ -126,8 +126,20 @@ audioSourceSelect.addEventListener("change", () => {
   if (networkAudioInfoBox) {
     if (audioSourceSelect.value === "network") {
       networkAudioInfoBox.style.display = "block";
+      const qrDetails = document.querySelector(".qr-details");
+      if (qrDetails) qrDetails.open = true;
     } else {
       networkAudioInfoBox.style.display = "none";
+    }
+  }
+
+  if (isRunning) {
+    logDebug(`Switching audio source to ${audioSourceSelect.value}...`, "info");
+    stopAudioCapture();
+    try {
+      await startAudioCapture();
+    } catch (err) {
+      logDebug(`Failed to switch audio source: ${err.message}`, "error");
     }
   }
 });
@@ -160,7 +172,10 @@ async function populateMicDevices() {
 
 // Request permissions on first load to populate labels, otherwise fallback to enumerate
 navigator.mediaDevices.getUserMedia({ audio: true })
-  .then(() => populateMicDevices())
+  .then((stream) => {
+    populateMicDevices();
+    stream.getTracks().forEach(t => t.stop());
+  })
   .catch(() => populateMicDevices());
 
 // Clear Logs
@@ -381,7 +396,10 @@ function playPCMChunk(base64Data, channelId) {
   const sourceNode = audioContextOutput.createBufferSource();
   sourceNode.buffer = audioBuffer;
   
-  const hostVolume = parseFloat(document.getElementById('host-volume-slider')?.value ?? 1);
+  const localPlaybackToggle = document.getElementById('local-playback-toggle');
+  const isLocalMuted = localPlaybackToggle ? !localPlaybackToggle.checked : false;
+
+  const hostVolume = isLocalMuted ? 0 : parseFloat(document.getElementById('host-volume-slider')?.value ?? 1);
   const gainNode = audioContextOutput.createGain();
   gainNode.gain.value = hostVolume;
   sourceNode.connect(gainNode);
@@ -556,11 +574,9 @@ async function startAudioCapture() {
 function stopAudioCapture() {
   if (audioSourceSelect.value === "network") {
     logDebug("Stopped listening for network audio stream.", "info");
-    micIndicator.classList.remove("active");
-    micDb.textContent = "0%";
-    return;
   }
   
+  // Unconditionally destroy local mic resources to prevent stream overlap and Gemini errors
   if (scriptProcessor) {
     scriptProcessor.disconnect();
     scriptProcessor = null;
@@ -573,6 +589,7 @@ function stopAudioCapture() {
     audioContextInput.close();
     audioContextInput = null;
   }
+  
   micIndicator.classList.remove("active");
   micDb.textContent = "0%";
 }
@@ -872,7 +889,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
       if (outputTx) {
         const text = outputTx.text;
         if (text) {
-          console.log("[Gemini OutputTx]", "channel:", channelId, "final:", outputTx.final, "keys:", Object.keys(outputTx), "text:", text);
           updateOutputTranscript(text, channelId, outputTx.final);
           updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
