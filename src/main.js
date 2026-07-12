@@ -78,9 +78,7 @@ const outputIndicator1 = document.querySelector(".output-pulse-1");
 const outputIndicator2 = document.querySelector(".output-pulse-2");
 
 // --- API Key Local Storage ---
-if (localStorage.getItem("gemini_api_key")) {
-  apiKeyInput.value = localStorage.getItem("gemini_api_key");
-}
+apiKeyInput.value = import.meta.env?.VITE_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || "";
 
 apiKeyInput.addEventListener("input", () => {
   localStorage.setItem("gemini_api_key", apiKeyInput.value.trim());
@@ -732,6 +730,9 @@ async function startSession() {
     alert("Please enter a valid Gemini API Key.");
     return;
   }
+  
+  // Save the valid API key to localStorage so the user doesn't have to re-enter it next time
+  localStorage.setItem("gemini_api_key", apiKey);
   
   const targetLanguage1 = targetLanguageSelect1.value;
   const targetLanguage2 = targetLanguageSelect2.value;
