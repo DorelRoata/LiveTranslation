@@ -23,16 +23,19 @@ This application supports dual-language concurrent translations, visual waveform
 * **Concurrent Dual-Language Translation:** Connects to two parallel Gemini Live WebSocket sessions to translate speech into two languages at the same time.
 * **Visual Waveform Analysis:** Live HTML5 canvas waveforms showing microphone input volume and translation audio output.
 * **Independent Mute Controls:** Toggle spoken translation audio for Language 1 and Language 2 independently.
+* **Decoupled Local Speaker Routing:** Includes a "Local Speaker" toggle on the dashboard. Unchecking this silences translated speech on the host computer's speakers (preventing microphone feedback loop and stream bleed on streaming/broadcast PCs), while continuing to stream audio packets over the network to all projector and client pages.
 * **Multi-Laptop Screen Sharing (Projector Support):** Expose a local network server over HTTPS and stream live subtitles to a second laptop connected to a projector.
 * **Remote Network Audio Streaming:** Capture audio on a separate computer and stream it over the local network to the main translation server. Ideal for setups where the microphone is far from the translation laptop — just open the Audio Streamer page on the remote PC and select "Network Audio" on the dashboard.
 * **Disconnect Detection:** When the remote audio sender disconnects unexpectedly, the dashboard instantly displays a warning banner so the operator knows the stream was interrupted.
 * **Smart Dynamic QR Code:** Automatically resolves the host's local network IP to generate a scannable QR code directly on the dashboard. Any attendee or secondary device can scan it to instantly join the live translation session.
+* **Premium Flat Theme Layout:** Restructured dashboard placing all settings and system instruction widgets in a clean, 4-column horizontal card front and center at the top of the viewport. Visualizers, transcript logs, and controls are stacked below. Accent styling has been polished into a modern flat blue theme (removing legacy purple elements).
 * **AI Translation Hints:** Provide real-time "system instructions" to the AI interpreter via the dashboard before connecting (e.g. teaching it specific theological terminology, preacher's name, or formal translation styles).
 * **Broadcast-Grade Subtitles Engine:** 
   * **Smooth-Typing Ticker Queue:** Instead of raw API text chunks popping onto the screen at once (causing jarring flashes), incoming text is buffered into a client-side queue and rendered smoothly word-by-word. The queue calculates dynamic backpressure speeds (e.g., automatically speeding up from 160ms/word to 30ms/word) to ensure zero lag.
   * **Semantic Line Locking & Pacing Pause:** Sentences are intelligently locked into an immutable visual history buffer. Line breaks are strictly calculated at true sentence boundaries (`.?!`), and the engine introduces a dynamic post-break pause (150ms to 350ms depending on queue depth) to give the reader a stable moment to digest the completed sentence before it shifts up.
   * **Active-Line Highlight Preservation:** The sentence-final word (e.g., ending with a period) is rendered and fully highlighted in bright white on the active line, only moving to dimmed history when the next sentence actually begins.
   * **Visual Hierarchy:** Premium high-contrast layout where the active typing line glows in bright white while historical lines recede into a dim 30% opacity.
+  * **Instant State Synchronization & Auto-Reconnect:** Subtitle clients feature a 3-second auto-reconnect loop that recovers from server restarts. When a subtitle page first connects or is refreshed mid-session, it receives a synchronized history state which renders instantly to the screen, bypassing the fast-forward word queue animation.
 
 ---
 
