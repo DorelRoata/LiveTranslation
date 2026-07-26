@@ -385,7 +385,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'LiveTranslation v1.1.4 diagnostics',
+    'Live Translate v1.1.5 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -445,14 +445,14 @@ function logDebug(message, type = "info") {
   if (!debugLogList) return;
   const line = document.createElement("div");
   line.className = `debug-line ${type}`;
-  let color = "#cbd5e1";
+  let color = "#d6d2ca";
   let prefix = "[System]";
   
   if (type === "error") {
     color = "#f87171";
     prefix = "[Error]";
   } else if (type === "ws-sent") {
-    color = "#60a5fa";
+    color = "#f0a08d";
     prefix = "[Sent]";
   } else if (type === "ws-recv") {
     color = "#34d399";
@@ -475,7 +475,7 @@ function logDebug(message, type = "info") {
 }
 
 clearDebugBtn.addEventListener("click", () => {
-  debugLogList.innerHTML = `<div class="debug-line" style="color: #64748b;">[System] Logs cleared.</div>`;
+  debugLogList.innerHTML = `<div class="debug-line" style="color: #6f7872;">[System] Logs cleared.</div>`;
 });
 
 // --- Visualizer Rendering ---
@@ -538,8 +538,8 @@ function initVisualizer(canvas, dataBuffer, color) {
 }
 
 // Start visualizer loops
-initVisualizer(micCanvas, micBuffer, "#ff4d6d");
-initVisualizer(outputCanvas, outBuffer, "#00f5ff");
+initVisualizer(micCanvas, micBuffer, "#df6178");
+initVisualizer(outputCanvas, outBuffer, "#5bc0a4");
 
 // --- Audio Playback Pipeline (Gemini Output) ---
 function initOutputAudio() {

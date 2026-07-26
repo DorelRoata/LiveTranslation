@@ -1,4 +1,4 @@
-# Gemini Live Translate - Real-time Voice Interpreter
+# Live Translate
 
 A sleek, low-latency, real-time voice-to-voice translation web application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). 
 
