@@ -731,6 +731,42 @@ canvas {
   color: var(--text-muted);
 }
 
+/* Font Size Controls & Utilities for Transcripts */
+.font-size-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.font-size-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+.font-size-btn.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.transcript-grid.font-sm .transcript-bubble { font-size: 0.8rem; line-height: 1.35; }
+.transcript-grid.font-md .transcript-bubble { font-size: 0.95rem; line-height: 1.45; }
+.transcript-grid.font-lg .transcript-bubble { font-size: 1.15rem; line-height: 1.55; }
+.transcript-grid.font-xl .transcript-bubble { font-size: 1.35rem; line-height: 1.65; }
+
+/* Mute Mic Active Button State */
+#mute-mic-btn.is-muted {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
 /* --- Animations --- */
 @keyframes pulse-green {
   0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }

@@ -24,6 +24,12 @@ let reconnectTimeout = null;
 let subtitleWindow = null;
 let localSubtitlesWS = null;
 
+// New Features State
+let isMicMuted = false;
+let sessionTimerInterval = null;
+let sessionStartTime = 0;
+let totalWordsCount = 0;
+
 const subtitleState = {
   lang1: { accumulatedText: "" },
   lang2: { accumulatedText: "" }
@@ -53,6 +59,12 @@ const streamerBtn = document.getElementById("streamer-btn");
 const connectionStatus = document.getElementById("connection-status");
 const networkAudioInfoBox = document.getElementById("network-audio-info-box");
 const networkDisconnectWarning = document.getElementById("network-disconnect-warning");
+
+const muteMicBtn = document.getElementById("mute-mic-btn");
+const muteMicLabel = document.getElementById("mute-mic-label");
+const sessionTimerEl = document.getElementById("session-timer");
+const wordCounterEl = document.getElementById("word-counter");
+const transcriptGridEl = document.getElementById("transcript-grid");
 
 const micDb = document.getElementById("mic-db");
 const outputDb = document.getElementById("output-db");
@@ -511,6 +523,12 @@ async function startAudioCapture() {
     const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
     if (!socket1Ready && !socket2Ready) return;
     
+    if (isMicMuted) {
+      micDb.textContent = "Muted";
+      micIndicator.classList.remove("active");
+      return;
+    }
+    
     const float32 = e.inputBuffer.getChannelData(0);
     
     let maxVal = 0;
@@ -592,8 +610,97 @@ function stopAudioCapture() {
   micDb.textContent = "0%";
 }
 
+// --- New Dashboard Features Helpers ---
+
+// 1. Session Timer & Word Counter
+function startSessionTimer() {
+  if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+  sessionStartTime = Date.now();
+  totalWordsCount = 0;
+  updateWordCounterUI();
+
+  sessionTimerInterval = setInterval(() => {
+    const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const hrs = String(Math.floor(elapsedSeconds / 3600)).padStart(2, '0');
+    const mins = String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2, '0');
+    const secs = String(elapsedSeconds % 60).padStart(2, '0');
+    if (sessionTimerEl) {
+      sessionTimerEl.textContent = `⏱️ ${hrs}:${mins}:${secs}`;
+    }
+  }, 1000);
+}
+
+function stopSessionTimer() {
+  if (sessionTimerInterval) {
+    clearInterval(sessionTimerInterval);
+    sessionTimerInterval = null;
+  }
+}
+
+function incrementWordCount(text) {
+  if (!text) return;
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words > 0) {
+    totalWordsCount += words;
+    updateWordCounterUI();
+  }
+}
+
+function updateWordCounterUI() {
+  if (wordCounterEl) {
+    wordCounterEl.textContent = `📝 ${totalWordsCount.toLocaleString()} words`;
+  }
+}
+
+// 2. Live Mic Mute Toggle
+if (muteMicBtn) {
+  muteMicBtn.addEventListener("click", () => {
+    isMicMuted = !isMicMuted;
+    if (isMicMuted) {
+      muteMicBtn.classList.add("is-muted");
+      if (muteMicLabel) muteMicLabel.textContent = "Mic Muted";
+      micDb.textContent = "Muted";
+      micIndicator.classList.remove("active");
+      logDebug("Microphone paused (muted). Gemini session remains connected.", "warning");
+    } else {
+      muteMicBtn.classList.remove("is-muted");
+      if (muteMicLabel) muteMicLabel.textContent = "Mute Mic";
+      micDb.textContent = "0%";
+      logDebug("Microphone unmuted. Resuming live audio capture.", "info");
+    }
+  });
+}
+
+// 3. Dynamic Font Size Picker
+function initFontSizePicker() {
+  const fontBtns = document.querySelectorAll(".font-size-btn");
+  const savedSize = localStorage.getItem("transcript_font_size") || "md";
+
+  function setFontSize(size) {
+    fontBtns.forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-size") === size);
+    });
+    if (transcriptGridEl) {
+      transcriptGridEl.className = `transcript-grid font-${size}`;
+    }
+    localStorage.setItem("transcript_font_size", size);
+  }
+
+  fontBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const size = btn.getAttribute("data-size");
+      setFontSize(size);
+    });
+  });
+
+  setFontSize(savedSize);
+}
+
+initFontSizePicker();
+
 function addInputTranscript(text) {
   inputPlaceholder.style.display = "none";
+  incrementWordCount(text);
   
   const bubble = document.createElement("div");
   bubble.className = "transcript-bubble";
@@ -645,6 +752,7 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
   if (isFinal) {
     currentBubble.textContent = text;
     currentBubble.classList.remove("streaming-text");
+    incrementWordCount(text);
     
     const ts = document.createElement("span");
     ts.className = "timestamp";
@@ -842,6 +950,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
       logDebug("All connections active. Ready.", "info");
       
       isRunning = true;
+      startSessionTimer();
       startBtn.disabled = false;
       startBtn.classList.add("recording");
       startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
@@ -994,6 +1103,7 @@ function reconnectSession() {
 
 function disconnectSession() {
   isRunning = false;
+  stopSessionTimer();
   clearTimeout(reconnectTimeout);
   startBtn.disabled = false;
   startBtn.classList.remove("recording");
@@ -1115,6 +1225,12 @@ function handleIncomingNetworkAudio(base64Data) {
   const isNetworkSource = audioSourceSelect.value === 'network';
   const isTranslating = (socket1 && socket1.readyState === WebSocket.OPEN) || (socket2 && socket2.readyState === WebSocket.OPEN);
   if (!isNetworkSource || !isTranslating) return;
+
+  if (isMicMuted) {
+    micDb.textContent = "Muted";
+    micIndicator.classList.remove("active");
+    return;
+  }
 
   const mediaMsg = {
     realtimeInput: {

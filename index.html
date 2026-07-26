@@ -28,10 +28,20 @@
           </div>
         </div>
         
-        <!-- Connection Status Badge -->
-        <div class="status-badge" id="connection-status">
-          <span class="status-dot"></span>
-          <span class="status-text">Disconnected</span>
+        <!-- Header Right Area (Stats + Connection Badge) -->
+        <div class="header-right-area" style="display: flex; align-items: center; gap: 0.75rem;">
+          <!-- Session Stats Badge -->
+          <div class="session-stats-badge" id="session-stats-badge" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.85rem; border-radius: 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--panel-border); font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-secondary);">
+            <span id="session-timer" title="Session Duration">⏱️ 00:00:00</span>
+            <span style="color: var(--panel-border);">|</span>
+            <span id="word-counter" title="Total Words Processed">📝 0 words</span>
+          </div>
+
+          <!-- Connection Status Badge -->
+          <div class="status-badge" id="connection-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Disconnected</span>
+          </div>
         </div>
       </header>
 
@@ -241,9 +251,19 @@
           <!-- Visualizers Box -->
           <div class="visualizer-row glass-card">
             <div class="visualizer-container">
-              <div class="visualizer-header">
-                <h3>Input Mic</h3>
-                <span class="vol-db" id="mic-db">0%</span>
+              <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h3 style="margin: 0;">Input Mic</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <button id="mute-mic-btn" type="button" class="icon-btn-text" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-secondary); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: var(--transition-smooth);" title="Temporarily pause microphone audio without disconnecting">
+                    <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                    </svg>
+                    <span id="mute-mic-label">Mute Mic</span>
+                  </button>
+                  <span class="vol-db" id="mic-db">0%</span>
+                </div>
               </div>
               <div class="visualizer-box">
                 <canvas id="mic-canvas"></canvas>
@@ -270,8 +290,20 @@
             </div>
           </div>
 
+          <!-- Transcript Header Controls Bar -->
+          <div class="transcript-controls-bar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.75rem; padding: 0 0.25rem;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Live Transcripts</span>
+            <div class="font-size-picker" style="display: flex; align-items: center; gap: 0.35rem;">
+              <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.25rem;">Text Size:</span>
+              <button class="font-size-btn" data-size="sm" title="Small Text">S</button>
+              <button class="font-size-btn active" data-size="md" title="Medium Text">M</button>
+              <button class="font-size-btn" data-size="lg" title="Large Text">L</button>
+              <button class="font-size-btn" data-size="xl" title="Extra Large Text">XL</button>
+            </div>
+          </div>
+
           <!-- Transcripts columns -->
-          <div class="transcript-grid">
+          <div class="transcript-grid font-md" id="transcript-grid">
             <!-- Left Side: Source Language -->
             <div class="transcript-col glass-card">
               <div class="col-header">
