@@ -374,7 +374,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'LiveTranslation v1.1.0 diagnostics',
+    'LiveTranslation v1.1.1 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
