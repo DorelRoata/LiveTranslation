@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { createScreenWakeLock } from './wake-lock.js';
 
 // Error Handler
 window.onerror = function (msg, url, line) {
@@ -54,6 +55,7 @@ const btnViewBoth = document.getElementById('btn-view-both');
 const btnViewLang1 = document.getElementById('btn-view-lang1');
 const btnViewLang2 = document.getElementById('btn-view-lang2');
 const btnAudioToggle = document.getElementById('btn-audio-toggle');
+const btnWakeLock = document.getElementById('btn-wake-lock');
 const secLang1 = document.getElementById('sec-lang1');
 const secLang2 = document.getElementById('sec-lang2');
 
@@ -67,6 +69,49 @@ const qrUrlText = document.getElementById('qr-url-text');
 // UI state configurations
 let viewMode = 'both'; // 'both', 'lang1', 'lang2'
 let audioEnabled = false;
+
+const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
+  btnWakeLock.classList.toggle('audio-active', active);
+  btnWakeLock.disabled = !supported;
+  btnWakeLock.setAttribute('aria-pressed', String(desired));
+
+  if (!supported) {
+    btnWakeLock.textContent = 'Unavailable';
+    btnWakeLock.title = 'This browser does not support keeping the screen awake.';
+  } else if (active) {
+    btnWakeLock.textContent = 'Awake';
+    btnWakeLock.title = 'Tap to allow normal screen dimming.';
+  } else if (desired && (status === 'blocked' || status === 'released')) {
+    btnWakeLock.textContent = 'Tap to Keep Awake';
+    btnWakeLock.title = 'Tap to retry. Low Power Mode may prevent this feature.';
+  } else if (desired) {
+    btnWakeLock.textContent = 'Keep Awake';
+    btnWakeLock.title = 'The screen will stay awake after browser permission is granted.';
+  } else {
+    btnWakeLock.textContent = 'Keep Awake';
+    btnWakeLock.title = 'Tap to prevent the screen from dimming.';
+  }
+});
+
+const savedWakePreference = localStorage.getItem('subtitles_keep_awake');
+wakeLock.setEnabled(savedWakePreference !== 'false');
+
+btnWakeLock.addEventListener('click', async () => {
+  if (!wakeLock.isSupported()) return;
+  if (wakeLock.isDesired() && !wakeLock.isActive()) {
+    await wakeLock.request();
+    return;
+  }
+  const enabled = !wakeLock.isDesired();
+  localStorage.setItem('subtitles_keep_awake', String(enabled));
+  await wakeLock.setEnabled(enabled);
+});
+
+window.addEventListener('pointerdown', () => {
+  if (wakeLock.isDesired() && !wakeLock.isActive()) wakeLock.request();
+}, { capture: true, once: true });
+
+window.addEventListener('pagehide', () => wakeLock.dispose(), { once: true });
 
 // Audio contexts & playback state
 let audioContext = null;

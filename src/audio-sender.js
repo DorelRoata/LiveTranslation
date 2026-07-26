@@ -1,4 +1,5 @@
 import './style.css';
+import { createScreenWakeLock } from './wake-lock.js';
 
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const micDeviceSelect = document.getElementById("mic-device-select");
@@ -8,6 +9,7 @@ const statusText = document.getElementById("status-text");
 const micBar = document.getElementById("mic-bar");
 const micDb = document.getElementById("mic-db");
 const btnText = toggleStreamBtn.querySelector(".btn-text");
+const wakeLockStatus = document.getElementById('wake-lock-status');
 
 let ws = null;
 let isStreaming = false;
@@ -18,6 +20,25 @@ let audioContext = null;
 let mediaStream = null;
 let scriptProcessor = null;
 let source = null;
+
+const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
+  if (!supported) {
+    wakeLockStatus.dataset.state = 'warning';
+    wakeLockStatus.textContent = 'This browser cannot prevent screen dimming. Keep the phone connected to power if needed.';
+  } else if (active) {
+    wakeLockStatus.dataset.state = 'active';
+    wakeLockStatus.textContent = 'Screen will stay awake while microphone streaming is active.';
+  } else if (desired && (status === 'blocked' || status === 'released')) {
+    wakeLockStatus.dataset.state = 'warning';
+    wakeLockStatus.textContent = 'Screen wake lock was blocked. Disable Low Power Mode and tap Start Streaming again.';
+  } else if (desired) {
+    wakeLockStatus.dataset.state = 'idle';
+    wakeLockStatus.textContent = 'Waiting to keep the screen awake...';
+  } else {
+    wakeLockStatus.dataset.state = 'idle';
+    wakeLockStatus.textContent = 'Screen wake lock activates while streaming.';
+  }
+});
 
 function sendStreamingStatus() {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -112,6 +133,7 @@ async function startStreaming() {
   isStarting = true;
   toggleStreamBtn.disabled = true;
   btnText.textContent = "Starting...";
+  wakeLock.setEnabled(true);
   let pendingStream = null;
   let pendingContext = null;
   let pendingSource = null;
@@ -177,6 +199,7 @@ async function startStreaming() {
     sendStreamingStatus();
   } catch (err) {
     isStreaming = false;
+    wakeLock.setEnabled(false);
     pendingProcessor?.disconnect();
     pendingSource?.disconnect();
     pendingStream?.getTracks().forEach(track => track.stop());
@@ -201,6 +224,7 @@ function stopStreaming() {
   if (!isStreaming && !isStarting) return;
   isStreaming = false;
   isStarting = false;
+  wakeLock.setEnabled(false);
   sendStreamingStatus();
   
   if (scriptProcessor) {

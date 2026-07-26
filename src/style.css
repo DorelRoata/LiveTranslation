@@ -53,6 +53,21 @@ body {
   color: #f87171;
 }
 
+.wake-lock-note {
+  margin: 0.8rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.wake-lock-note[data-state="active"] {
+  color: #86efac;
+}
+
+.wake-lock-note[data-state="warning"] {
+  color: #fcd34d;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
