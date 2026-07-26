@@ -605,6 +605,12 @@ function addInputTranscript(text) {
   bubble.appendChild(ts);
   
   inputList.appendChild(bubble);
+  
+  // Cap input transcript list to max 100 items to prevent memory leaks
+  while (inputList.children.length > 100) {
+    inputList.removeChild(inputList.firstChild);
+  }
+  
   document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
 }
 
@@ -623,6 +629,12 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
     currentBubble = document.createElement("div");
     currentBubble.className = "transcript-bubble";
     list.appendChild(currentBubble);
+    
+    // Cap output transcript list to max 100 items to prevent memory leaks
+    while (list.children.length > 100) {
+      list.removeChild(list.firstChild);
+    }
+    
     if (channelId === 1) {
       currentStreamingBubble1 = currentBubble;
     } else {
@@ -1005,6 +1017,10 @@ function disconnectSession() {
   }
   
   if (socket1) {
+    socket1.onopen = null;
+    socket1.onmessage = null;
+    socket1.onclose = null;
+    socket1.onerror = null;
     if (socket1.readyState === WebSocket.OPEN || socket1.readyState === WebSocket.CONNECTING) {
       socket1.close();
     }
@@ -1012,6 +1028,10 @@ function disconnectSession() {
   }
   
   if (socket2) {
+    socket2.onopen = null;
+    socket2.onmessage = null;
+    socket2.onclose = null;
+    socket2.onerror = null;
     if (socket2.readyState === WebSocket.OPEN || socket2.readyState === WebSocket.CONNECTING) {
       socket2.close();
     }
