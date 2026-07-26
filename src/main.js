@@ -374,7 +374,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'LiveTranslation v1.1.1 diagnostics',
+    'LiveTranslation v1.1.2 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1327,8 +1327,23 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
       if (!isCurrentSocket(ws, channelId, generation)) return;
       const data = JSON.parse(text);
 
+      if (data.goAway) {
+        const timeLeft = typeof data.goAway.timeLeft === 'string' ? data.goAway.timeLeft : '';
+        const timing = timeLeft ? ` (${timeLeft} remaining)` : '';
+        logDebug(`Gemini requested connection rotation${timing}.`, 'warning');
+        setHealthItem(`gemini${channelId}`, 'warning', 'Server requested reconnect');
+        scheduleReconnect('Gemini requested a routine connection rotation.', generation);
+        return;
+      }
+
       if (data.error) {
-        stopForGeminiError(data.error.message || data.error.status || 'Unknown Gemini error');
+        const errorMessage = data.error.message || data.error.status || 'Unknown Gemini error';
+        if (/goaway|go away/i.test(errorMessage) || data.error.status === 'UNAVAILABLE') {
+          logDebug(`Temporary Gemini service response: ${errorMessage}`, 'warning');
+          scheduleReconnect('Gemini is temporarily rotating or unavailable.', generation);
+          return;
+        }
+        stopForGeminiError(errorMessage);
         return;
       }
       
