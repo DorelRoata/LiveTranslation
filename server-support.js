@@ -9,14 +9,26 @@ const MAX_BUFFERED_BYTES = 256 * 1024;
 
 export function getNetworkIP() {
   const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name] ?? []) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        return iface.address;
-      }
+  const candidates = [];
+
+  for (const [name, addresses] of Object.entries(interfaces)) {
+    for (const iface of addresses ?? []) {
+      if (iface.family !== 'IPv4' || iface.internal) continue;
+
+      const virtualAdapter = /docker|bridge|veth|vmnet|virtualbox|utun|tailscale|vethernet|wsl/i.test(name);
+      const physicalAdapter = /^(en\d+|eth\d+|wlan\d+)$|wi-?fi|ethernet/i.test(name);
+      let score = 0;
+      if (iface.address.startsWith('192.168.')) score += 100;
+      else if (iface.address.startsWith('10.')) score += 60;
+      else if (/^172\.(1[6-9]|2\d|3[01])\./.test(iface.address)) score += 30;
+      if (physicalAdapter) score += 40;
+      if (virtualAdapter) score -= 100;
+      candidates.push({ address: iface.address, score });
     }
   }
-  return 'localhost';
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0]?.address || 'localhost';
 }
 
 export function getConfigDir() {
