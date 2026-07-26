@@ -1089,7 +1089,7 @@ summary:focus-visible {
 
 @media (max-width: 640px) {
   .app-container {
-    padding: 1rem;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   }
   .app-header,
   .header-right-area,
@@ -1125,6 +1125,20 @@ summary:focus-visible {
   select,
   input {
     min-height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .health-grid {
+    grid-template-columns: 1fr;
+  }
+  .health-panel,
+  .glass-card,
+  .transcript-col {
+    padding: 1rem;
+  }
+  .logo-text h1 {
+    font-size: 1.35rem;
   }
 }
 

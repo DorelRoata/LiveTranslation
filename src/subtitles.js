@@ -135,24 +135,28 @@ function getLanguageName(code, fallback) {
   return LANG_NAMES[code.toLowerCase()] || code.toUpperCase();
 }
 
-// Auto-hide controls bar on mouse inactivity
-let mouseTimeout;
-const keepControlsVisible = window.matchMedia('(pointer: coarse)').matches;
-function resetMouseTimer() {
-  controlBar.classList.remove('hidden');
-  clearTimeout(mouseTimeout);
-  if (keepControlsVisible) return;
-  mouseTimeout = setTimeout(() => {
+// Auto-hide app chrome after inactivity on both pointer and touch devices.
+let controlsTimeout;
+function setControlsHidden(hidden) {
+  controlBar.classList.toggle('hidden', hidden);
+  statusIndicator.classList.toggle('chrome-hidden', hidden);
+}
+
+function resetControlsTimer() {
+  setControlsHidden(false);
+  clearTimeout(controlsTimeout);
+  controlsTimeout = setTimeout(() => {
     if (!controlBar.matches(':hover') && !controlBar.matches(':focus-within')) {
-      controlBar.classList.add('hidden');
+      setControlsHidden(true);
     }
   }, 3000);
 }
-window.addEventListener('pointermove', resetMouseTimer);
-window.addEventListener('pointerdown', resetMouseTimer);
-window.addEventListener('keydown', resetMouseTimer);
-window.addEventListener('focusin', resetMouseTimer);
-resetMouseTimer();
+window.addEventListener('pointermove', resetControlsTimer, { passive: true });
+window.addEventListener('pointerdown', resetControlsTimer, { passive: true });
+window.addEventListener('touchmove', resetControlsTimer, { passive: true });
+window.addEventListener('keydown', resetControlsTimer);
+window.addEventListener('focusin', resetControlsTimer);
+resetControlsTimer();
 
 function refreshVisibleLanes() {
   if (viewMode !== 'lang2') rebuildSubtitleDOM('lang1');

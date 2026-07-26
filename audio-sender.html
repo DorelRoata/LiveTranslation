@@ -3,28 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Audio Streamer - Live Translation</title>
+    <title>External Microphone - Live Translate</title>
     <style>
       body {
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100vh;
+        min-height: 100vh;
+        min-height: 100dvh;
         margin: 0;
+        padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+        box-sizing: border-box;
         background-color: var(--bg-color);
         color: var(--text-primary);
         font-family: var(--font-sans);
-        overflow: hidden;
+        overflow-y: auto;
       }
       .streamer-card {
         background: var(--panel-bg);
         border: 1px solid var(--panel-border);
         border-radius: 12px;
-        padding: 2rem;
+        padding: clamp(1.25rem, 5vw, 2rem);
         width: 100%;
         max-width: 400px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         text-align: center;
+        margin: auto;
       }
       .status-dot {
         display: inline-block;
@@ -57,6 +61,23 @@
         background: linear-gradient(to top, var(--accent-cyan), var(--accent-blue));
         transition: height 0.05s ease-out;
       }
+      @media (max-width: 420px) {
+        .streamer-card {
+          border-radius: 10px;
+        }
+      }
+      @media (max-height: 600px) and (orientation: landscape) {
+        body {
+          align-items: flex-start;
+        }
+        .streamer-card {
+          max-width: 620px;
+        }
+        .mic-visualizer {
+          height: 40px;
+          margin: 0.75rem 0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -87,7 +108,7 @@
         <span class="btn-text">Start Streaming</span>
       </button>
       <p id="wake-lock-status" class="wake-lock-note" data-state="idle">Screen wake lock activates while streaming.</p>
-      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0; font-family: var(--font-mono);">v1.1.5</p>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1.5rem; margin-bottom: 0; font-family: var(--font-mono);">v1.1.6</p>
     </div>
     
     <script type="module" src="/src/audio-sender.js"></script>
