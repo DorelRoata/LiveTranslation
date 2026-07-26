@@ -51,13 +51,20 @@ cd LiveTranslation
 # 2. Install dependencies
 npm install
 
-# 3. Start the local server
-npm run dev
+# 3. Build and start the production local server
+npm run start:app
 ```
+
+On first launch, enter the Gemini API key in the dashboard opened at
+`https://localhost:5173`. The key is stored in the current user's application
+settings outside the repository and is never included in Vite source or build
+artifacts. Later launches load it automatically.
+
+For source development with hot reload, use `npm run dev`.
 
 ### Setup Instructions:
 1. In the terminal, copy the network IP printed under the `Network` heading (e.g., `https://192.168.1.67:5173/`).
-2. Open that network URL on **Laptop A**.
+2. Open `https://localhost:5173` on **Laptop A**. API key configuration is intentionally available only through this local address.
 3. In the configuration panel, copy the exact link shown under **Projector Screen Sharing** (e.g., `https://192.168.1.67:5173/subtitles.html`).
 4. On **Laptop B** (the projector laptop), open that subtitles URL in Chrome, Edge, or Safari.
    * *Note: Because Vite uses a local self-signed SSL certificate, your browser will display a certificate warning. Click **Advanced** and then click **Proceed to ... (unsafe)** to open the subtitles page safely.*

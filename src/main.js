@@ -6,6 +6,8 @@ const HOST = "generativelanguage.googleapis.com";
 const API_VERSION = "v1alpha";
 const PATH = `ws/google.ai.generativelanguage.${API_VERSION}.GenerativeService.BidiGenerateContent`;
 const MODEL = "models/gemini-3.5-live-translate-preview";
+const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
+const SETUP_TIMEOUT_MS = 15_000;
 
 // --- State Variables ---
 let socket1 = null;
@@ -14,15 +16,26 @@ let audioContextInput = null;
 let audioContextOutput = null;
 let micStream = null;
 let scriptProcessor = null;
+let audioCaptureGeneration = 0;
 
 let nextStartTime1 = 0;
 let nextStartTime2 = 0;
 let activeSources1 = [];
 let activeSources2 = [];
 let isRunning = false;
+let isStarting = false;
 let reconnectTimeout = null;
+let reconnectAttempt = 0;
+let setupTimeout = null;
+let sessionGeneration = 0;
+let sessionApiKey = '';
+let sessionConfig = null;
+const socketSetupReady = { 1: false, 2: false };
 let subtitleWindow = null;
 let localSubtitlesWS = null;
+let localReconnectTimeout = null;
+let localReconnectAttempt = 0;
+let remoteAudioStreaming = false;
 
 // New Features State
 let isMicMuted = false;
@@ -42,6 +55,7 @@ const outBuffer = new Float32Array(512);
 // UI Elements
 const apiKeyInput = document.getElementById("api-key-input");
 const toggleApiKeyBtn = document.getElementById("toggle-api-key");
+const apiKeyStatus = document.getElementById("api-key-status");
 const audioSourceSelect = document.getElementById("audio-source-select");
 const micDeviceGroup = document.getElementById("mic-device-group");
 const micDeviceSelect = document.getElementById("mic-device-select");
@@ -57,7 +71,6 @@ const startBtn = document.getElementById("start-btn");
 const subtitlesBtn = document.getElementById("subtitles-btn");
 const streamerBtn = document.getElementById("streamer-btn");
 const connectionStatus = document.getElementById("connection-status");
-const networkAudioInfoBox = document.getElementById("network-audio-info-box");
 const networkDisconnectWarning = document.getElementById("network-disconnect-warning");
 
 const muteMicBtn = document.getElementById("mute-mic-btn");
@@ -84,17 +97,91 @@ const clearOutputBtn1 = document.getElementById("clear-output-log-1");
 const clearOutputBtn2 = document.getElementById("clear-output-log-2");
 const debugLogList = document.getElementById("debug-log-list");
 const clearDebugBtn = document.getElementById("clear-debug-log");
+const reconnectNowBtn = document.getElementById('reconnect-now-btn');
+const restartAudioBtn = document.getElementById('restart-audio-btn');
+const copyDiagnosticsBtn = document.getElementById('copy-diagnostics-btn');
+const diagnosticBanner = document.getElementById('diagnostic-banner');
+const diagnosticMessage = document.getElementById('diagnostic-message');
+const healthItems = {
+  local: document.getElementById('health-local'),
+  gemini1: document.getElementById('health-gemini-1'),
+  gemini2: document.getElementById('health-gemini-2'),
+  audio: document.getElementById('health-audio')
+};
+const healthSnapshot = {
+  local: { state: 'connecting', detail: 'Connecting...' },
+  gemini1: { state: 'idle', detail: 'Not started' },
+  gemini2: { state: 'idle', detail: 'Not enabled' },
+  audio: { state: 'idle', detail: 'Not started' }
+};
+const mediaSupported = Boolean(navigator.mediaDevices?.getUserMedia);
 
 const micIndicator = document.querySelector(".input-pulse");
 const outputIndicator1 = document.querySelector(".output-pulse-1");
 const outputIndicator2 = document.querySelector(".output-pulse-2");
 
-// --- API Key Local Storage ---
-apiKeyInput.value = import.meta.env?.VITE_GEMINI_API_KEY || localStorage.getItem("gemini_api_key") || "";
+// --- API Key Runtime Configuration ---
+async function loadStoredApiKey() {
+  try {
+    const response = await fetch('/api/config/api-key', { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Unable to read API key configuration.');
 
-apiKeyInput.addEventListener("input", () => {
-  localStorage.setItem("gemini_api_key", apiKeyInput.value.trim());
+    const legacyKey = localStorage.getItem('gemini_api_key')?.trim();
+    if (!data.configured && legacyKey) {
+      data.apiKey = legacyKey;
+      if (legacyKey.length >= 20 && legacyKey.length <= 500) {
+        try {
+          await saveApiKey(legacyKey);
+          data.configured = true;
+        } catch (error) {
+          data.warning = 'The old browser key could not be migrated. Review it and save again by starting translation.';
+        }
+      } else {
+        data.warning = 'The old browser key appears incomplete. Enter a valid Gemini API key.';
+      }
+      localStorage.removeItem('gemini_api_key');
+    }
+    if (data.configured) localStorage.removeItem('gemini_api_key');
+
+    apiKeyInput.value = data.apiKey || '';
+    apiKeyStatus.textContent = data.warning || (data.configured
+      ? 'Saved in this computer\'s private LiveTranslation settings.'
+      : 'Enter once. The key will be saved outside the repository on this computer.');
+    apiKeyStatus.classList.toggle('error', Boolean(data.warning));
+    if (data.warning) setDiagnostic(data.warning, 'warning');
+    apiKeyInput.disabled = false;
+    startBtn.disabled = !mediaSupported;
+  } catch (error) {
+    apiKeyInput.disabled = true;
+    startBtn.disabled = true;
+    apiKeyStatus.textContent = error.message;
+    apiKeyStatus.classList.add('error');
+    setDiagnostic(`API key settings could not be loaded: ${error.message}`, 'error');
+  }
+}
+
+async function saveApiKey(apiKey) {
+  const response = await fetch('/api/config/api-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Unable to save the API key.');
+  apiKeyStatus.textContent = 'Saved in this computer\'s private LiveTranslation settings.';
+  apiKeyStatus.classList.remove('error');
+}
+
+apiKeyInput.disabled = true;
+startBtn.disabled = true;
+
+apiKeyInput.addEventListener('input', () => {
+  apiKeyStatus.textContent = 'The key will be saved when translation starts.';
+  apiKeyStatus.classList.remove('error');
 });
+
+loadStoredApiKey();
 
 // --- System Instruction Local Storage ---
 if (localStorage.getItem("gemini_system_instruction")) {
@@ -108,6 +195,7 @@ systemInstructionInput.addEventListener("input", () => {
 toggleApiKeyBtn.addEventListener("click", () => {
   if (apiKeyInput.type === "password") {
     apiKeyInput.type = "text";
+    toggleApiKeyBtn.setAttribute('aria-label', 'Hide API Key');
     toggleApiKeyBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
@@ -116,6 +204,7 @@ toggleApiKeyBtn.addEventListener("click", () => {
     `;
   } else {
     apiKeyInput.type = "password";
+    toggleApiKeyBtn.setAttribute('aria-label', 'Show API Key');
     toggleApiKeyBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -133,23 +222,24 @@ audioSourceSelect.addEventListener("change", async () => {
     micDeviceGroup.style.display = "none";
   }
   
-  if (networkAudioInfoBox) {
-    if (audioSourceSelect.value === "network") {
-      networkAudioInfoBox.style.display = "block";
-      const qrDetails = document.querySelector(".qr-details");
-      if (qrDetails) qrDetails.open = true;
-    } else {
-      networkAudioInfoBox.style.display = "none";
-    }
+  if (audioSourceSelect.value === "network") {
+    const qrDetails = document.querySelector(".qr-details");
+    if (qrDetails) qrDetails.open = true;
+  } else if (networkDisconnectWarning) {
+    networkDisconnectWarning.style.display = 'none';
   }
 
   if (isRunning) {
+    audioSourceSelect.disabled = true;
     logDebug(`Switching audio source to ${audioSourceSelect.value}...`, "info");
     stopAudioCapture();
     try {
       await startAudioCapture();
     } catch (err) {
-      logDebug(`Failed to switch audio source: ${err.message}`, "error");
+      if (err.name !== 'AbortError') logDebug(`Failed to switch audio source: ${err.message}`, "error");
+    } finally {
+      audioSourceSelect.disabled = false;
+      restartAudioBtn.disabled = !isRunning || audioSourceSelect.value === 'network';
     }
   }
 });
@@ -181,12 +271,18 @@ async function populateMicDevices() {
 }
 
 // Request permissions on first load to populate labels, otherwise fallback to enumerate
-navigator.mediaDevices.getUserMedia({ audio: true })
-  .then((stream) => {
-    populateMicDevices();
-    stream.getTracks().forEach(t => t.stop());
-  })
-  .catch(() => populateMicDevices());
+if (mediaSupported) {
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then((stream) => {
+      populateMicDevices();
+      stream.getTracks().forEach(t => t.stop());
+    })
+    .catch(() => populateMicDevices());
+} else {
+  setHealthItem('audio', 'error', 'Browser media support unavailable');
+  setDiagnostic('This browser cannot access microphones. Open LiveTranslation in a current version of Chrome, Edge, or Safari.', 'error');
+  startBtn.disabled = true;
+}
 
 // Clear Logs
 clearInputBtn.addEventListener("click", () => {
@@ -217,7 +313,7 @@ clearProjectorBtn?.addEventListener("click", () => {
   subtitleState.lang2.accumulatedText = "";
   
   // Broadcast clear command
-  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+  if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
   }
 });
@@ -232,6 +328,103 @@ function base64ArrayBuffer(arrayBuffer) {
   }
   return btoa(binary);
 }
+
+function isSocketOpen(ws, requireSetup = false, channelId = 0) {
+  return Boolean(
+    ws &&
+    ws.readyState === WebSocket.OPEN &&
+    (!requireSetup || socketSetupReady[channelId])
+  );
+}
+
+function canSendAudio(ws, requireSetup = false, channelId = 0) {
+  return isSocketOpen(ws, requireSetup, channelId) && ws.bufferedAmount <= MAX_BUFFERED_AUDIO_BYTES;
+}
+
+function setHealthItem(name, state, detail) {
+  const item = healthItems[name];
+  if (!item) return;
+  item.dataset.state = state;
+  item.querySelector('.health-detail').textContent = detail;
+  healthSnapshot[name] = { state, detail };
+}
+
+function setDiagnostic(message, state = 'idle') {
+  diagnosticBanner.dataset.state = state;
+  diagnosticMessage.textContent = message;
+}
+
+function setSessionSettingsDisabled(disabled) {
+  apiKeyInput.disabled = disabled;
+  targetLanguageSelect1.disabled = disabled;
+  targetLanguageSelect2.disabled = disabled;
+  echoToggle.disabled = disabled;
+  systemInstructionInput.disabled = disabled;
+}
+
+async function copyDiagnostics() {
+  const labels = {
+    local: 'Local Relay',
+    gemini1: 'Gemini 1',
+    gemini2: 'Gemini 2',
+    audio: 'Audio Input'
+  };
+  const statusLines = Object.entries(healthSnapshot)
+    .filter(([name]) => name !== 'gemini2' || !healthItems.gemini2.hidden)
+    .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
+  const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
+  const report = [
+    'LiveTranslation v1.1.0 diagnostics',
+    `Time: ${new Date().toISOString()}`,
+    `Browser online: ${navigator.onLine}`,
+    `Audio source: ${audioSourceSelect.value}`,
+    ...statusLines,
+    `Operator message: ${diagnosticMessage.textContent}`,
+    '',
+    'Recent status log:',
+    ...recentLogs
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(report);
+    const previousText = copyDiagnosticsBtn.textContent;
+    copyDiagnosticsBtn.textContent = 'Copied';
+    setTimeout(() => { copyDiagnosticsBtn.textContent = previousText; }, 1500);
+  } catch (error) {
+    logDebug('Could not copy diagnostics. Browser clipboard permission was denied.', 'error');
+  }
+}
+
+copyDiagnosticsBtn.addEventListener('click', copyDiagnostics);
+reconnectNowBtn.addEventListener('click', () => {
+  if (!isRunning) return;
+  clearTimeout(reconnectTimeout);
+  reconnectTimeout = null;
+  reconnectAttempt = 0;
+  updateConnectionStatus('connecting', 'Reconnecting...');
+  setDiagnostic('Manual reconnect started. Audio capture and subtitles are being preserved.', 'warning');
+  logDebug('Operator requested an immediate Gemini reconnect.', 'warning');
+  connectGeminiSockets();
+});
+
+restartAudioBtn.addEventListener('click', async () => {
+  if (!isRunning) return;
+  restartAudioBtn.disabled = true;
+  setDiagnostic('Restarting the selected audio source. Gemini connections will stay open.', 'warning');
+  stopAudioCapture();
+  try {
+    await startAudioCapture();
+    setDiagnostic('Audio input restarted successfully.', 'good');
+    logDebug('Audio input restarted successfully.', 'info');
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      setHealthItem('audio', 'error', 'Restart failed');
+      logDebug(`Audio restart failed: ${error.message}`, 'error');
+    }
+  } finally {
+    restartAudioBtn.disabled = !isRunning || audioSourceSelect.value === 'network';
+  }
+});
 
 // --- Debug Logging Utility ---
 let chunksSent = 0;
@@ -265,6 +458,8 @@ function logDebug(message, type = "info") {
   while (debugLogList.children.length > 100) {
     debugLogList.removeChild(debugLogList.firstChild);
   }
+
+  if (type === 'error') setDiagnostic(message, 'error');
 }
 
 clearDebugBtn.addEventListener("click", () => {
@@ -354,7 +549,7 @@ function playPCMChunk(base64Data, channelId) {
   const isPlayChecked = channelId === 1 ? playVoiceCheckbox1.checked : playVoiceCheckbox2.checked;
   
   // Stream to subtitles screen if enabled on main page
-  if (isPlayChecked && localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+  if (isPlayChecked && canSendAudio(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({
       type: 'audio',
       channelId: channelId,
@@ -460,9 +655,12 @@ function stopAllPlayback() {
 
 // --- Audio Capture Pipeline (Mic Input) ---
 async function startAudioCapture() {
+  const captureGeneration = ++audioCaptureGeneration;
   const sourceVal = audioSourceSelect.value;
+  setHealthItem('audio', 'connecting', sourceVal === 'network' ? 'Waiting for remote sender' : 'Requesting audio access');
   if (sourceVal === "network") {
     logDebug("Network audio source selected. Ready to receive audio stream from another PC...", "info");
+    setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
     return;
   }
   
@@ -472,55 +670,72 @@ async function startAudioCapture() {
 
   logDebug(`Initializing capture context for: ${sourceVal}...`, "info");
 
-  audioContextInput = new (window.AudioContext || window.webkitAudioContext)({
+  const captureContext = new (window.AudioContext || window.webkitAudioContext)({
     sampleRate: 16000
   });
-  
-  if (sourceVal === "system") {
-    logDebug("Requesting getDisplayMedia for system audio loopback...", "info");
-    micStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: {
-        systemAudio: "include"
+  let captureStream = null;
+  let captureProcessor = null;
+  let captureSource = null;
+
+  try {
+    if (sourceVal === "system") {
+      logDebug("Requesting getDisplayMedia for system audio loopback...", "info");
+      captureStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: { systemAudio: "include" }
+      });
+
+      logDebug("getDisplayMedia stream obtained. Discarding video tracks...", "info");
+      captureStream.getVideoTracks().forEach(track => track.stop());
+      if (captureStream.getAudioTracks().length === 0) {
+        throw new Error("No system audio track shared. When prompted, make sure to check 'Share system audio' or 'Share tab audio' in the sharing dialog.");
       }
-    });
-    
-    logDebug("getDisplayMedia stream obtained. Discarding video tracks...", "info");
-    micStream.getVideoTracks().forEach(track => track.stop());
-    
-    // Check if user checked "Share system audio"
-    if (micStream.getAudioTracks().length === 0) {
-      throw new Error("No system audio track shared. When prompted, make sure to check 'Share system audio' or 'Share tab audio' in the sharing dialog.");
-    }
-    logDebug("System audio loopback track captured successfully.", "info");
-  } else {
-    logDebug("Requesting getUserMedia for microphone access...", "info");
-    const micConstraints = {
-      audio: {
-        channelCount: 1,
-        sampleRate: 16000,
-        echoCancellation: true,
-        noiseSuppression: true
+      logDebug("System audio loopback track captured successfully.", "info");
+    } else {
+      logDebug("Requesting getUserMedia for microphone access...", "info");
+      const micConstraints = {
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      };
+      if (micDeviceSelect.value && micDeviceSelect.value !== 'default') {
+        micConstraints.audio.deviceId = { exact: micDeviceSelect.value };
       }
-    };
-    if (micDeviceSelect.value && micDeviceSelect.value !== 'default') {
-      micConstraints.audio.deviceId = { exact: micDeviceSelect.value };
+      captureStream = await navigator.mediaDevices.getUserMedia(micConstraints);
+      logDebug("Microphone captured successfully.", "info");
     }
-    micStream = await navigator.mediaDevices.getUserMedia(micConstraints);
-    logDebug("Microphone captured successfully.", "info");
+
+    if (captureContext.state === 'suspended') await captureContext.resume();
+    if (captureGeneration !== audioCaptureGeneration) {
+      const cancelledError = new Error('Audio capture was cancelled.');
+      cancelledError.name = 'AbortError';
+      throw cancelledError;
+    }
+    captureSource = captureContext.createMediaStreamSource(captureStream);
+    captureProcessor = captureContext.createScriptProcessor(2048, 1, 1);
+    chunksSent = 0;
+  } catch (error) {
+    captureProcessor?.disconnect();
+    captureSource?.disconnect();
+    captureStream?.getTracks().forEach(track => track.stop());
+    await captureContext.close().catch(() => {});
+    if (captureGeneration === audioCaptureGeneration && error.name !== 'AbortError') {
+      setHealthItem('audio', 'error', error.message);
+    }
+    throw error;
   }
-  
-  if (!audioContextInput) {
-    throw new Error("Session disconnected. This usually happens if the connection to Google was closed (please verify your Gemini API key is correct and has access to the Live API).");
-  }
-  const source = audioContextInput.createMediaStreamSource(micStream);
-  
-  scriptProcessor = audioContextInput.createScriptProcessor(2048, 1, 1);
-  chunksSent = 0;
-  
+
+  audioContextInput = captureContext;
+  micStream = captureStream;
+  scriptProcessor = captureProcessor;
+  setHealthItem('audio', 'good', sourceVal === 'system' ? 'System audio active' : 'Microphone active');
+
   scriptProcessor.onaudioprocess = (e) => {
-    const socket1Ready = socket1 && socket1.readyState === WebSocket.OPEN;
-    const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
+    const socket1Ready = canSendAudio(socket1, true, 1);
+    const socket2Ready = canSendAudio(socket2, true, 2);
     if (!socket1Ready && !socket2Ready) return;
     
     if (isMicMuted) {
@@ -583,11 +798,22 @@ async function startAudioCapture() {
     }
   };
   
-  source.connect(scriptProcessor);
+  captureSource.connect(scriptProcessor);
   scriptProcessor.connect(audioContextInput.destination);
+
+  for (const track of micStream.getAudioTracks()) {
+    track.addEventListener('ended', () => {
+      if (!isRunning) return;
+      logDebug('The selected audio source ended. Translation is still connected.', 'error');
+      setHealthItem('audio', 'error', 'Audio source ended');
+      micIndicator.classList.remove('active');
+      micDb.textContent = 'Ended';
+    }, { once: true });
+  }
 }
 
 function stopAudioCapture() {
+  audioCaptureGeneration++;
   if (audioSourceSelect.value === "network") {
     logDebug("Stopped listening for network audio stream.", "info");
   }
@@ -608,6 +834,7 @@ function stopAudioCapture() {
   
   micIndicator.classList.remove("active");
   micDb.textContent = "0%";
+  setHealthItem('audio', 'idle', 'Not started');
 }
 
 // --- New Dashboard Features Helpers ---
@@ -658,12 +885,14 @@ if (muteMicBtn) {
     isMicMuted = !isMicMuted;
     if (isMicMuted) {
       muteMicBtn.classList.add("is-muted");
+      muteMicBtn.setAttribute('aria-pressed', 'true');
       if (muteMicLabel) muteMicLabel.textContent = "Mic Muted";
       micDb.textContent = "Muted";
       micIndicator.classList.remove("active");
       logDebug("Microphone paused (muted). Gemini session remains connected.", "warning");
     } else {
       muteMicBtn.classList.remove("is-muted");
+      muteMicBtn.setAttribute('aria-pressed', 'false');
       if (muteMicLabel) muteMicLabel.textContent = "Mute Mic";
       micDb.textContent = "0%";
       logDebug("Microphone unmuted. Resuming live audio capture.", "info");
@@ -678,7 +907,9 @@ function initFontSizePicker() {
 
   function setFontSize(size) {
     fontBtns.forEach(btn => {
-      btn.classList.toggle("active", btn.getAttribute("data-size") === size);
+      const isActive = btn.getAttribute("data-size") === size;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
     });
     if (transcriptGridEl) {
       transcriptGridEl.className = `transcript-grid font-${size}`;
@@ -833,7 +1064,7 @@ function updateSubtitleLane(lane, text, isFinal = false) {
   }
   
   // Send update to local subtitles broadcast server
-  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+  if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({
       type: 'update',
       lane: lane,
@@ -845,23 +1076,58 @@ function updateSubtitleLane(lane, text, isFinal = false) {
 
 // --- WebSocket Handlers ---
 async function startSession() {
+  if (isStarting || isRunning) return;
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     alert("Please enter a valid Gemini API Key.");
     return;
   }
+
+  const pendingSessionConfig = {
+    targetLanguage1: targetLanguageSelect1.value,
+    targetLanguage2: targetLanguageSelect2.value,
+    echoTargetLanguage: echoToggle.checked,
+    systemInstructionText: systemInstructionInput.value.trim()
+  };
+  sessionConfig = pendingSessionConfig;
+
+  isStarting = true;
+  setSessionSettingsDisabled(true);
+  audioSourceSelect.disabled = true;
+  micDeviceSelect.disabled = true;
+  startBtn.disabled = true;
+  startBtn.querySelector(".btn-text").textContent = "Starting...";
+
+  // Start capture before network work so system-audio selection retains user activation.
+  const captureResult = startAudioCapture().then(
+    () => ({ ok: true }),
+    error => ({ ok: false, error })
+  );
+
+  try {
+    await saveApiKey(apiKey);
+    sessionApiKey = apiKey;
+  } catch (error) {
+    stopAudioCapture();
+    isStarting = false;
+    sessionConfig = null;
+    setSessionSettingsDisabled(false);
+    audioSourceSelect.disabled = false;
+    micDeviceSelect.disabled = false;
+    startBtn.disabled = false;
+    startBtn.querySelector(".btn-text").textContent = "Start Translation";
+    apiKeyStatus.textContent = error.message;
+    apiKeyStatus.classList.add('error');
+    alert(error.message);
+    return;
+  }
   
-  // Save the valid API key to localStorage so the user doesn't have to re-enter it next time
-  localStorage.setItem("gemini_api_key", apiKey);
-  
-  const targetLanguage1 = targetLanguageSelect1.value;
-  const targetLanguage2 = targetLanguageSelect2.value;
-  const echoTargetLanguage = echoToggle.checked;
+  const { targetLanguage1, targetLanguage2 } = pendingSessionConfig;
   
   const isDual = targetLanguage2 !== "none";
   
   // Clear and sync local subtitles WS
-  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+  if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
     syncLocalSubtitlesSetup();
   }
@@ -877,44 +1143,150 @@ async function startSession() {
     document.getElementById("header-lang-1").textContent = `Translation (${targetLanguage1.toUpperCase()})`;
   }
   
-  // Disable button and update UI state immediately
-  startBtn.disabled = true;
-  startBtn.querySelector(".btn-text").textContent = "Starting...";
-  
-  // Capture audio immediately from user gesture before WebSocket async calls
-  try {
-    await startAudioCapture();
-  } catch (err) {
-    console.error("Failed to capture audio:", err);
-    logDebug(`Failed to capture audio: ${err.message}`, "error");
-    alert("Failed to capture audio: " + err.message);
+  const capture = await captureResult;
+  if (!capture.ok) {
+    const err = capture.error;
+    stopAudioCapture();
+    isStarting = false;
+    sessionConfig = null;
+    setSessionSettingsDisabled(false);
+    audioSourceSelect.disabled = false;
+    micDeviceSelect.disabled = false;
+    if (err.name !== 'AbortError') {
+      console.error("Failed to capture audio:", err);
+      logDebug(`Failed to capture audio: ${err.message}`, "error");
+      alert("Failed to capture audio: " + err.message);
+    }
     startBtn.disabled = false;
     startBtn.querySelector(".btn-text").textContent = "Start Translation";
     return;
   }
-  
+
+  isStarting = false;
+  isRunning = true;
+  audioSourceSelect.disabled = false;
+  micDeviceSelect.disabled = false;
+  restartAudioBtn.disabled = audioSourceSelect.value === 'network';
+  reconnectNowBtn.disabled = false;
+  startBtn.disabled = false;
+  startBtn.classList.add("recording");
+  startBtn.querySelector(".btn-text").textContent = "Cancel Start";
   updateConnectionStatus("connecting", "Connecting...");
   logDebug(`Connecting to Gemini Live API...`, "info");
-  
-  const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
-  
-  // Create Connection 1
-  socket1 = new WebSocket(url);
-  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage);
-  
-  // Create Connection 2 if dual
-  if (isDual) {
-    socket2 = new WebSocket(url);
-    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage);
-  }
+  connectGeminiSockets();
 }
 
-function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
-  ws.onopen = async () => {
-    logDebug(`WebSocket ${channelId} opened successfully.`, "info");
-    
-    const systemInstructionText = systemInstructionInput.value.trim();
+function isCurrentSocket(ws, channelId, generation) {
+  const activeSocket = channelId === 1 ? socket1 : socket2;
+  return isRunning && generation === sessionGeneration && ws === activeSocket;
+}
 
+function closeGeminiSockets() {
+  for (const ws of [socket1, socket2]) {
+    if (!ws) continue;
+    ws.onopen = null;
+    ws.onmessage = null;
+    ws.onclose = null;
+    ws.onerror = null;
+    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+      try { ws.close(); } catch (error) {}
+    }
+  }
+  socket1 = null;
+  socket2 = null;
+  socketSetupReady[1] = false;
+  socketSetupReady[2] = false;
+}
+
+function connectGeminiSockets() {
+  if (!isRunning || !sessionConfig) return;
+  clearTimeout(setupTimeout);
+  closeGeminiSockets();
+  sessionGeneration++;
+  const generation = sessionGeneration;
+  const apiKey = sessionApiKey;
+  const { targetLanguage1, targetLanguage2, echoTargetLanguage, systemInstructionText } = sessionConfig;
+  const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
+  setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
+
+  socket1 = new WebSocket(url);
+  setHealthItem('gemini1', 'connecting', 'Opening connection');
+  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, systemInstructionText, generation);
+  if (targetLanguage2 !== "none") {
+    healthItems.gemini2.hidden = false;
+    socket2 = new WebSocket(url);
+    setHealthItem('gemini2', 'connecting', 'Opening connection');
+    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, systemInstructionText, generation);
+  } else {
+    healthItems.gemini2.hidden = true;
+    setHealthItem('gemini2', 'idle', 'Not enabled');
+  }
+
+  setupTimeout = setTimeout(() => {
+    scheduleReconnect('Gemini setup timed out.', generation);
+  }, SETUP_TIMEOUT_MS);
+}
+
+function markSocketReady(channelId, generation) {
+  if (generation !== sessionGeneration || !isRunning) return;
+  socketSetupReady[channelId] = true;
+  setHealthItem(`gemini${channelId}`, 'good', 'Ready');
+  if (!socketSetupReady[1] || (socket2 && !socketSetupReady[2])) return;
+
+  clearTimeout(setupTimeout);
+  setupTimeout = null;
+  reconnectAttempt = 0;
+  updateConnectionStatus("connected", "Connected");
+  logDebug("All Gemini connections completed setup. Ready.", "info");
+  if (!sessionTimerInterval) startSessionTimer();
+  startBtn.disabled = false;
+  startBtn.classList.add("recording");
+  startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
+  reconnectNowBtn.disabled = false;
+  setDiagnostic('Translation services are connected and ready.', 'good');
+}
+
+function scheduleReconnect(reason, generation = sessionGeneration) {
+  if (!isRunning || generation !== sessionGeneration || reconnectTimeout) return;
+  clearTimeout(setupTimeout);
+  setupTimeout = null;
+  closeGeminiSockets();
+  setHealthItem('gemini1', 'warning', 'Reconnecting');
+  if (!healthItems.gemini2.hidden) setHealthItem('gemini2', 'warning', 'Reconnecting');
+
+  const delay = Math.min(1000 * (2 ** reconnectAttempt), 8000);
+  reconnectAttempt++;
+  updateConnectionStatus("connecting", "Reconnecting...");
+  startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
+  logDebug(`${reason} Reconnecting in ${Math.round(delay / 1000)}s...`, "warning");
+  setDiagnostic(`${reason} Automatic recovery is in progress.`, 'warning');
+  reconnectTimeout = setTimeout(() => {
+    reconnectTimeout = null;
+    connectGeminiSockets();
+  }, delay);
+}
+
+function stopForGeminiError(message) {
+  if (!isRunning) return;
+  const hadSecondChannel = !healthItems.gemini2.hidden;
+  logDebug(`Gemini rejected the session: ${message}`, 'error');
+  disconnectSession(false);
+  setHealthItem('gemini1', 'error', 'Configuration rejected');
+  if (hadSecondChannel) {
+    healthItems.gemini2.hidden = false;
+    setHealthItem('gemini2', 'error', 'Configuration rejected');
+  }
+  setDiagnostic(`Gemini rejected the connection: ${message}. Check the API key and settings, then start again.`, 'error');
+  updateConnectionStatus('disconnected', 'Configuration Error');
+  alert(`Gemini could not start this session: ${message}`);
+}
+
+function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemInstructionText, generation) {
+  ws.onopen = () => {
+    if (!isCurrentSocket(ws, channelId, generation)) return;
+    logDebug(`WebSocket ${channelId} opened successfully.`, "info");
+    setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
+    
     // Send Setup Message
     const setupMsg = {
       setup: {
@@ -939,22 +1311,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
     
     logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
-    
-    // Start session when all active sockets are OPEN
-    const isDual = targetLanguageSelect2.value !== "none";
-    const socket1Ready = socket1 && socket1.readyState === WebSocket.OPEN;
-    const socket2Ready = socket2 && socket2.readyState === WebSocket.OPEN;
-    
-    if (socket1Ready && (!isDual || socket2Ready)) {
-      updateConnectionStatus("connected", "Connected");
-      logDebug("All connections active. Ready.", "info");
-      
-      isRunning = true;
-      startSessionTimer();
-      startBtn.disabled = false;
-      startBtn.classList.add("recording");
-      startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
-    }
   };
   
   ws.onmessage = async (event) => {
@@ -967,11 +1323,18 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
       } else {
         text = event.data;
       }
-      
+
+      if (!isCurrentSocket(ws, channelId, generation)) return;
       const data = JSON.parse(text);
+
+      if (data.error) {
+        stopForGeminiError(data.error.message || data.error.status || 'Unknown Gemini error');
+        return;
+      }
       
       if (data.setupComplete) {
         logDebug(`Received: WebSocket ${channelId} setupComplete acknowledgment.`, "ws-recv");
+        markSocketReady(channelId, generation);
         return;
       }
       
@@ -1023,88 +1386,41 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage) {
   };
   
   ws.onclose = (event) => {
+    if (!isCurrentSocket(ws, channelId, generation)) return;
     console.log(`WebSocket ${channelId} connection closed:`, event);
     logDebug(`WebSocket ${channelId} connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
-    
-    if (isRunning) {
-      logDebug(`Connection dropped on channel ${channelId}. Attempting auto-reconnect in 3s...`, "warning");
-      updateConnectionStatus("connecting", "Reconnecting...");
-      
-      if (socket1 && socket1.readyState !== WebSocket.CLOSED) {
-        try { socket1.close(); } catch(e){}
-      }
-      if (socket2 && socket2.readyState !== WebSocket.CLOSED) {
-        try { socket2.close(); } catch(e){}
-      }
-      
-      clearTimeout(reconnectTimeout);
-      reconnectTimeout = setTimeout(reconnectSession, 3000);
-    } else {
-      disconnectSession();
+    if ([1002, 1003, 1007, 1008].includes(event.code)) {
+      stopForGeminiError(event.reason || `WebSocket closed with code ${event.code}`);
+      return;
     }
+    scheduleReconnect(`Connection dropped on channel ${channelId}.`, generation);
   };
   
   ws.onerror = (err) => {
+    if (!isCurrentSocket(ws, channelId, generation)) return;
     console.error(`WebSocket ${channelId} error:`, err);
     logDebug(`WebSocket ${channelId} error: ${err.message || 'Unknown network error'}`, "error");
-    
-    if (isRunning) {
-      logDebug(`Connection error on channel ${channelId}. Attempting auto-reconnect in 3s...`, "warning");
-      updateConnectionStatus("connecting", "Reconnecting...");
-      
-      if (socket1 && socket1.readyState !== WebSocket.CLOSED) {
-        try { socket1.close(); } catch(e){}
-      }
-      if (socket2 && socket2.readyState !== WebSocket.CLOSED) {
-        try { socket2.close(); } catch(e){}
-      }
-      
-      clearTimeout(reconnectTimeout);
-      reconnectTimeout = setTimeout(reconnectSession, 3000);
-    } else {
-      disconnectSession();
-    }
+    scheduleReconnect(`Connection error on channel ${channelId}.`, generation);
   };
 }
 
-function reconnectSession() {
-  if (!isRunning) return;
-  
-  logDebug("Attempting auto-reconnect to Gemini Live API...", "info");
-  updateConnectionStatus("connecting", "Reconnecting...");
-  
-  if (socket1) {
-    try { socket1.close(); } catch(e){}
-    socket1 = null;
-  }
-  if (socket2) {
-    try { socket2.close(); } catch(e){}
-    socket2 = null;
-  }
-  
-  const apiKey = apiKeyInput.value.trim();
-  const targetLanguage1 = targetLanguageSelect1.value;
-  const targetLanguage2 = targetLanguageSelect2.value;
-  const echoTargetLanguage = echoToggle.checked;
-  const isDual = targetLanguage2 !== "none";
-  
-  const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
-  
-  // Create Connection 1
-  socket1 = new WebSocket(url);
-  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage);
-  
-  // Create Connection 2 if dual
-  if (isDual) {
-    socket2 = new WebSocket(url);
-    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage);
-  }
-}
-
-function disconnectSession() {
+function disconnectSession(clearSubtitles = true) {
   isRunning = false;
+  isStarting = false;
+  sessionApiKey = '';
+  sessionConfig = null;
+  setSessionSettingsDisabled(false);
+  audioSourceSelect.disabled = false;
+  micDeviceSelect.disabled = false;
+  sessionGeneration++;
   stopSessionTimer();
   clearTimeout(reconnectTimeout);
+  clearTimeout(setupTimeout);
+  reconnectTimeout = null;
+  setupTimeout = null;
+  reconnectAttempt = 0;
+  reconnectNowBtn.disabled = true;
+  restartAudioBtn.disabled = true;
   startBtn.disabled = false;
   startBtn.classList.remove("recording");
   startBtn.querySelector(".btn-text").textContent = "Start Translation";
@@ -1117,36 +1433,19 @@ function disconnectSession() {
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
   
-  // Reset subtitle presentation state
-  ['lang1', 'lang2'].forEach(lane => {
-    subtitleState[lane].accumulatedText = "";
-  });
-  
-  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
-    localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
-  }
-  
-  if (socket1) {
-    socket1.onopen = null;
-    socket1.onmessage = null;
-    socket1.onclose = null;
-    socket1.onerror = null;
-    if (socket1.readyState === WebSocket.OPEN || socket1.readyState === WebSocket.CONNECTING) {
-      socket1.close();
+  if (clearSubtitles) {
+    ['lang1', 'lang2'].forEach(lane => {
+      subtitleState[lane].accumulatedText = "";
+    });
+    if (isSocketOpen(localSubtitlesWS)) {
+      localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
     }
-    socket1 = null;
   }
-  
-  if (socket2) {
-    socket2.onopen = null;
-    socket2.onmessage = null;
-    socket2.onclose = null;
-    socket2.onerror = null;
-    if (socket2.readyState === WebSocket.OPEN || socket2.readyState === WebSocket.CONNECTING) {
-      socket2.close();
-    }
-    socket2 = null;
-  }
+  closeGeminiSockets();
+  setHealthItem('gemini1', 'idle', 'Not started');
+  setHealthItem('gemini2', 'idle', 'Not enabled');
+  healthItems.gemini2.hidden = true;
+  setDiagnostic('Translation stopped. Settings and saved API key are ready for the next session.', 'idle');
 }
 
 function updateConnectionStatus(statusClass, statusText) {
@@ -1158,7 +1457,7 @@ function updateConnectionStatus(statusClass, statusText) {
 startBtn.addEventListener("click", () => {
   if (isRunning) {
     disconnectSession();
-  } else {
+  } else if (!isStarting) {
     startSession();
   }
 });
@@ -1176,43 +1475,72 @@ if (streamerBtn) {
 
 // --- Local Subtitles WebSocket Broadcasting ---
 function initLocalSubtitlesWS() {
+  clearTimeout(localReconnectTimeout);
+  setHealthItem('local', 'connecting', 'Connecting');
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
-  
-  localSubtitlesWS = new WebSocket(wsUrl);
+  const ws = new WebSocket(wsUrl);
+  localSubtitlesWS = ws;
 
-  localSubtitlesWS.onopen = () => {
+  ws.onopen = () => {
+    if (localSubtitlesWS !== ws) return;
+    localReconnectAttempt = 0;
+    setHealthItem('local', 'good', 'Connected');
     logDebug("Connected to local subtitles broadcast server.", "info");
     syncLocalSubtitlesSetup();
+    if (isRunning && socketSetupReady[1] && (!socket2 || socketSetupReady[2])) {
+      setDiagnostic('Local projector relay restored. Translation services are ready.', 'good');
+    }
   };
 
-  localSubtitlesWS.onclose = () => {
-    logDebug("Disconnected from local subtitles server. Reconnecting in 3s...", "info");
-    setTimeout(initLocalSubtitlesWS, 3000);
+  ws.onclose = () => {
+    if (localSubtitlesWS !== ws) return;
+    localSubtitlesWS = null;
+    const delay = Math.min(1000 * (2 ** localReconnectAttempt), 8000);
+    localReconnectAttempt++;
+    logDebug(`Disconnected from local subtitles server. Reconnecting in ${Math.round(delay / 1000)}s...`, "info");
+    setHealthItem('local', 'warning', `Retrying in ${Math.round(delay / 1000)}s`);
+    if (isRunning) setDiagnostic('The local projector relay disconnected. Automatic recovery is in progress.', 'warning');
+    localReconnectTimeout = setTimeout(initLocalSubtitlesWS, delay);
   };
 
-  localSubtitlesWS.onerror = (err) => {
+  ws.onerror = (err) => {
+    if (localSubtitlesWS !== ws) return;
     console.error("Local subtitles WebSocket error:", err);
+    ws.close();
   };
   
-  localSubtitlesWS.onmessage = (event) => {
+  ws.onmessage = (event) => {
+    if (localSubtitlesWS !== ws) return;
     try {
       const data = JSON.parse(event.data);
-      if (data.type === 'input-audio') {
+      if (data.type === 'sync') {
+        remoteAudioStreaming = Boolean(data.state?.audioSenderStreaming);
+        if (audioSourceSelect.value === 'network') {
+          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
+        }
+      } else if (data.type === 'input-audio') {
+        remoteAudioStreaming = true;
+        if (audioSourceSelect.value === 'network') setHealthItem('audio', 'good', 'Remote microphone active');
         handleIncomingNetworkAudio(data.audioData);
-      } else if (data.type === 'audio-sender-connected') {
-        if (networkDisconnectWarning && networkDisconnectWarning.style.display !== "none") {
+      } else if (data.type === 'audio-sender-status') {
+        remoteAudioStreaming = Boolean(data.streaming);
+        if (audioSourceSelect.value === 'network') {
+          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
+        }
+        if (remoteAudioStreaming && networkDisconnectWarning && networkDisconnectWarning.style.display !== "none") {
           networkDisconnectWarning.style.display = "none";
           logDebug("Remote audio stream reconnected.", "info");
-        }
-      } else if (data.type === 'audio-sender-disconnected') {
-        const isNetworkSource = audioSourceSelect.value === 'network';
-        const isTranslating = (socket1 && socket1.readyState === WebSocket.OPEN) || (socket2 && socket2.readyState === WebSocket.OPEN);
-        if (isNetworkSource && isTranslating) {
-          if (networkDisconnectWarning) networkDisconnectWarning.style.display = "flex";
-          logDebug("Remote audio stream disconnected!", "error");
-          micIndicator.classList.remove("active");
-          micDb.textContent = "0%";
+          setDiagnostic('Remote microphone reconnected. Translation can continue.', 'good');
+        } else if (!remoteAudioStreaming) {
+          const isNetworkSource = audioSourceSelect.value === 'network';
+          const isTranslating = socketSetupReady[1] || socketSetupReady[2];
+          if (isNetworkSource && isTranslating) {
+            if (networkDisconnectWarning) networkDisconnectWarning.style.display = "flex";
+            logDebug("Remote audio stream disconnected!", "error");
+            micIndicator.classList.remove("active");
+            micDb.textContent = "0%";
+          }
         }
       }
     } catch (err) {
@@ -1223,7 +1551,7 @@ function initLocalSubtitlesWS() {
 
 function handleIncomingNetworkAudio(base64Data) {
   const isNetworkSource = audioSourceSelect.value === 'network';
-  const isTranslating = (socket1 && socket1.readyState === WebSocket.OPEN) || (socket2 && socket2.readyState === WebSocket.OPEN);
+  const isTranslating = socketSetupReady[1] || socketSetupReady[2];
   if (!isNetworkSource || !isTranslating) return;
 
   if (isMicMuted) {
@@ -1239,8 +1567,8 @@ function handleIncomingNetworkAudio(base64Data) {
   };
   const msgStr = JSON.stringify(mediaMsg);
   
-  if (socket1 && socket1.readyState === WebSocket.OPEN) socket1.send(msgStr);
-  if (socket2 && socket2.readyState === WebSocket.OPEN) socket2.send(msgStr);
+  if (canSendAudio(socket1, true, 1)) socket1.send(msgStr);
+  if (canSendAudio(socket2, true, 2)) socket2.send(msgStr);
   
   chunksSent++;
   if (chunksSent % 25 === 0) {
@@ -1274,18 +1602,38 @@ function handleIncomingNetworkAudio(base64Data) {
 }
 
 function syncLocalSubtitlesSetup() {
-  if (localSubtitlesWS && localSubtitlesWS.readyState === WebSocket.OPEN) {
+  if (isSocketOpen(localSubtitlesWS)) {
+    const targetLanguage1 = sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value;
+    const targetLanguage2 = sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value;
     localSubtitlesWS.send(JSON.stringify({
       type: 'setup',
-      targetLanguage1: targetLanguageSelect1.value,
-      targetLanguage2: targetLanguageSelect2.value,
-      isDual: targetLanguageSelect2.value !== "none"
+      targetLanguage1,
+      targetLanguage2,
+      isDual: targetLanguage2 !== "none"
     }));
   }
 }
 
 // Initialize local WebSocket connection on page load
 initLocalSubtitlesWS();
+
+window.addEventListener('offline', () => {
+  setDiagnostic('This computer is offline. Audio will not be queued; connections will resume when the network returns.', 'warning');
+});
+
+window.addEventListener('online', () => {
+  if (!localSubtitlesWS) {
+    clearTimeout(localReconnectTimeout);
+    initLocalSubtitlesWS();
+  }
+  if (isRunning) {
+    clearTimeout(reconnectTimeout);
+    reconnectTimeout = null;
+    reconnectAttempt = 0;
+    setDiagnostic('Network restored. Reconnecting translation services now...', 'warning');
+    connectGeminiSockets();
+  }
+});
 
 // Update Projector Sharing URL Tip & QR Code
 async function initProjectorSharingQR() {
@@ -1335,6 +1683,26 @@ async function initProjectorSharingQR() {
       if (error) console.error("QR Code generation error:", error);
     });
   }
+
+  function bindShareActions(copyButtonId, openButtonId, url) {
+    const copyButton = document.getElementById(copyButtonId);
+    const openButton = document.getElementById(openButtonId);
+    copyButton?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        copyButton.textContent = 'Copied';
+        setTimeout(() => { copyButton.textContent = 'Copy URL'; }, 1500);
+      } catch (error) {
+        logDebug(`Could not copy sharing URL: ${error.message}`, 'error');
+      }
+    });
+    openButton?.addEventListener('click', () => {
+      window.open(url, '_blank', 'noopener');
+    });
+  }
+
+  bindShareActions('copy-projector-url', 'open-projector-url', subtitlesUrl);
+  bindShareActions('copy-streamer-url', 'open-streamer-url', streamerUrl);
 }
 
 initProjectorSharingQR();

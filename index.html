@@ -38,7 +38,7 @@
           </div>
 
           <!-- Connection Status Badge -->
-          <div class="status-badge" id="connection-status">
+          <div class="status-badge" id="connection-status" role="status" aria-live="polite">
             <span class="status-dot"></span>
             <span class="status-text">Disconnected</span>
           </div>
@@ -67,6 +67,7 @@
                     </svg>
                   </button>
                 </div>
+                <small id="api-key-status" class="input-hint">Checking local configuration...</small>
               </div>
 
               <!-- Audio Source Selection -->
@@ -203,9 +204,9 @@
           </div>
 
           <!-- Collapsible QR Code details section -->
-          <details class="qr-details">
+          <details class="qr-details" open>
             <summary class="qr-summary">
-              Show QR Connection Codes & URLs (for Projectors / External Microphones)
+              Projector & External Microphone Sharing
             </summary>
             <div class="qr-grid-layout">
               <!-- Projector Screen Sharing Tip -->
@@ -215,19 +216,27 @@
                 <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
                   <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                    <canvas id="projector-qr-canvas" style="width: 88px; height: 88px; display: block;"></canvas>
+                    <canvas id="projector-qr-canvas" aria-label="QR code for the projector subtitles page" style="width: 88px; height: 88px; display: block;"></canvas>
+                  </div>
+                  <div class="share-link-actions">
+                    <button id="copy-projector-url" class="share-link-btn" type="button">Copy URL</button>
+                    <button id="open-projector-url" class="share-link-btn" type="button">Open Page</button>
                   </div>
                 </div>
               </div>
 
               <!-- Network Audio Sender Sharing Tip -->
-              <div class="network-info-box" id="network-audio-info-box" style="display: none;">
+              <div class="network-info-box" id="network-audio-info-box">
                 <p style="font-weight: 600; color: var(--accent-amber); margin-bottom: 0.25rem;">Network Audio Sender URL:</p>
                 <p>Scan to stream audio from another PC or phone to this dashboard:</p>
                 <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
                   <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                    <canvas id="streamer-qr-canvas" style="width: 88px; height: 88px; display: block;"></canvas>
+                    <canvas id="streamer-qr-canvas" aria-label="QR code for the external microphone page" style="width: 88px; height: 88px; display: block;"></canvas>
+                  </div>
+                  <div class="share-link-actions">
+                    <button id="copy-streamer-url" class="share-link-btn" type="button">Copy URL</button>
+                    <button id="open-streamer-url" class="share-link-btn" type="button">Open Page</button>
                   </div>
                 </div>
               </div>
@@ -237,9 +246,59 @@
 
         <!-- Bottom Section: Visualizers & Logs -->
         <section class="workspace" aria-label="Translation Workspace">
+
+          <div class="health-panel glass-card" aria-labelledby="health-title">
+            <div class="health-header">
+              <div>
+                <span class="health-eyebrow">Operator Center</span>
+                <h2 id="health-title">Connection Health</h2>
+              </div>
+              <div class="health-actions">
+                <button id="copy-diagnostics-btn" class="health-btn" type="button">Copy Status</button>
+                <button id="restart-audio-btn" class="health-btn" type="button" disabled>Restart Audio</button>
+                <button id="reconnect-now-btn" class="health-btn primary" type="button" disabled>Reconnect Now</button>
+              </div>
+            </div>
+
+            <div class="health-grid">
+              <div class="health-item" id="health-local" data-state="connecting">
+                <span class="health-dot" aria-hidden="true"></span>
+                <div>
+                  <strong>Local Relay</strong>
+                  <span class="health-detail">Connecting...</span>
+                </div>
+              </div>
+              <div class="health-item" id="health-gemini-1" data-state="idle">
+                <span class="health-dot" aria-hidden="true"></span>
+                <div>
+                  <strong>Gemini 1</strong>
+                  <span class="health-detail">Not started</span>
+                </div>
+              </div>
+              <div class="health-item" id="health-gemini-2" data-state="idle" hidden>
+                <span class="health-dot" aria-hidden="true"></span>
+                <div>
+                  <strong>Gemini 2</strong>
+                  <span class="health-detail">Not enabled</span>
+                </div>
+              </div>
+              <div class="health-item" id="health-audio" data-state="idle">
+                <span class="health-dot" aria-hidden="true"></span>
+                <div>
+                  <strong>Audio Input</strong>
+                  <span class="health-detail">Not started</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="diagnostic-banner" id="diagnostic-banner" data-state="idle" role="status" aria-live="polite">
+              <span class="diagnostic-icon" aria-hidden="true">i</span>
+              <span id="diagnostic-message">Ready. Start translation when your audio source is prepared.</span>
+            </div>
+          </div>
           
           <!-- Disconnect Warning Banner -->
-          <div id="network-disconnect-warning" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 0.9rem;">
+          <div id="network-disconnect-warning" role="alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 0.9rem;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -254,7 +313,7 @@
               <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <h3 style="margin: 0;">Input Mic</h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <button id="mute-mic-btn" type="button" class="icon-btn-text" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-secondary); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: var(--transition-smooth);" title="Temporarily pause microphone audio without disconnecting">
+                  <button id="mute-mic-btn" type="button" class="icon-btn-text" aria-pressed="false" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-secondary); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: var(--transition-smooth);" title="Temporarily pause microphone audio without disconnecting">
                     <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
                       <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                       <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -295,10 +354,10 @@
             <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Live Transcripts</span>
             <div class="font-size-picker" style="display: flex; align-items: center; gap: 0.35rem;">
               <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.25rem;">Text Size:</span>
-              <button class="font-size-btn" data-size="sm" title="Small Text">S</button>
-              <button class="font-size-btn active" data-size="md" title="Medium Text">M</button>
-              <button class="font-size-btn" data-size="lg" title="Large Text">L</button>
-              <button class="font-size-btn" data-size="xl" title="Extra Large Text">XL</button>
+              <button class="font-size-btn" data-size="sm" aria-pressed="false" title="Small Text">S</button>
+              <button class="font-size-btn active" data-size="md" aria-pressed="true" title="Medium Text">M</button>
+              <button class="font-size-btn" data-size="lg" aria-pressed="false" title="Large Text">L</button>
+              <button class="font-size-btn" data-size="xl" aria-pressed="false" title="Extra Large Text">XL</button>
             </div>
           </div>
 

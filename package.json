@@ -6,14 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "start:app": "npm run build && npm start"
   },
   "devDependencies": {
-    "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "vite": "^8.0.12",
-    "ws": "^8.21.0"
+    "vite": "^8.0.12"
   },
   "dependencies": {
-    "qrcode": "^1.5.4"
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "qrcode": "^1.5.4",
+    "ws": "^8.21.0"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

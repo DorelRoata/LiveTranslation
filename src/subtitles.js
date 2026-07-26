@@ -72,6 +72,9 @@ let audioEnabled = false;
 let audioContext = null;
 let nextStartTime1 = 0;
 let nextStartTime2 = 0;
+let subtitleSocket = null;
+let reconnectTimer = null;
+let reconnectAttempt = 0;
 
 // Language code to full names mappings for buttons
 const LANG_NAMES = {
@@ -89,30 +92,43 @@ function getLanguageName(code, fallback) {
 
 // Auto-hide controls bar on mouse inactivity
 let mouseTimeout;
+const keepControlsVisible = window.matchMedia('(pointer: coarse)').matches;
 function resetMouseTimer() {
   controlBar.classList.remove('hidden');
   clearTimeout(mouseTimeout);
+  if (keepControlsVisible) return;
   mouseTimeout = setTimeout(() => {
-    if (!controlBar.matches(':hover')) {
+    if (!controlBar.matches(':hover') && !controlBar.matches(':focus-within')) {
       controlBar.classList.add('hidden');
     }
   }, 3000);
 }
-window.addEventListener('mousemove', resetMouseTimer);
+window.addEventListener('pointermove', resetMouseTimer);
+window.addEventListener('pointerdown', resetMouseTimer);
+window.addEventListener('keydown', resetMouseTimer);
+window.addEventListener('focusin', resetMouseTimer);
 resetMouseTimer();
+
+function refreshVisibleLanes() {
+  if (viewMode !== 'lang2') rebuildSubtitleDOM('lang1');
+  if (viewMode !== 'lang1') rebuildSubtitleDOM('lang2');
+}
 
 // View toggling logic
 btnViewBoth.addEventListener('click', () => {
   viewMode = 'both';
   updateUIElements();
+  refreshVisibleLanes();
 });
 btnViewLang1.addEventListener('click', () => {
   viewMode = 'lang1';
   updateUIElements();
+  refreshVisibleLanes();
 });
 btnViewLang2.addEventListener('click', () => {
   viewMode = 'lang2';
   updateUIElements();
+  refreshVisibleLanes();
 });
 
 // Audio Playback context initialisation and toggling
@@ -122,9 +138,11 @@ btnAudioToggle.addEventListener('click', () => {
     initAudioContext();
     btnAudioToggle.classList.add('audio-active');
     btnAudioToggle.textContent = 'Enabled';
+    btnAudioToggle.setAttribute('aria-pressed', 'true');
   } else {
     btnAudioToggle.classList.remove('audio-active');
     btnAudioToggle.textContent = 'Disabled';
+    btnAudioToggle.setAttribute('aria-pressed', 'false');
   }
 });
 
@@ -366,6 +384,9 @@ function updateUIElements() {
   btnViewBoth.classList.toggle('active', viewMode === 'both');
   btnViewLang1.classList.toggle('active', viewMode === 'lang1');
   btnViewLang2.classList.toggle('active', viewMode === 'lang2');
+  btnViewBoth.setAttribute('aria-pressed', String(viewMode === 'both'));
+  btnViewLang1.setAttribute('aria-pressed', String(viewMode === 'lang1'));
+  btnViewLang2.setAttribute('aria-pressed', String(viewMode === 'lang2'));
 
   // 3. Grid Columns Visibility
   if (viewMode === 'both') {
@@ -438,24 +459,32 @@ function playPCMChunk(base64Data, channelId) {
 }
 
 function connect() {
+  if (subtitleSocket && (subtitleSocket.readyState === WebSocket.OPEN || subtitleSocket.readyState === WebSocket.CONNECTING)) return;
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
   
   statusIndicator.style.backgroundColor = "#f59e0b"; // Yellow (Connecting)
   statusIndicator.style.boxShadow = "0 0 8px #f59e0b";
   statusIndicator.title = "Connecting to Host...";
+  statusIndicator.setAttribute('aria-label', 'Connecting to host');
   
   const socket = new WebSocket(wsUrl);
+  subtitleSocket = socket;
 
   let totalMsgs = 0;
 
   socket.onopen = () => {
+    if (subtitleSocket !== socket) return;
+    clearTimeout(reconnectTimer);
+    reconnectAttempt = 0;
     statusIndicator.style.backgroundColor = "#10b981"; // Green (Connected)
     statusIndicator.style.boxShadow = "0 0 8px #10b981";
     statusIndicator.title = "Connected to Host";
+    statusIndicator.setAttribute('aria-label', 'Connected to host');
   };
 
   socket.onmessage = (event) => {
+    if (subtitleSocket !== socket) return;
     totalMsgs++;
 
     try {
@@ -496,13 +525,20 @@ function connect() {
   };
 
   socket.onclose = () => {
+    if (subtitleSocket !== socket) return;
+    subtitleSocket = null;
     statusIndicator.style.backgroundColor = "#ef4444"; // Red (Disconnected)
     statusIndicator.style.boxShadow = "0 0 8px #ef4444";
     statusIndicator.title = "Disconnected (Retrying...)";
-    setTimeout(connect, 3000);
+    statusIndicator.setAttribute('aria-label', 'Disconnected. Retrying connection');
+    const delay = Math.min(1000 * (2 ** reconnectAttempt), 8000);
+    reconnectAttempt++;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connect, delay);
   };
 
   socket.onerror = () => {
+    if (subtitleSocket !== socket) return;
     socket.close();
   };
 }
@@ -527,6 +563,8 @@ initProjectorSharingQR();
 
 btnQrToggle.addEventListener('click', () => {
   qrOverlay.classList.remove('hidden');
+  qrOverlay.setAttribute('aria-hidden', 'false');
+  btnQrClose.focus();
   
   // Render QR Code
   QRCode.toCanvas(qrCanvasProjector, subtitlesUrl, {
@@ -542,15 +580,25 @@ btnQrToggle.addEventListener('click', () => {
   });
 });
 
-// Close when Close button clicked
-btnQrClose.addEventListener('click', () => {
+function closeQrOverlay() {
   qrOverlay.classList.add('hidden');
-});
+  qrOverlay.setAttribute('aria-hidden', 'true');
+  btnQrToggle.focus();
+}
+
+// Close when Close button clicked
+btnQrClose.addEventListener('click', closeQrOverlay);
 
 // Close when clicking anywhere on background overlay
 qrOverlay.addEventListener('click', (event) => {
   if (event.target === qrOverlay) {
-    qrOverlay.classList.add('hidden');
+    closeQrOverlay();
+  }
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !qrOverlay.classList.contains('hidden')) {
+    closeQrOverlay();
   }
 });
 

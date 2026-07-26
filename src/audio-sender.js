@@ -1,3 +1,6 @@
+import './style.css';
+
+const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const micDeviceSelect = document.getElementById("mic-device-select");
 const toggleStreamBtn = document.getElementById("toggle-stream-btn");
 const statusDot = document.getElementById("status-dot");
@@ -8,35 +11,54 @@ const btnText = toggleStreamBtn.querySelector(".btn-text");
 
 let ws = null;
 let isStreaming = false;
+let isStarting = false;
+let reconnectTimer = null;
+let reconnectAttempt = 0;
 let audioContext = null;
 let mediaStream = null;
 let scriptProcessor = null;
 let source = null;
 
+function sendStreamingStatus() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'audio-sender-streaming', streaming: isStreaming }));
+}
+
 // Connect WebSocket
 function connectWebSocket() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${wsProtocol}//${window.location.host}/local-subtitles-ws`;
-  
-  ws = new WebSocket(wsUrl);
+  const socket = new WebSocket(wsUrl);
+  ws = socket;
 
-  ws.onopen = () => {
+  socket.onopen = () => {
+    if (ws !== socket) return;
+    clearTimeout(reconnectTimer);
+    reconnectAttempt = 0;
     statusDot.classList.add("active");
-    statusText.textContent = "Connected to Dashboard";
-    ws.send(JSON.stringify({ type: 'audio-sender-hello' }));
+    statusText.textContent = isStreaming ? "Streaming to Dashboard" : "Connected to Dashboard (Idle)";
+    socket.send(JSON.stringify({ type: 'audio-sender-hello' }));
+    sendStreamingStatus();
   };
 
-  ws.onclose = () => {
+  socket.onclose = () => {
+    if (ws !== socket) return;
+    ws = null;
     statusDot.classList.remove("active");
-    statusText.textContent = "Disconnected - Retrying...";
-    if (isStreaming) {
-      stopStreaming();
-    }
-    setTimeout(connectWebSocket, 3000);
+    const delay = Math.min(1000 * (2 ** reconnectAttempt), 8000);
+    reconnectAttempt++;
+    statusText.textContent = isStreaming
+      ? `Reconnecting - microphone remains active`
+      : `Disconnected - retrying in ${Math.round(delay / 1000)}s`;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWebSocket, delay);
   };
 
-  ws.onerror = (err) => {
+  socket.onerror = (err) => {
+    if (ws !== socket) return;
     console.error("WebSocket error:", err);
+    socket.close();
   };
 }
 
@@ -81,10 +103,19 @@ function floatTo16BitPCMBase64(input) {
 
 // Start Capture
 async function startStreaming() {
-  if (ws.readyState !== WebSocket.OPEN) {
+  if (isStarting || isStreaming) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
     alert("Not connected to the dashboard. Please wait.");
     return;
   }
+
+  isStarting = true;
+  toggleStreamBtn.disabled = true;
+  btnText.textContent = "Starting...";
+  let pendingStream = null;
+  let pendingContext = null;
+  let pendingSource = null;
+  let pendingProcessor = null;
 
   try {
     const constraints = {
@@ -100,13 +131,20 @@ async function startStreaming() {
       constraints.audio.deviceId = { exact: micDeviceSelect.value };
     }
 
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    source = audioContext.createMediaStreamSource(mediaStream);
-    scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+    pendingStream = await navigator.mediaDevices.getUserMedia(constraints);
+    pendingContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (pendingContext.state === 'suspended') await pendingContext.resume();
+    pendingSource = pendingContext.createMediaStreamSource(pendingStream);
+    pendingProcessor = pendingContext.createScriptProcessor(2048, 1, 1);
+
+    mediaStream = pendingStream;
+    audioContext = pendingContext;
+    source = pendingSource;
+    scriptProcessor = pendingProcessor;
+    isStreaming = true;
     
     scriptProcessor.onaudioprocess = (e) => {
-      if (!isStreaming || ws.readyState !== WebSocket.OPEN) return;
+      if (!isStreaming || !ws || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > MAX_BUFFERED_AUDIO_BYTES) return;
       
       const inputData = e.inputBuffer.getChannelData(0);
       const base64Audio = floatTo16BitPCMBase64(inputData);
@@ -129,21 +167,41 @@ async function startStreaming() {
     source.connect(scriptProcessor);
     scriptProcessor.connect(audioContext.destination);
 
-    isStreaming = true;
+    mediaStream.getAudioTracks().forEach(track => {
+      track.addEventListener('ended', stopStreaming, { once: true });
+    });
     toggleStreamBtn.style.background = "#ef4444";
     toggleStreamBtn.style.boxShadow = "0 0 15px rgba(239, 68, 68, 0.4)";
     btnText.textContent = "Stop Streaming";
     statusText.textContent = "Streaming to Dashboard";
-    
+    sendStreamingStatus();
   } catch (err) {
+    isStreaming = false;
+    pendingProcessor?.disconnect();
+    pendingSource?.disconnect();
+    pendingStream?.getTracks().forEach(track => track.stop());
+    if (pendingContext && pendingContext.state !== 'closed') {
+      await pendingContext.close().catch(() => {});
+    }
+    mediaStream = null;
+    audioContext = null;
+    source = null;
+    scriptProcessor = null;
     console.error("Error accessing microphone:", err);
     alert("Could not access microphone: " + err.message);
+  } finally {
+    isStarting = false;
+    toggleStreamBtn.disabled = false;
+    if (!isStreaming) btnText.textContent = "Start Streaming";
   }
 }
 
 // Stop Capture
 function stopStreaming() {
+  if (!isStreaming && !isStarting) return;
   isStreaming = false;
+  isStarting = false;
+  sendStreamingStatus();
   
   if (scriptProcessor) {
     scriptProcessor.disconnect();
@@ -167,11 +225,14 @@ function stopStreaming() {
   toggleStreamBtn.style.background = "";
   toggleStreamBtn.style.boxShadow = "";
   btnText.textContent = "Start Streaming";
-  statusText.textContent = "Connected to Dashboard (Idle)";
+  statusText.textContent = ws?.readyState === WebSocket.OPEN
+    ? "Connected to Dashboard (Idle)"
+    : "Disconnected - Retrying...";
 }
 
 // Event Listeners
 toggleStreamBtn.addEventListener("click", () => {
+  if (isStarting) return;
   if (isStreaming) {
     stopStreaming();
   } else {
@@ -179,8 +240,13 @@ toggleStreamBtn.addEventListener("click", () => {
   }
 });
 
-navigator.mediaDevices.addEventListener('devicechange', populateMicDevices);
+if (navigator.mediaDevices) {
+  navigator.mediaDevices.addEventListener('devicechange', populateMicDevices);
+} else {
+  toggleStreamBtn.disabled = true;
+  statusText.textContent = 'Microphone access is unavailable in this browser.';
+}
 
 // Initialize
-populateMicDevices();
+if (navigator.mediaDevices) populateMicDevices();
 connectWebSocket();

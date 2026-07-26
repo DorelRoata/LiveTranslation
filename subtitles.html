@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Projector Screen - Live Subtitles</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
@@ -13,6 +15,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       box-sizing: border-box;
       overflow: hidden;
       position: relative;
@@ -217,23 +220,81 @@
     body.obs-mode .qr-overlay {
       display: none !important;
     }
+
+    .control-btn:focus-visible {
+      outline: 3px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        min-height: 100dvh;
+        height: auto;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+      .control-bar {
+        position: fixed;
+        top: max(0.75rem, env(safe-area-inset-top));
+        width: calc(100% - 1.5rem);
+        max-width: 34rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.6rem;
+        border-radius: 18px;
+      }
+      .control-group {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .control-bar > div[style*="width: 1px"] {
+        display: none;
+      }
+      .container {
+        min-height: calc(100dvh - 2rem);
+        padding-top: 8rem;
+        gap: 1rem;
+      }
+      .section {
+        padding: 1rem;
+      }
+      .text {
+        padding: 0;
+      }
+      .qr-card {
+        padding: 1.25rem;
+      }
+      .qr-card canvas {
+        width: min(250px, 70vw);
+        height: min(250px, 70vw);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="status-dot" id="status-indicator" title="Connecting to Host..."></div>
+  <div class="status-dot" id="status-indicator" role="status" aria-label="Connecting to host" title="Connecting to Host..."></div>
 
   <!-- Floating Navigation Controls -->
   <div class="control-bar" id="control-bar">
     <div class="control-group">
       <span class="control-label">Layout:</span>
-      <button class="control-btn active" id="btn-view-both">Both</button>
-      <button class="control-btn" id="btn-view-lang1">Language 1</button>
-      <button class="control-btn" id="btn-view-lang2" style="display: none;">Language 2</button>
+      <button class="control-btn active" id="btn-view-both" aria-pressed="true">Both</button>
+      <button class="control-btn" id="btn-view-lang1" aria-pressed="false">Language 1</button>
+      <button class="control-btn" id="btn-view-lang2" aria-pressed="false" style="display: none;">Language 2</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group">
       <span class="control-label">Audio:</span>
-      <button class="control-btn" id="btn-audio-toggle">Disabled</button>
+      <button class="control-btn" id="btn-audio-toggle" aria-pressed="false">Disabled</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group">
@@ -254,9 +315,9 @@
   </div>
 
   <!-- QR Code Modal Overlay -->
-  <div class="qr-overlay hidden" id="qr-overlay">
+  <div class="qr-overlay hidden" id="qr-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="qr-title">
     <div class="qr-card">
-      <h3>Scan to view subtitles on your phone</h3>
+      <h3 id="qr-title">Scan to view subtitles on your phone</h3>
       <div style="background: white; padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
         <canvas id="qr-canvas-projector" style="width: 250px; height: 250px; display: block;"></canvas>
       </div>
