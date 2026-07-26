@@ -102,6 +102,8 @@ const restartAudioBtn = document.getElementById('restart-audio-btn');
 const copyDiagnosticsBtn = document.getElementById('copy-diagnostics-btn');
 const diagnosticBanner = document.getElementById('diagnostic-banner');
 const diagnosticMessage = document.getElementById('diagnostic-message');
+const connectionRecoveryBanner = document.getElementById('connection-recovery-banner');
+const connectionRecoveryDetail = document.getElementById('connection-recovery-detail');
 const healthItems = {
   local: document.getElementById('health-local'),
   gemini1: document.getElementById('health-gemini-1'),
@@ -354,6 +356,15 @@ function setDiagnostic(message, state = 'idle') {
   diagnosticMessage.textContent = message;
 }
 
+function showRecoveryBanner(detail) {
+  connectionRecoveryDetail.textContent = detail;
+  connectionRecoveryBanner.hidden = false;
+}
+
+function hideRecoveryBanner() {
+  connectionRecoveryBanner.hidden = true;
+}
+
 function setSessionSettingsDisabled(disabled) {
   apiKeyInput.disabled = disabled;
   targetLanguageSelect1.disabled = disabled;
@@ -374,7 +385,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'LiveTranslation v1.1.2 diagnostics',
+    'LiveTranslation v1.1.3 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -402,6 +413,7 @@ reconnectNowBtn.addEventListener('click', () => {
   reconnectTimeout = null;
   reconnectAttempt = 0;
   updateConnectionStatus('connecting', 'Reconnecting...');
+  showRecoveryBanner('Manual reconnect started. Your subtitles are preserved and live audio is paused instead of being queued.');
   setDiagnostic('Manual reconnect started. Audio capture and subtitles are being preserved.', 'warning');
   logDebug('Operator requested an immediate Gemini reconnect.', 'warning');
   connectGeminiSockets();
@@ -1243,6 +1255,7 @@ function markSocketReady(channelId, generation) {
   startBtn.classList.add("recording");
   startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
   reconnectNowBtn.disabled = false;
+  hideRecoveryBanner();
   setDiagnostic('Translation services are connected and ready.', 'good');
 }
 
@@ -1259,6 +1272,7 @@ function scheduleReconnect(reason, generation = sessionGeneration) {
   updateConnectionStatus("connecting", "Reconnecting...");
   startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
   logDebug(`${reason} Reconnecting in ${Math.round(delay / 1000)}s...`, "warning");
+  showRecoveryBanner(`${reason} Retrying in ${Math.round(delay / 1000)}s. Your subtitles are preserved and live audio is not being queued.`);
   setDiagnostic(`${reason} Automatic recovery is in progress.`, 'warning');
   reconnectTimeout = setTimeout(() => {
     reconnectTimeout = null;
@@ -1269,6 +1283,7 @@ function scheduleReconnect(reason, generation = sessionGeneration) {
 function stopForGeminiError(message) {
   if (!isRunning) return;
   const hadSecondChannel = !healthItems.gemini2.hidden;
+  hideRecoveryBanner();
   logDebug(`Gemini rejected the session: ${message}`, 'error');
   disconnectSession(false);
   setHealthItem('gemini1', 'error', 'Configuration rejected');
@@ -1434,6 +1449,7 @@ function disconnectSession(clearSubtitles = true) {
   reconnectTimeout = null;
   setupTimeout = null;
   reconnectAttempt = 0;
+  hideRecoveryBanner();
   reconnectNowBtn.disabled = true;
   restartAudioBtn.disabled = true;
   startBtn.disabled = false;
@@ -1633,6 +1649,9 @@ function syncLocalSubtitlesSetup() {
 initLocalSubtitlesWS();
 
 window.addEventListener('offline', () => {
+  if (isRunning) {
+    showRecoveryBanner('Network connection lost. Waiting for the network to return; subtitles are preserved and live audio is not being queued.');
+  }
   setDiagnostic('This computer is offline. Audio will not be queued; connections will resume when the network returns.', 'warning');
 });
 
@@ -1645,6 +1664,7 @@ window.addEventListener('online', () => {
     clearTimeout(reconnectTimeout);
     reconnectTimeout = null;
     reconnectAttempt = 0;
+    showRecoveryBanner('Network restored. Reconnecting now while preserving your subtitles.');
     setDiagnostic('Network restored. Reconnecting translation services now...', 'warning');
     connectGeminiSockets();
   }

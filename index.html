@@ -296,6 +296,14 @@
               <span id="diagnostic-message">Ready. Start translation when your audio source is prepared.</span>
             </div>
           </div>
+
+          <div id="connection-recovery-banner" class="connection-recovery-banner" role="status" aria-live="assertive" hidden>
+            <span class="recovery-spinner" aria-hidden="true"></span>
+            <div>
+              <strong>Reconnecting to Gemini...</strong>
+              <span id="connection-recovery-detail">Your subtitles are preserved. Live audio is paused instead of being queued.</span>
+            </div>
+          </div>
           
           <!-- Disconnect Warning Banner -->
           <div id="network-disconnect-warning" role="alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 0.9rem;">
@@ -430,7 +438,7 @@
 
       <!-- Global Footer -->
       <footer class="app-footer">
-        <p>Powered by Google Gemini 3.5 Live Translate. Requires a secure microphone context. | v1.1.2</p>
+        <p>Powered by Google Gemini 3.5 Live Translate. Requires a secure microphone context. | v1.1.3</p>
       </footer>
     </div>
 
