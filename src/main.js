@@ -385,7 +385,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.1.6 diagnostics',
+    'Live Translate v1.1.7 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -475,7 +475,7 @@ function logDebug(message, type = "info") {
 }
 
 clearDebugBtn.addEventListener("click", () => {
-  debugLogList.innerHTML = `<div class="debug-line" style="color: #6f7872;">[System] Logs cleared.</div>`;
+  debugLogList.innerHTML = `<div class="debug-line" style="color: #71808a;">[System] Logs cleared.</div>`;
 });
 
 // --- Visualizer Rendering ---

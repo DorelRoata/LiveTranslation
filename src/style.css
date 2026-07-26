@@ -1,13 +1,13 @@
 :root {
-  --bg-color: #111412;
-  --bg-gradient: radial-gradient(circle at 12% 0%, rgba(240, 120, 94, 0.09), transparent 30%), radial-gradient(circle at 88% 5%, rgba(91, 192, 164, 0.07), transparent 26%);
-  --panel-bg: #1b201d;
-  --panel-border: rgba(244, 240, 232, 0.11);
+  --bg-color: #171d22;
+  --bg-gradient: linear-gradient(145deg, #171d22 0%, #1c242a 52%, #151a1e 100%);
+  --panel-bg: #232c33;
+  --panel-border: rgba(177, 190, 198, 0.14);
   --panel-border-glow: transparent;
   
-  --text-primary: #f4f0e8;
-  --text-secondary: #a8b0aa;
-  --text-muted: #6f7872;
+  --text-primary: #eef2f3;
+  --text-secondary: #aab6bd;
+  --text-muted: #71808a;
   
   --accent-blue: #f0785e;
   --accent-cyan: #5bc0a4;
@@ -18,7 +18,7 @@
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'Space Grotesk', monospace;
   
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 12px 32px rgba(4, 8, 11, 0.24);
   --shadow-glow: none;
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -131,7 +131,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   background: var(--accent-blue);
-  color: #171a18;
+  color: #182025;
   box-shadow: 0 8px 22px rgba(240, 120, 94, 0.2);
 }
 .logo-icon span {
@@ -204,7 +204,7 @@ body {
   transition: var(--transition-smooth);
 }
 .glass-card:hover {
-  border-color: rgba(244, 240, 232, 0.19);
+  border-color: rgba(177, 190, 198, 0.24);
   box-shadow: var(--shadow-lg);
 }
 
@@ -473,7 +473,7 @@ select {
   border-radius: 12px;
   border: none;
   background: var(--accent-blue);
-  color: #171a18;
+  color: #182025;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -551,7 +551,7 @@ select {
 .health-panel {
   padding: 1.25rem;
   border-color: rgba(91, 192, 164, 0.22);
-  background: linear-gradient(135deg, rgba(31, 38, 33, 0.98), rgba(22, 27, 24, 0.98));
+  background: linear-gradient(135deg, rgba(41, 51, 59, 0.98), rgba(29, 37, 43, 0.98));
 }
 
 .health-header {
@@ -683,7 +683,7 @@ select {
   padding: 0.7rem 0.8rem;
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 9px;
-  background: rgba(17, 20, 18, 0.72);
+  background: rgba(20, 27, 32, 0.78);
   color: var(--text-secondary);
   font-size: 0.78rem;
 }
@@ -695,7 +695,7 @@ select {
   flex: 0 0 20px;
   place-items: center;
   border-radius: 50%;
-  background: #334155;
+  background: #3b4852;
   color: #ffffff;
   font-family: Georgia, serif;
   font-weight: 700;
@@ -1014,7 +1014,7 @@ canvas {
 .font-size-btn.active {
   background: var(--accent-blue);
   border-color: var(--accent-blue);
-  color: #171a18;
+  color: #182025;
   box-shadow: 0 0 8px rgba(240, 120, 94, 0.32);
 }
 
