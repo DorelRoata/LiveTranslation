@@ -99,6 +99,7 @@ const debugLogList = document.getElementById("debug-log-list");
 const clearDebugBtn = document.getElementById("clear-debug-log");
 const reconnectNowBtn = document.getElementById('reconnect-now-btn');
 const restartAudioBtn = document.getElementById('restart-audio-btn');
+const checkUpdatesBtn = document.getElementById('check-updates-btn');
 const copyDiagnosticsBtn = document.getElementById('copy-diagnostics-btn');
 const diagnosticBanner = document.getElementById('diagnostic-banner');
 const diagnosticMessage = document.getElementById('diagnostic-message');
@@ -385,7 +386,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.1.7 diagnostics',
+    'Live Translate v1.2.0 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -407,6 +408,32 @@ async function copyDiagnostics() {
 }
 
 copyDiagnosticsBtn.addEventListener('click', copyDiagnostics);
+checkUpdatesBtn.addEventListener('click', async () => {
+  checkUpdatesBtn.disabled = true;
+  checkUpdatesBtn.textContent = 'Checking...';
+  try {
+    const response = await fetch('/api/update/status', { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Update check failed.');
+
+    if (!data.supportedBranch) {
+      setDiagnostic(`Automatic updates require the main branch. This checkout is on ${data.branch}.`, 'warning');
+    } else if (data.updateAvailable) {
+      const localChanges = data.dirty ? ' Local changes must be committed or stashed first.' : '';
+      setDiagnostic(`Update available: ${data.currentCommit} to ${data.remoteCommit}. Quit and reopen the Dock app to install it.${localChanges}`, 'warning');
+    } else if (data.diverged) {
+      setDiagnostic('This checkout differs from GitHub and cannot be updated automatically. Review it in Git before updating.', 'warning');
+    } else {
+      setDiagnostic(`Live Translate is up to date (${data.currentCommit}).`, 'good');
+    }
+  } catch (error) {
+    setDiagnostic(error.message, 'error');
+  } finally {
+    checkUpdatesBtn.disabled = false;
+    checkUpdatesBtn.textContent = 'Check Updates';
+  }
+});
+
 reconnectNowBtn.addEventListener('click', () => {
   if (!isRunning) return;
   clearTimeout(reconnectTimeout);

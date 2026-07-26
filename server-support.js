@@ -1,11 +1,68 @@
+import { execFile } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
 
 const MAX_REQUEST_BYTES = 8 * 1024;
 const MAX_WS_PAYLOAD_BYTES = 512 * 1024;
 const MAX_BUFFERED_BYTES = 256 * 1024;
+const execFileAsync = promisify(execFile);
+
+async function runGit(args) {
+  const { stdout } = await execFileAsync('git', args, {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    timeout: 15_000,
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+      GIT_SSH_COMMAND: 'ssh -o BatchMode=yes -o ConnectTimeout=5'
+    }
+  });
+  return stdout.trim();
+}
+
+async function getUpdateStatus() {
+  const insideWorktree = await runGit(['rev-parse', '--is-inside-work-tree']);
+  if (insideWorktree !== 'true') throw new Error('Not inside a Git worktree.');
+
+  let branch = 'detached';
+  try {
+    branch = await runGit(['symbolic-ref', '--quiet', '--short', 'HEAD']);
+  } catch (error) {
+    branch = 'detached';
+  }
+
+  await runGit(['fetch', '--quiet', 'origin', 'main']);
+  const [currentCommit, remoteCommit, worktreeStatus] = await Promise.all([
+    runGit(['rev-parse', 'HEAD']),
+    runGit(['rev-parse', 'origin/main']),
+    runGit(['status', '--porcelain'])
+  ]);
+
+  let canFastForward = false;
+  const supportedBranch = branch === 'main';
+  if (supportedBranch && currentCommit !== remoteCommit) {
+    try {
+      await runGit(['merge-base', '--is-ancestor', 'HEAD', 'origin/main']);
+      canFastForward = true;
+    } catch (error) {
+      canFastForward = false;
+    }
+  }
+
+  return {
+    branch,
+    supportedBranch,
+    currentCommit: currentCommit.slice(0, 7),
+    remoteCommit: remoteCommit.slice(0, 7),
+    dirty: Boolean(worktreeStatus),
+    updateAvailable: supportedBranch && currentCommit !== remoteCommit && canFastForward,
+    diverged: supportedBranch && currentCommit !== remoteCommit && !canFastForward
+  };
+}
 
 export function getNetworkIP() {
   const interfaces = os.networkInterfaces();
@@ -94,6 +151,36 @@ export async function handleRuntimeApi(req, res) {
 
   if (url.pathname === '/api/network-ip' && req.method === 'GET') {
     sendJson(res, 200, { ip: getNetworkIP() });
+    return true;
+  }
+
+  if (url.pathname === '/api/instance' && req.method === 'GET') {
+    if (!isLoopback(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'Instance details are only available on this computer.' });
+      return true;
+    }
+    sendJson(res, 200, {
+      application: 'live-translate',
+      repositoryPath: await fs.realpath(process.cwd()).catch(() => path.resolve(process.cwd()))
+    });
+    return true;
+  }
+
+  if (url.pathname === '/api/update/status') {
+    if (!isLoopback(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'Update checks are only available on this computer.' });
+      return true;
+    }
+    if (req.method !== 'GET') {
+      sendJson(res, 405, { error: 'Method not allowed.' });
+      return true;
+    }
+    try {
+      sendJson(res, 200, await getUpdateStatus());
+    } catch (error) {
+      console.error('Unable to check for Live Translate updates:', error.message);
+      sendJson(res, 503, { error: 'Could not reach the Git repository. Try again when the network is available.' });
+    }
     return true;
   }
 

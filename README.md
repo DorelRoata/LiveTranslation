@@ -50,7 +50,7 @@ git clone https://github.com/DorelRoata/LiveTranslation.git
 cd LiveTranslation
 
 # 2. Install dependencies
-npm install
+npm ci
 
 # 3. Build and start the production local server
 npm run start:app
@@ -62,6 +62,46 @@ settings outside the repository and is never included in Vite source or build
 artifacts. Later launches load it automatically.
 
 For source development with hot reload, use `npm run dev`.
+
+### macOS Dock App
+
+After cloning the repository and running `npm ci`, double-click:
+
+```text
+install-mac-app.command
+```
+
+The installer places `Live Translate.app` in `~/Applications`, links it to this
+repository, and offers to launch it. Drag the app from `~/Applications` to the
+Dock for one-click access. The app builds and starts the production server,
+waits for it to become ready, and opens `https://localhost:5173` automatically.
+
+Do not delete or move the repository after installation. If it moves, run
+`install-mac-app.command` again from the new location. The Gemini API key and
+settings remain under `~/Library/Application Support/LiveTranslation` and are
+not replaced by app updates.
+
+### Future Updates
+
+When the Dock app starts and the server is not already running, it checks
+`origin/main`. If a fast-forward update is available, it asks before running
+`git pull --ff-only`, `npm ci`, and the production build. A dirty or diverged
+worktree is never overwritten. The Connection Health panel also has a **Check
+Updates** button; when an update is found, quit and reopen the Dock app to
+install it.
+
+For a new Mac deployment:
+
+```bash
+git clone https://github.com/DorelRoata/LiveTranslation.git
+cd LiveTranslation
+npm ci
+open install-mac-app.command
+```
+
+If macOS blocks the installer on first launch, Control-click it, choose **Open**,
+then confirm. Routine feature updates do not require reinstalling the Dock app
+because its launcher executes the update logic from this repository.
 
 ### Setup Instructions:
 1. In the terminal, copy the network IP printed under the `Network` heading (e.g., `https://192.168.1.67:5173/`).

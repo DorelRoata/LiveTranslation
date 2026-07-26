@@ -1,0 +1,27 @@
+#!/bin/bash
+
+CONFIG_DIR="$HOME/Library/Application Support/LiveTranslation"
+REPO_PATH_FILE="$CONFIG_DIR/repo-path.txt"
+
+show_error() {
+  /usr/bin/osascript - "$1" <<'APPLESCRIPT'
+on run argv
+  display dialog (item 1 of argv) with title "Live Translate" buttons {"OK"} default button "OK" with icon stop
+end run
+APPLESCRIPT
+}
+
+if [ ! -f "$REPO_PATH_FILE" ]; then
+  show_error "Live Translate is not linked to its application folder. Run install-mac-app.command from the repository again."
+  exit 1
+fi
+
+REPO_ROOT="$(/bin/cat "$REPO_PATH_FILE")"
+LAUNCHER="$REPO_ROOT/macos/launch-live-translate.sh"
+
+if [ ! -x "$LAUNCHER" ]; then
+  show_error "The Live Translate repository could not be found at:\n\n$REPO_ROOT\n\nMove it back or run install-mac-app.command from its new location."
+  exit 1
+fi
+
+exec "$LAUNCHER" "$REPO_ROOT"

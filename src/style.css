@@ -580,6 +580,7 @@ select {
 
 .health-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.55rem;
 }
 
