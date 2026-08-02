@@ -1817,6 +1817,7 @@ async function initProjectorSharingQR() {
   if (!projectorTip) return;
 
   let networkIP = window.location.hostname; // Fallback to current browser host (e.g. 192.168.x.x)
+  let obsPort = null;
   const port = window.location.port ? `:${window.location.port}` : '';
 
   try {
@@ -1825,6 +1826,7 @@ async function initProjectorSharingQR() {
     if (data.ip && data.ip !== 'localhost') {
       networkIP = data.ip;
     }
+    if (Number.isInteger(data.obsPort) && data.obsPort > 0) obsPort = data.obsPort;
   } catch (err) {
     console.warn("Failed to fetch local network IP from server API:", err);
   }
@@ -1878,6 +1880,12 @@ async function initProjectorSharingQR() {
 
   bindShareActions('copy-projector-url', 'open-projector-url', subtitlesUrl);
   bindShareActions('copy-streamer-url', 'open-streamer-url', streamerUrl);
+  const obsUrl = obsPort
+    ? `http://${networkIP}:${obsPort}/?obs=true`
+    : `${subtitlesUrl}?obs=true`;
+  const obsTip = document.getElementById('obs-url-tip');
+  if (obsTip) obsTip.textContent = obsUrl;
+  bindShareActions('copy-obs-url', 'open-obs-url', obsUrl);
 }
 
 initProjectorSharingQR();

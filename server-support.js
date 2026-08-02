@@ -150,7 +150,11 @@ export async function handleRuntimeApi(req, res) {
   const url = new URL(req.url, 'https://localhost');
 
   if (url.pathname === '/api/network-ip' && req.method === 'GET') {
-    sendJson(res, 200, { ip: getNetworkIP() });
+    const obsPort = Number.parseInt(process.env.LIVE_TRANSLATE_OBS_PORT || '', 10);
+    sendJson(res, 200, {
+      ip: getNetworkIP(),
+      obsPort: Number.isInteger(obsPort) && obsPort > 0 ? obsPort : null
+    });
     return true;
   }
 
@@ -227,7 +231,12 @@ export async function handleRuntimeApi(req, res) {
   return true;
 }
 
-export function attachLocalRelay(httpServer) {
+export function attachLocalRelay(httpServer, existingRelay = null) {
+  if (existingRelay) {
+    existingRelay.attach(httpServer);
+    return existingRelay;
+  }
+
   const subtitleState = {
     lang1: { accumulatedText: '' },
     lang2: { accumulatedText: '' },
@@ -237,6 +246,7 @@ export function attachLocalRelay(httpServer) {
     audioSenderStreaming: false
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
+  const attachedServers = new Set();
 
   function send(client, message, lossy = false) {
     if (client.readyState !== WebSocket.OPEN) return;
@@ -264,13 +274,21 @@ export function attachLocalRelay(httpServer) {
     }));
   }
 
-  httpServer.on('upgrade', (request, socket, head) => {
-    const { pathname } = new URL(request.url, 'https://localhost');
-    if (pathname !== '/local-subtitles-ws') return;
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
+  function attach(server) {
+    if (attachedServers.has(server)) return;
+    attachedServers.add(server);
+    server.on('upgrade', (request, socket, head) => {
+      const { pathname } = new URL(request.url, 'https://localhost');
+      if (pathname !== '/local-subtitles-ws') return;
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
     });
-  });
+    server.on('close', () => {
+      attachedServers.delete(server);
+      if (attachedServers.size === 0) clearInterval(heartbeat);
+    });
+  }
 
   wss.on('connection', (ws) => {
     ws.isAlive = true;
@@ -340,6 +358,7 @@ export function attachLocalRelay(httpServer) {
     }
   }, 15_000);
 
-  httpServer.on('close', () => clearInterval(heartbeat));
-  return wss;
+  const relay = { attach, wss };
+  attach(httpServer);
+  return relay;
 }

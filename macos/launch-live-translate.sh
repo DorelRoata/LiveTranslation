@@ -236,6 +236,7 @@ fi
 if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
   RUNNING_REPO="$(get_running_repository)"
   if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
+    show_notice "Live Translate is already running. Opening the existing dashboard."
     /usr/bin/open "$DASHBOARD_URL"
     exit 0
   fi

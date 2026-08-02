@@ -127,12 +127,14 @@ You can overlay the live translated subtitles directly onto a video feed in OBS 
 
 ### How to set it up:
 1. Open **OBS Studio** and add a new **Browser** source to your scene.
-2. Set the **URL** to your local subtitle link, but add `?obs=true` to the end. 
-   *(Example: `https://192.168.1.67:5173/subtitles.html?obs=true` or `https://localhost:5173/subtitles.html?obs=true`)*
+2. Copy the dedicated **OBS Overlay URL** from the dashboard and paste it into the source.
+   It uses port `5174` over local HTTP so OBS does not silently reject the app's
+   self-signed HTTPS certificate. Example: `http://192.168.1.67:5174/?obs=true`.
 3. Set the **Width** to `1920` and **Height** to `1080` (or match your stream's canvas resolution).
 4. *(Optional)* If you want the translated text-to-speech audio to play through the stream, check **"Control audio via OBS"**. Otherwise, leave it unchecked if you only want the text overlay.
 
-The subtitles will now perfectly float over your camera feed with smooth typing animations!
+The overlay is transparent and intentionally blank until translated words arrive.
+The subtitles will then float over your camera feed with smooth typing animations.
 
 ---
 

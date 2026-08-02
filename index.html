@@ -206,7 +206,7 @@
           <!-- Collapsible QR Code details section -->
           <details class="qr-details" open>
             <summary class="qr-summary">
-              Projector & External Microphone Sharing
+              Projector, OBS & External Microphone Sharing
             </summary>
             <div class="qr-grid-layout">
               <!-- Projector Screen Sharing Tip -->
@@ -238,6 +238,17 @@
                     <button id="copy-streamer-url" class="share-link-btn" type="button">Copy URL</button>
                     <button id="open-streamer-url" class="share-link-btn" type="button">Open Page</button>
                   </div>
+                </div>
+              </div>
+
+              <!-- OBS Browser Source Sharing Tip -->
+              <div class="network-info-box" id="obs-overlay-info-box">
+                <p style="font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.25rem;">OBS Overlay URL:</p>
+                <p>Paste this certificate-free URL into an OBS Browser Source. The transparent page stays blank until translated words arrive:</p>
+                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true</p>
+                <div class="share-link-actions">
+                  <button id="copy-obs-url" class="share-link-btn" type="button">Copy URL</button>
+                  <button id="open-obs-url" class="share-link-btn" type="button">Open Page</button>
                 </div>
               </div>
             </div>
