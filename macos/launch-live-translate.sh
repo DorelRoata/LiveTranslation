@@ -33,6 +33,17 @@ end run
 APPLESCRIPT
 }
 
+show_already_running() {
+  if [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ]; then
+    /usr/bin/printf 'OK\n'
+    return 0
+  fi
+  /usr/bin/osascript <<'APPLESCRIPT'
+set result to display dialog "Live Translate is already running. Nothing new will be started, and the current dashboard will not be reloaded." with title "Live Translate" buttons {"Open Dashboard", "OK"} default button "OK" with icon note
+return button returned of result
+APPLESCRIPT
+}
+
 ask_to_update() {
   /usr/bin/osascript - "$1" <<'APPLESCRIPT'
 on run argv
@@ -236,8 +247,10 @@ fi
 if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
   RUNNING_REPO="$(get_running_repository)"
   if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
-    show_notice "Live Translate is already running. Opening the existing dashboard."
-    /usr/bin/open "$DASHBOARD_URL"
+    RUNNING_CHOICE="$(show_already_running)"
+    if [ "$RUNNING_CHOICE" = "Open Dashboard" ]; then
+      /usr/bin/open "$DASHBOARD_URL"
+    fi
     exit 0
   fi
   show_error "Port 5173 is already being used by another or older server. Stop that server, then open Live Translate again."
