@@ -24,6 +24,7 @@ The current application version is `v1.2.0`.
 - **Echo Target Language** defaults to off.
 - Remembered operator settings with a **Reset Settings to Defaults** button.
 - Selectable **Smooth** subtitle pacing with a 200 ms buffer, plus the original **Live** pacing mode.
+- An optional live **Automatically Ignore Songs** filter that keeps Gemini connected while pausing song audio.
 - A projector/phone subtitle page with wake lock and automatic reconnection.
 - A certificate-free OBS Browser Source endpoint on local HTTP port `5174`.
 - A remote microphone page for another computer or phone.
@@ -118,7 +119,7 @@ The Gemini API key is stored in the current user's private application configura
 
 The file is created with user-only permissions. API-key configuration is available only from the host computer.
 
-Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, subtitle pacing, Echo Target Language, Local Speaker, local volume, and transcript font size.
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
 
 Important defaults include:
 
@@ -130,6 +131,7 @@ Important defaults include:
 - Voice 1 and Voice 2 output: on.
 - Local volume: 100%, but silent while Local Speaker is off.
 - Subtitle Pace: Smooth with a 200 ms start buffer.
+- Automatically Ignore Songs: off.
 - Transcript size: medium.
 
 **Reset Settings to Defaults** restores operator preferences but deliberately keeps the saved Gemini API key.
@@ -167,6 +169,18 @@ The dashboard warns the operator if the remote sender disconnects and clears the
 OBS mode hides controls and the connection indicator and makes the page background transparent. A completely blank overlay is expected before translated words arrive.
 
 If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties.
+
+## Automatic song filtering
+
+**Automatically Ignore Songs** is a saved dashboard switch that defaults to off and remains available while translation is running. When enabled, the browser loads Google's MediaPipe/YAMNet audio classifier and analyzes the existing 16 kHz audio locally for speech, singing, and music-related events.
+
+- Two consecutive song-like windows are required before pausing, preventing a brief musical sound from stopping a speaker.
+- Three consecutive speech-dominant windows are required before resuming.
+- While paused, new audio is not sent to Gemini, pending translated playback is stopped, and new translation output is discarded. The Gemini session stays connected.
+- Turning the switch off resumes translation immediately.
+- If the classifier cannot load or fails, the filter fails open: the dashboard shows an error and translation continues normally.
+
+The first activation downloads the MediaPipe WebAssembly runtime and YAMNet model from their official distribution locations, after which normal browser caching applies. Detection is probabilistic. Speech over loud music and unusual vocal sounds can cause false results, so the dashboard status and live switch remain the operator override.
 
 ## Subtitle pacing
 

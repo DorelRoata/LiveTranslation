@@ -1,5 +1,12 @@
 import './style.css';
 import QRCode from 'qrcode';
+import {
+  RollingAudioWindow,
+  SONG_DETECTION_SAMPLE_RATE,
+  createSongGateState,
+  getSongEvidence,
+  updateSongGateState
+} from './song-detection.js';
 
 // --- Constants ---
 const HOST = "generativelanguage.googleapis.com";
@@ -9,6 +16,8 @@ const MODEL = "models/gemini-3.5-live-translate-preview";
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
+const SONG_DETECTOR_WASM_ROOT = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-audio@1.0.1/wasm';
+const SONG_DETECTOR_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
 const DEFAULT_SYSTEM_INSTRUCTION = `${LEGACY_DEFAULT_SYSTEM_INSTRUCTION} Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.`;
 const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
@@ -23,6 +32,7 @@ const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   localSpeaker: false,
   localVolume: 1,
   subtitlePacing: 'smooth',
+  ignoreSongs: false,
   transcriptFontSize: 'md'
 });
 
@@ -59,6 +69,12 @@ let isMicMuted = false;
 let sessionTimerInterval = null;
 let sessionStartTime = 0;
 let totalWordsCount = 0;
+let songClassifier = null;
+let songClassifierLoadPromise = null;
+let songDetectionFailed = false;
+let songGateState = createSongGateState();
+let isSongSuppressed = false;
+const songAudioWindow = new RollingAudioWindow();
 
 const subtitleState = {
   lang1: { accumulatedText: "" },
@@ -78,6 +94,8 @@ const micDeviceGroup = document.getElementById("mic-device-group");
 const micDeviceSelect = document.getElementById("mic-device-select");
 const systemInstructionInput = document.getElementById("system-instruction-input");
 const subtitlePacingSelect = document.getElementById('subtitle-pacing-select');
+const ignoreSongsToggle = document.getElementById('ignore-songs-toggle');
+const songFilterStatus = document.getElementById('song-filter-status');
 
 const targetLanguageSelect1 = document.getElementById("target-language-select-1");
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
@@ -186,6 +204,9 @@ function applyOperatorSettings(settings) {
   const volume = Number(settings.localVolume);
   hostVolumeSlider.value = String(Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : DEFAULT_OPERATOR_SETTINGS.localVolume);
   setSelectValue(subtitlePacingSelect, settings.subtitlePacing, DEFAULT_OPERATOR_SETTINGS.subtitlePacing);
+  ignoreSongsToggle.checked = typeof settings.ignoreSongs === 'boolean'
+    ? settings.ignoreSongs
+    : DEFAULT_OPERATOR_SETTINGS.ignoreSongs;
   setTranscriptFontSize(settings.transcriptFontSize);
   micDeviceGroup.style.display = audioSourceSelect.value === 'mic' ? 'block' : 'none';
 }
@@ -204,6 +225,7 @@ function getOperatorSettings() {
     localSpeaker: localPlaybackToggle.checked,
     localVolume: Number(hostVolumeSlider.value),
     subtitlePacing: subtitlePacingSelect.value,
+    ignoreSongs: ignoreSongsToggle.checked,
     transcriptFontSize: activeFontButton?.dataset.size || DEFAULT_OPERATOR_SETTINGS.transcriptFontSize
   };
 }
@@ -240,6 +262,7 @@ function loadOperatorSettings() {
 }
 
 loadOperatorSettings();
+syncSongDetectorPreference();
 
 // Gemini sessions live in this browser page. Protect an active translation
 // from accidental reloads, tab closes, or a launcher/browser navigation.
@@ -322,6 +345,10 @@ echoToggle.addEventListener('change', saveOperatorSettings);
 localPlaybackToggle.addEventListener('change', saveOperatorSettings);
 hostVolumeSlider.addEventListener('input', saveOperatorSettings);
 subtitlePacingSelect.addEventListener('change', saveOperatorSettings);
+ignoreSongsToggle.addEventListener('change', () => {
+  saveOperatorSettings();
+  syncSongDetectorPreference();
+});
 micDeviceSelect.addEventListener('change', () => {
   preferredMicDeviceId = micDeviceSelect.value || DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
   saveOperatorSettings();
@@ -331,7 +358,8 @@ resetSettingsBtn.addEventListener('click', () => {
   if (!window.confirm('Reset operator settings to their defaults? The saved Gemini API key will not be removed.')) return;
   applyOperatorSettings(DEFAULT_OPERATOR_SETTINGS);
   saveOperatorSettings();
-  setDiagnostic('Operator settings restored to defaults. Local Speaker and Echo Target Language are off.', 'good');
+  syncSongDetectorPreference();
+  setDiagnostic('Operator settings restored to defaults. Local Speaker, Echo Target Language, and automatic song filtering are off.', 'good');
 });
 
 // Toggle API Key Visibility
@@ -537,6 +565,7 @@ async function copyDiagnostics() {
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
+    `Automatic song filter: ${ignoreSongsToggle.checked ? songFilterStatus.textContent : 'Off'}`,
     ...statusLines,
     `Operator message: ${diagnosticMessage.textContent}`,
     '',
@@ -730,6 +759,7 @@ function initOutputAudio() {
 }
 
 function playPCMChunk(base64Data, channelId) {
+  if (isSongSuppressed) return;
   initOutputAudio();
   
   const isPlayChecked = channelId === 1 ? playVoiceCheckbox1.checked : playVoiceCheckbox2.checked;
@@ -838,6 +868,154 @@ function stopAllPlayback() {
   outputDb.textContent = "0%";
 }
 
+function setSongFilterStatus(state, message) {
+  songFilterStatus.dataset.state = state;
+  songFilterStatus.textContent = message;
+}
+
+function discardStreamingOutput() {
+  const pending = [currentStreamingBubble1, currentStreamingBubble2];
+  pending.forEach(bubble => bubble?.remove());
+  currentStreamingBubble1 = null;
+  currentStreamingBubble2 = null;
+  if (outputList1.children.length === 0) outputPlaceholder1.style.display = 'block';
+  if (outputList2.children.length === 0) outputPlaceholder2.style.display = 'block';
+}
+
+function updateReadySongFilterStatus() {
+  if (!ignoreSongsToggle.checked) {
+    setSongFilterStatus('off', 'Off — songs may be translated.');
+  } else if (songDetectionFailed) {
+    setSongFilterStatus('error', 'Detector unavailable — translation is continuing.');
+  } else if (!songClassifier) {
+    setSongFilterStatus('ready', 'Loading on-device song detector...');
+  } else if (isRunning) {
+    setSongFilterStatus('ready', 'On — listening for songs.');
+  } else {
+    setSongFilterStatus('ready', 'On — ready when translation starts.');
+  }
+}
+
+function setSongSuppressed(suppressed, announceResume = true) {
+  if (isSongSuppressed === suppressed) return;
+  isSongSuppressed = suppressed;
+
+  if (suppressed) {
+    stopAllPlayback();
+    discardStreamingOutput();
+    setSongFilterStatus('paused', 'Song detected — translation paused.');
+    setDiagnostic('Song detected. Audio to Gemini is paused while the session stays connected.', 'warning');
+    logDebug('Song detected. Automatic song filter paused translation audio.', 'warning');
+    return;
+  }
+
+  updateReadySongFilterStatus();
+  if (isRunning && announceResume) {
+    setDiagnostic('Speech detected. Translation audio resumed automatically.', 'good');
+    logDebug('Speech detected. Automatic song filter resumed translation audio.', 'info');
+  }
+}
+
+function resetSongDetectionGate() {
+  songAudioWindow.reset();
+  songGateState = createSongGateState();
+  setSongSuppressed(false, false);
+}
+
+async function ensureSongClassifier() {
+  if (songClassifier) return songClassifier;
+  if (songClassifierLoadPromise) return songClassifierLoadPromise;
+
+  songDetectionFailed = false;
+  songClassifierLoadPromise = (async () => {
+    const { AudioClassifier, FilesetResolver } = await import('@mediapipe/tasks-audio');
+    const fileset = await FilesetResolver.forAudioTasks(SONG_DETECTOR_WASM_ROOT);
+    const classifier = await AudioClassifier.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: SONG_DETECTOR_MODEL_URL },
+      maxResults: 30,
+      scoreThreshold: 0.05
+    });
+    classifier.setDefaultSampleRate(SONG_DETECTION_SAMPLE_RATE);
+    songClassifier = classifier;
+    return classifier;
+  })().catch(error => {
+    songDetectionFailed = true;
+    logDebug(`Automatic song detector could not load: ${error.message}`, 'error');
+    if (ignoreSongsToggle.checked) {
+      setSongFilterStatus('error', 'Detector unavailable — translation is continuing.');
+      setDiagnostic('Automatic song detection could not load. Translation is continuing normally.', 'warning');
+    }
+    return null;
+  }).finally(() => {
+    songClassifierLoadPromise = null;
+  });
+
+  return songClassifierLoadPromise;
+}
+
+async function syncSongDetectorPreference() {
+  const wasSuppressed = isSongSuppressed;
+  resetSongDetectionGate();
+  if (!ignoreSongsToggle.checked) {
+    songDetectionFailed = false;
+    setSongFilterStatus('off', 'Off — songs may be translated.');
+    if (wasSuppressed && isRunning) {
+      setDiagnostic('Automatic song filtering was disabled. Translation resumed immediately.', 'good');
+      logDebug('Automatic song filtering disabled. Translation audio resumed.', 'info');
+    }
+    return;
+  }
+
+  setSongFilterStatus('ready', songClassifier ? 'On — ready when translation starts.' : 'Loading on-device song detector...');
+  const classifier = await ensureSongClassifier();
+  if (!ignoreSongsToggle.checked || !classifier) return;
+  updateReadySongFilterStatus();
+}
+
+function failOpenSongDetection(error) {
+  songDetectionFailed = true;
+  try {
+    songClassifier?.close();
+  } catch (closeError) {
+    console.warn('Unable to close the failed song detector:', closeError);
+  }
+  songClassifier = null;
+  resetSongDetectionGate();
+  setSongFilterStatus('error', 'Detector unavailable — translation is continuing.');
+  setDiagnostic('Automatic song detection stopped unexpectedly. Translation is continuing normally.', 'warning');
+  logDebug(`Automatic song detection stopped: ${error.message}`, 'error');
+}
+
+function analyzeAudioForSongs(samples) {
+  if (!ignoreSongsToggle.checked || !songClassifier || songDetectionFailed) return;
+  const window = songAudioWindow.append(samples);
+  if (!window) return;
+
+  try {
+    const evidence = getSongEvidence(songClassifier.classify(window, SONG_DETECTION_SAMPLE_RATE));
+    const nextState = updateSongGateState(songGateState, evidence);
+    const suppressionChanged = nextState.suppressed !== songGateState.suppressed;
+    songGateState = nextState;
+    if (suppressionChanged) setSongSuppressed(nextState.suppressed);
+  } catch (error) {
+    failOpenSongDetection(error);
+  }
+}
+
+function decodeBase64Pcm16(base64Data) {
+  const binary = atob(base64Data);
+  const pcm = new Int16Array(Math.floor(binary.length / 2));
+  for (let index = 0; index < pcm.length; index++) {
+    const low = binary.charCodeAt(index * 2);
+    const high = binary.charCodeAt((index * 2) + 1);
+    const value = low | (high << 8);
+    pcm[index] = value >= 0x8000 ? value - 0x10000 : value;
+  }
+  const samples = new Float32Array(pcm.length);
+  for (let index = 0; index < pcm.length; index++) samples[index] = pcm[index] / 0x8000;
+  return samples;
+}
+
 // --- Audio Capture Pipeline (Mic Input) ---
 async function startAudioCapture() {
   const captureGeneration = ++audioCaptureGeneration;
@@ -922,14 +1100,15 @@ async function startAudioCapture() {
     const socket1Ready = canSendAudio(socket1, true, 1);
     const socket2Ready = canSendAudio(socket2, true, 2);
     if (!socket1Ready && !socket2Ready) return;
+
+    const float32 = e.inputBuffer.getChannelData(0);
+    analyzeAudioForSongs(float32);
     
     if (isMicMuted) {
       micDb.textContent = "Muted";
       micIndicator.classList.remove("active");
       return;
     }
-    
-    const float32 = e.inputBuffer.getChannelData(0);
     
     let maxVal = 0;
     const pcm16 = new Int16Array(float32.length);
@@ -955,6 +1134,8 @@ async function startAudioCapture() {
     } else {
       micIndicator.classList.remove("active");
     }
+
+    if (isSongSuppressed) return;
     
     // Send PCM chunk
     const base64Data = base64ArrayBuffer(pcm16.buffer);
@@ -1336,6 +1517,7 @@ async function startSession() {
 
   isStarting = false;
   isRunning = true;
+  updateReadySongFilterStatus();
   audioSourceSelect.disabled = false;
   micDeviceSelect.disabled = false;
   restartAudioBtn.disabled = audioSourceSelect.value === 'network';
@@ -1527,6 +1709,8 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
         markSocketReady(channelId, generation);
         return;
       }
+
+      if (isSongSuppressed) return;
       
       if (data.serverContent) {
         const sc = data.serverContent;
@@ -1621,6 +1805,8 @@ function disconnectSession(clearSubtitles = true) {
   logDebug("Disconnecting session...", "info");
   stopAudioCapture();
   stopAllPlayback();
+  resetSongDetectionGate();
+  updateReadySongFilterStatus();
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
   
@@ -1745,11 +1931,21 @@ function handleIncomingNetworkAudio(base64Data) {
   const isTranslating = socketSetupReady[1] || socketSetupReady[2];
   if (!isNetworkSource || !isTranslating) return;
 
+  if (ignoreSongsToggle.checked && songClassifier && !songDetectionFailed) {
+    try {
+      analyzeAudioForSongs(decodeBase64Pcm16(base64Data));
+    } catch (error) {
+      failOpenSongDetection(error);
+    }
+  }
+
   if (isMicMuted) {
     micDb.textContent = "Muted";
     micIndicator.classList.remove("active");
     return;
   }
+
+  if (isSongSuppressed) return;
 
   const mediaMsg = {
     realtimeInput: {

@@ -97,6 +97,7 @@ The following values are saved immediately in browser storage:
 - Local Speaker.
 - Local playback volume.
 - Subtitle pacing mode.
+- Automatically Ignore Songs.
 - Transcript font size.
 
 Browser storage belongs to the exact origin and browser profile. For predictable restoration, always operate the host dashboard at `https://localhost:5173/` in the same browser profile. Private browsing, clearing site data, changing profiles, or opening the dashboard by network IP creates or uses a different settings store.
@@ -117,6 +118,7 @@ Browser storage belongs to the exact origin and browser profile. For predictable
 | Local Speaker | Off |
 | Local volume | 100% |
 | Subtitle Pace | Smooth (200 ms buffer) |
+| Automatically Ignore Songs | Off |
 | Transcript size | Medium |
 | System instructions | Built-in church-sermon interpreter and short-phrase pacing prompt |
 
@@ -186,7 +188,23 @@ Interpret the result:
 - Projector has words, OBS blank: verify port `5174`, the source URL, OBS visibility/layer order, and refresh the Browser Source cache.
 - OBS URL unavailable in a normal browser: verify both computers are on the same network and allow the host application through the firewall.
 
-## 11. Subtitle pacing
+## 11. Automatically Ignore Songs
+
+The saved **Automatically Ignore Songs** switch defaults to off and can be enabled or disabled without stopping an active translation session.
+
+When enabled:
+
+1. The browser loads the on-device MediaPipe/YAMNet classifier. The first load requires internet access for the classifier runtime and model; the browser can cache them afterward.
+2. The same 16 kHz audio used by translation is classified locally, including microphone, system-audio, and network-audio sources.
+3. Two consecutive song-like windows pause the audio feed. Pending translated playback stops and subsequent Gemini translation output is ignored, but the session remains connected.
+4. The status under the switch changes to **Song detected — translation paused**.
+5. Three consecutive speech-dominant windows resume translation automatically. Turning the switch off resumes immediately.
+
+The filter deliberately fails open. If the model cannot load or inference stops, the dashboard reports **Detector unavailable** and continues translation instead of silently losing speech.
+
+Detection is probabilistic. The thresholds are designed to avoid pausing a speaker over light background music, but loud music under speech, chanting, or unusual vocal sounds can still produce false results. Watch the dashboard status and use the switch as the live override. The normal **Mute Mic** control remains the manual backstop.
+
+## 12. Subtitle pacing
 
 The dashboard's saved **Subtitle Pace** selector controls every projector, phone, and OBS subtitle client through the local relay.
 
@@ -215,7 +233,7 @@ Live retains the original `350 ms` normal line-break pause and `150 ms` catch-up
 
 Both modes use sentence punctuation for semantic line breaks and a 60-character fallback for long lines. The built-in Gemini prompt requests short complete phrases, natural cadence, no repetition or revision of already emitted text, and no long response pauses. This prompt can improve structure, while the client queue remains responsible for deterministic screen timing. Neither mode changes the translated audio playback speed.
 
-## 12. Recovery and diagnostics
+## 13. Recovery and diagnostics
 
 The dashboard provides:
 
@@ -229,7 +247,7 @@ The dashboard provides:
 
 Live audio is not queued while connections are unavailable. This prevents stale speech from being translated after a recovery.
 
-## 13. Logs
+## 14. Logs
 
 The macOS launcher writes to:
 
@@ -245,7 +263,7 @@ tail -100 "$HOME/Library/Logs/LiveTranslate.log"
 
 The browser dashboard also includes System Status Logs and a Copy Diagnostics control.
 
-## 14. Common problems
+## 15. Common problems
 
 ### Clicking the Dock app resets the dashboard
 
