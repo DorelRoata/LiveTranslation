@@ -152,7 +152,7 @@ perform_update() {
     write_update_marker updated || return 2
   fi
   if [ "$(/usr/bin/git rev-parse HEAD 2>/dev/null || true)" = "$UPDATE_EXPECTED_COMMIT" ] &&
-     npm ci >>"$LOG_FILE" 2>&1 && npm run build >>"$LOG_FILE" 2>&1; then
+     "$NPM_BIN" ci >>"$LOG_FILE" 2>&1 && "$NPM_BIN" run build >>"$LOG_FILE" 2>&1; then
     /bin/rm -f "$UPDATE_MARKER"
     /bin/rm -rf "$NODE_BACKUP" "$DIST_BACKUP"
     BUILD_READY=1
@@ -175,6 +175,7 @@ trap 'cleanup; exit 130' INT TERM HUP
 /bin/mkdir -p -m 700 "$CONFIG_DIR"
 /bin/chmod 700 "$CONFIG_DIR"
 /bin/mkdir -p "$LOG_DIR"
+/usr/bin/printf '\n[%s] Live Translate launcher starting\n' "$(/bin/date '+%Y-%m-%d %H:%M:%S')" >>"$LOG_FILE"
 
 if [ ! -d "$REPO_ROOT" ] || [ ! -f "$REPO_ROOT/package.json" ]; then
   show_error "The Live Translate repository could not be found at:\n\n$REPO_ROOT\n\nRun install-mac-app.command again from the repository."
@@ -220,6 +221,9 @@ if [ -z "$SELECTED_NODE_DIR" ]; then
   exit 1
 fi
 export PATH="$SELECTED_NODE_DIR:$BASE_PATH"
+NODE_BIN="$SELECTED_NODE_DIR/node"
+NPM_BIN="$SELECTED_NODE_DIR/npm"
+/usr/bin/printf 'Repository: %s\nNode: %s (%s)\n' "$REPO_ROOT" "$NODE_BIN" "$($NODE_BIN --version)" >>"$LOG_FILE"
 
 NODE_BACKUP="$REPO_ROOT/.live-translate-node_modules-backup"
 DIST_BACKUP="$REPO_ROOT/.live-translate-dist-backup"
@@ -283,23 +287,30 @@ if [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ]; then
   exit 0
 fi
 
-if [ ! -d node_modules ]; then
+dependencies_are_ready() {
+  "$NODE_BIN" -e "Promise.all([import('@vitejs/plugin-basic-ssl'), import('qrcode'), import('ws')]).catch(() => process.exit(1))" >/dev/null 2>&1
+}
+
+if ! dependencies_are_ready; then
   show_notice "Installing Live Translate dependencies..."
-  if ! npm ci >>"$LOG_FILE" 2>&1; then
+  if ! "$NPM_BIN" ci >>"$LOG_FILE" 2>&1; then
     show_error "Live Translate dependencies could not be installed. Check $LOG_FILE for details."
     exit 1
   fi
 fi
 
-if [ "$BUILD_READY" != "1" ]; then
+# Release checkouts include a tested production build. Rebuilding it on every
+# Dock launch made cold starts depend unnecessarily on npm/Vite and could fail
+# on a second Mac even though the shipped dashboard was ready to serve.
+if [ "$BUILD_READY" != "1" ] && [ ! -f dist/index.html ]; then
   show_notice "Preparing the dashboard..."
-  if ! npm run build >>"$LOG_FILE" 2>&1; then
+  if ! "$NPM_BIN" run build >>"$LOG_FILE" 2>&1; then
     show_error "The Live Translate dashboard could not be built. Check $LOG_FILE for details."
     exit 1
   fi
 fi
 
-node server.js >>"$LOG_FILE" 2>&1 &
+"$NODE_BIN" server.js >>"$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 
 for ATTEMPT in {1..60}; do
