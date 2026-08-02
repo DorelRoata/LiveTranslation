@@ -1,69 +1,73 @@
 # Live Translate
 
-A sleek, low-latency, real-time voice-to-voice translation web application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). 
+Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-This application supports dual-language concurrent translations, visual waveform analytics, audio play/mute controls, remote network audio streaming from a separate computer, and a dedicated local network projector screen for sharing rolling subtitles on another laptop in real-time.
+The current application version is `v1.2.0`.
 
----
+## Screenshots
 
-## 📸 Screenshots
+### Translation dashboard
 
-### 1. Main Translation Dashboard
 ![Main Translation Dashboard](./screenshots/dashboard.png)
 
-### 2. Standalone Subtitles Projector Screen
+### Projector subtitles
+
 ![Projector Subtitles Screen](./screenshots/projector.png)
 
----
+## Highlights
 
-## ⚡ Features
+- Microphone, system-audio, or remote network-audio input at 16 kHz PCM.
+- One or two concurrent Gemini translation sessions.
+- Low-latency translated speech playback at 24 kHz.
+- Independent Voice 1 and Voice 2 output controls.
+- A safety-oriented **Local Speaker** control that defaults to off.
+- **Echo Target Language** defaults to off.
+- Remembered operator settings with a **Reset Settings to Defaults** button.
+- A projector/phone subtitle page with wake lock and automatic reconnection.
+- A certificate-free OBS Browser Source endpoint on local HTTP port `5174`.
+- A remote microphone page for another computer or phone.
+- Connection health, diagnostics, manual recovery controls, and safe Mac updates.
+- A gunmetal-gray dashboard with coral, amber, and green status accents.
 
-* **High-Fidelity Audio capture:** Captures microphone input or system audio loopback (from YouTube, video calls, etc.) at 16kHz PCM.
-* **Low-Latency Spoken Responses:** Streams translated audio playback back at 24kHz using a jitter-free Float32 buffer queue.
-* **Concurrent Dual-Language Translation:** Connects to two parallel Gemini Live WebSocket sessions to translate speech into two languages at the same time.
-* **Visual Waveform Analysis:** Live HTML5 canvas waveforms showing microphone input volume and translation audio output.
-* **Independent Mute Controls:** Toggle spoken translation audio for Language 1 and Language 2 independently.
-* **Decoupled Local Speaker Routing:** Includes a "Local Speaker" toggle on the dashboard. Unchecking this silences translated speech on the host computer's speakers (preventing microphone feedback loop and stream bleed on streaming/broadcast PCs), while continuing to stream audio packets over the network to all projector and client pages.
-* **Multi-Laptop Screen Sharing (Projector Support):** Expose a local network server over HTTPS and stream live subtitles to a second laptop connected to a projector.
-* **Remote Network Audio Streaming:** Capture audio on a separate computer and stream it over the local network to the main translation server. Ideal for setups where the microphone is far from the translation laptop — just open the Audio Streamer page on the remote PC and select "Network Audio" on the dashboard.
-* **Disconnect Detection:** When the remote audio sender disconnects unexpectedly, the dashboard instantly displays a warning banner so the operator knows the stream was interrupted.
-* **Phone Screen Wake Lock:** Subtitle viewers can keep their screen awake, while the external microphone page enables wake lock automatically during streaming and reacquires it after returning to the page.
-* **Smart Dynamic QR Code:** Automatically resolves the host's local network IP to generate a scannable QR code directly on the dashboard. Any attendee or secondary device can scan it to instantly join the live translation session.
-* **Premium Flat Theme Layout:** Restructured dashboard placing all settings and system instruction widgets in a clean, 4-column horizontal card front and center at the top of the viewport. Visualizers, transcript logs, and controls are stacked below. Accent styling has been polished into a modern flat blue theme (removing legacy purple elements).
-* **AI Translation Hints:** Provide real-time "system instructions" to the AI interpreter via the dashboard before connecting (e.g. teaching it specific theological terminology, preacher's name, or formal translation styles).
-* **Broadcast-Grade Subtitles Engine:** 
-  * **Smooth-Typing Ticker Queue:** Instead of raw API text chunks popping onto the screen at once (causing jarring flashes), incoming text is buffered into a client-side queue and rendered smoothly word-by-word. The queue calculates dynamic backpressure speeds (e.g., automatically speeding up from 160ms/word to 30ms/word) to ensure zero lag.
-  * **Semantic Line Locking & Pacing Pause:** Sentences are intelligently locked into an immutable visual history buffer. Line breaks are strictly calculated at true sentence boundaries (`.?!`), and the engine introduces a dynamic post-break pause (150ms to 350ms depending on queue depth) to give the reader a stable moment to digest the completed sentence before it shifts up.
-  * **Active-Line Highlight Preservation:** The sentence-final word (e.g., ending with a period) is rendered and fully highlighted in bright white on the active line, only moving to dimmed history when the next sentence actually begins.
-  * **Visual Hierarchy:** Premium high-contrast layout where the active typing line glows in bright white while historical lines recede into a dim 30% opacity.
-  * **Instant State Synchronization & Auto-Reconnect:** Subtitle clients feature a 3-second auto-reconnect loop that recovers from server restarts. When a subtitle page first connects or is refreshed mid-session, it receives a synchronized history state which renders instantly to the screen, bypassing the fast-forward word queue animation.
+## Network addresses and ports
 
----
+| Purpose | Protocol and port | Typical address |
+| --- | --- | --- |
+| Local dashboard | HTTPS `5173` | `https://localhost:5173/` |
+| Projector/phone subtitles | HTTPS `5173` | `https://192.168.1.67:5173/subtitles.html` |
+| Remote microphone | HTTPS `5173` | `https://192.168.1.67:5173/audio-sender.html` |
+| OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true` |
 
-## 🚀 Quick Start (Local Network & Projector Mode)
+Use `localhost` only on the Mac that is running Live Translate. Other computers must use the network address displayed by the dashboard.
 
-To run the application on **Laptop A** (capturing audio) and display subtitles on **Laptop B** (connected to the projector):
+The dashboard, API-key configuration, projector page, and microphone page remain on HTTPS. The OBS-only listener uses HTTP because OBS can silently reject the application's self-signed HTTPS certificate. Port `5174` exposes only the subtitle overlay, its compiled assets, and the subtitle WebSocket; it does not expose the dashboard or configuration API.
+
+## Requirements
+
+- Node.js `20.19` or newer in the Node 20 line, or Node.js `22.12` or newer.
+- npm and Git.
+- A Gemini API key.
+- Chrome, Edge, or Safari for the dashboard and shared browser pages.
+- Both computers on the same local network for projector, remote microphone, or remote OBS use.
+
+## Quick start
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/DorelRoata/LiveTranslation.git
 cd LiveTranslation
-
-# 2. Install dependencies
 npm ci
-
-# 3. Build and start the production local server
 npm run start:app
 ```
 
-On first launch, enter the Gemini API key in the dashboard opened at
-`https://localhost:5173`. The key is stored in the current user's application
-settings outside the repository and is never included in Vite source or build
-artifacts. Later launches load it automatically.
+Open `https://localhost:5173/` on the host Mac. Enter the Gemini API key once; later launches load it automatically.
 
-For source development with hot reload, use `npm run dev`.
+For source development with hot reload:
 
-### macOS Dock App
+```bash
+npm run dev
+```
+
+## macOS Dock app
 
 After cloning the repository and running `npm ci`, double-click:
 
@@ -71,77 +75,116 @@ After cloning the repository and running `npm ci`, double-click:
 install-mac-app.command
 ```
 
-The installer places `Live Translate.app` in `~/Applications`, links it to this
-repository, and offers to launch it. Drag the app from `~/Applications` to the
-Dock for one-click access. The app builds and starts the production server,
-waits for it to become ready, and opens `https://localhost:5173` automatically.
+The installer places `Live Translate.app` in `~/Applications` and links it to the current repository. You can drag that app to the Dock.
 
-Do not delete or move the repository after installation. If it moves, run
-`install-mac-app.command` again from the new location. The Gemini API key and
-settings remain under `~/Library/Application Support/LiveTranslation` and are
-not replaced by app updates.
+The Dock app:
 
-### Future Updates
+- Finds a compatible Node.js installation.
+- Checks dependency integrity and installs missing dependencies when necessary.
+- Builds the production dashboard when required.
+- Starts the HTTPS dashboard on port `5173` and the OBS overlay on port `5174`.
+- Waits for the dashboard to become ready before opening it.
+- Writes startup output to `~/Library/Logs/LiveTranslate.log`.
+- Protects local or diverged Git work from automatic updates.
 
-When the Dock app starts and the server is not already running, it checks
-`origin/main`. If a fast-forward update is available, it asks before running
-`git pull --ff-only`, `npm ci`, and the production build. A dirty or diverged
-worktree is never overwritten. The Connection Health panel also has a **Check
-Updates** button; when an update is found, quit and reopen the Dock app to
-install it.
+If Live Translate is already running, clicking the Dock icon does not start another server or reload the active dashboard. It displays an **Already Running** dialog. Choose **OK** to leave the session untouched or **Open Dashboard** to navigate to it deliberately.
 
-For a new Mac deployment:
+Do not delete or move the linked repository. If it moves, run `install-mac-app.command` again from the new location. This is one of the few cases that requires reinstalling the Dock app.
 
-```bash
-git clone https://github.com/DorelRoata/LiveTranslation.git
-cd LiveTranslation
-npm ci
-open install-mac-app.command
+## Updating the Mac app
+
+Normal code updates do **not** require reinstalling `Live Translate.app`.
+
+To install an update:
+
+1. Stop the running translation session and quit Live Translate.
+2. Reopen the Dock app.
+3. Choose **Update and Start** when prompted.
+
+The update check runs only when no Live Translate server is already running. When an update is approved, the launcher performs a fast-forward-only pull of `origin/main`, installs locked dependencies with `npm ci`, builds the dashboard, and starts it. Interrupted updates use transaction markers and backups so the previous revision can be recovered safely.
+
+The **Check Updates** control in Connection Health reports whether a newer commit is available. If it finds one, quit and reopen the Dock app to install it.
+
+## Saved settings and safety defaults
+
+The Gemini API key is stored in the current user's private application configuration at:
+
+```text
+~/Library/Application Support/LiveTranslation/config.json
 ```
 
-If macOS blocks the installer on first launch, Control-click it, choose **Open**,
-then confirm. Routine feature updates do not require reinstalling the Dock app
-because its launcher executes the update logic from this repository.
+The file is created with user-only permissions. API-key configuration is available only from the host computer.
 
-### Setup Instructions:
-1. In the terminal, copy the network IP printed under the `Network` heading (e.g., `https://192.168.1.67:5173/`).
-2. Open `https://localhost:5173` on **Laptop A**. API key configuration is intentionally available only through this local address.
-3. In the configuration panel, copy the exact link shown under **Projector Screen Sharing** (e.g., `https://192.168.1.67:5173/subtitles.html`).
-4. On **Laptop B** (the projector laptop), open that subtitles URL in Chrome, Edge, or Safari.
-   * *Note: Because Vite uses a local self-signed SSL certificate, your browser will display a certificate warning. Click **Advanced** and then click **Proceed to ... (unsafe)** to open the subtitles page safely.*
-5. Once Laptop B displays a green status dot in the top-right corner (meaning it is connected to the host), start translating on Laptop A. The subtitles will stream to Laptop B's projector screen in real-time!
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, Echo Target Language, Local Speaker, local volume, and transcript font size.
 
-### Remote Audio Setup (Optional):
-If the microphone is on a **different computer** than the one running the translation server:
-1. On the dashboard, select **"Network Audio (Stream from another PC)"** from the Audio Source dropdown.
-2. A QR code and URL will appear for the **Audio Streamer** page (e.g., `https://192.168.1.67:5173/audio-sender.html`).
-3. On the remote computer, open that URL in a browser. Accept the SSL certificate warning and grant microphone access.
-4. Click **"Start Streaming"** on the Audio Streamer page. You should see the mic visualizer light up on both the streamer and the main dashboard.
-5. Press **"Start Translation"** on the dashboard — audio from the remote PC will be translated in real-time!
+Important defaults include:
 
----
+- Local Speaker: off.
+- Echo Target Language: off.
+- Audio source: system default microphone.
+- Language 1: English.
+- Language 2: disabled.
+- Voice 1 and Voice 2 output: on.
+- Local volume: 100%, but silent while Local Speaker is off.
+- Transcript size: medium.
 
-## 🎥 OBS Live Stream Integration (YouTube / Twitch)
+**Reset Settings to Defaults** restores operator preferences but deliberately keeps the saved Gemini API key.
 
-You can overlay the live translated subtitles directly onto a video feed in OBS Studio for live broadcasting. We have built a dedicated **OBS Broadcast Mode** that automatically hides the UI controls and sets a perfectly transparent background.
+Browser storage is scoped to the exact address. Use `https://localhost:5173/` consistently on the host Mac; a different browser profile or a network-IP dashboard address has separate browser settings.
 
-### How to set it up:
-1. Open **OBS Studio** and add a new **Browser** source to your scene.
-2. Copy the dedicated **OBS Overlay URL** from the dashboard and paste it into the source.
-   It uses port `5174` over local HTTP so OBS does not silently reject the app's
-   self-signed HTTPS certificate. Example: `http://192.168.1.67:5174/?obs=true`.
-3. Set the **Width** to `1920` and **Height** to `1080` (or match your stream's canvas resolution).
-4. *(Optional)* If you want the translated text-to-speech audio to play through the stream, check **"Control audio via OBS"**. Otherwise, leave it unchecked if you only want the text overlay.
+## Projector and phone subtitles
 
-The overlay is transparent and intentionally blank until translated words arrive.
-The subtitles will then float over your camera feed with smooth typing animations.
+Copy the **Projector Screen URL** from the dashboard. On the projector computer or phone:
 
----
+1. Open the exact HTTPS URL.
+2. Accept the self-signed certificate warning by choosing **Advanced** and proceeding.
+3. Wait for the green connection indicator.
+4. Start translation on the dashboard.
 
-## 🔒 Recommended Browsers & macOS Settings
+Subtitle viewers automatically reconnect after network or server interruptions and receive the current subtitle history after reconnecting. Wake lock can keep supported phone screens awake.
 
-Modern web browsers restrict microphone access and display capture (`getDisplayMedia`) to **secure contexts** (`localhost` or `https`). Because Projector Mode runs over a local IP network, the server runs over HTTPS using a self-signed certificate.
+## Remote microphone
 
-For best compatibility, we recommend using **Google Chrome** or **Microsoft Edge**:
-* **Microphone Permissions:** Allow microphone access in the browser prompt. On macOS, you may also need to check Google Chrome under **System Settings ➜ Privacy & Security ➜ Microphone**.
-* **System Audio Capture (macOS):** To capture audio playing from another app or tab on macOS, toggle Google Chrome ON under **System Settings ➜ Privacy & Security ➜ Screen & System Audio Recording**.
+1. Select **Network Audio (Stream from another PC)** as the dashboard audio source.
+2. Copy or scan the **Network Audio Sender URL**.
+3. Open it on the remote computer or phone and accept the certificate warning.
+4. Grant microphone access and select **Start Streaming**.
+5. Start translation on the host dashboard.
+
+The dashboard warns the operator if the remote sender disconnects and clears the warning when it reconnects.
+
+## OBS live-stream overlay
+
+1. In OBS, add a **Browser** source.
+2. Copy the dashboard's dedicated **OBS Overlay URL**. It resembles `http://192.168.1.67:5174/?obs=true`.
+3. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
+4. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.
+
+OBS mode hides controls and the connection indicator and makes the page background transparent. A completely blank overlay is expected before translated words arrive.
+
+If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties.
+
+## Subtitle pacing
+
+Shared subtitles use an automatic word queue:
+
+- `160 ms` per word under a light queue.
+- `110 ms`, `70 ms`, or `30 ms` per word as the backlog grows.
+- A `350 ms` pause after a completed line under normal load.
+- A shorter `150 ms` line pause when the queue must catch up.
+- Sentence punctuation (`.`, `?`, `!`) and a 60-character fallback determine line locking.
+
+This pacing affects displayed subtitles. There is currently no operator pacing selector and no separate speed control for Gemini's spoken translation.
+
+## Browser and macOS permissions
+
+Microphone and system-audio capture require a secure context, so the dashboard and shared capture pages use HTTPS with a locally generated certificate.
+
+- Allow microphone access in the browser prompt.
+- On macOS, enable the browser under **System Settings → Privacy & Security → Microphone** when necessary.
+- For system audio, enable the browser under **System Settings → Privacy & Security → Screen & System Audio Recording**.
+- If a remote browser displays a privacy warning for port `5173`, proceed only when the address matches the trusted Live Translate host on your local network.
+
+## Troubleshooting and detailed operations
+
+See [Operator Guide](./docs/OPERATOR_GUIDE.md) for the complete operating workflow, diagnostics, update recovery, OBS checks, saved-setting behavior, and common failure cases.

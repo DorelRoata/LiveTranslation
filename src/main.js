@@ -831,7 +831,7 @@ async function startAudioCapture() {
   }
   
   if (!navigator.mediaDevices) {
-    throw new Error("navigator.mediaDevices is not available. Please make sure you are accessing this application via http://localhost:5173/ in your browser URL bar. Browsers block microphone and audio sharing on local file:// files for security.");
+    throw new Error("navigator.mediaDevices is not available. Make sure you are accessing the dashboard through https://localhost:5173/. Browsers block microphone and audio sharing on insecure or local file:// pages.");
   }
 
   logDebug(`Initializing capture context for: ${sourceVal}...`, "info");
