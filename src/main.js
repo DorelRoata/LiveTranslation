@@ -8,6 +8,21 @@ const PATH = `ws/google.ai.generativelanguage.${API_VERSION}.GenerativeService.B
 const MODEL = "models/gemini-3.5-live-translate-preview";
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
+const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
+const DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
+const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
+  audioSource: 'mic',
+  microphoneDevice: 'default',
+  targetLanguage1: 'en',
+  targetLanguage2: 'none',
+  playVoice1: true,
+  playVoice2: true,
+  systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+  echoTargetLanguage: false,
+  localSpeaker: false,
+  localVolume: 1,
+  transcriptFontSize: 'md'
+});
 
 // --- State Variables ---
 let socket1 = null;
@@ -101,6 +116,7 @@ const reconnectNowBtn = document.getElementById('reconnect-now-btn');
 const restartAudioBtn = document.getElementById('restart-audio-btn');
 const checkUpdatesBtn = document.getElementById('check-updates-btn');
 const copyDiagnosticsBtn = document.getElementById('copy-diagnostics-btn');
+const resetSettingsBtn = document.getElementById('reset-settings-btn');
 const diagnosticBanner = document.getElementById('diagnostic-banner');
 const diagnosticMessage = document.getElementById('diagnostic-message');
 const connectionRecoveryBanner = document.getElementById('connection-recovery-banner');
@@ -118,10 +134,104 @@ const healthSnapshot = {
   audio: { state: 'idle', detail: 'Not started' }
 };
 const mediaSupported = Boolean(navigator.mediaDevices?.getUserMedia);
+const localPlaybackToggle = document.getElementById('local-playback-toggle');
+const hostVolumeSlider = document.getElementById('host-volume-slider');
+let preferredMicDeviceId = DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
 
 const micIndicator = document.querySelector(".input-pulse");
 const outputIndicator1 = document.querySelector(".output-pulse-1");
 const outputIndicator2 = document.querySelector(".output-pulse-2");
+
+// --- Remembered Operator Settings ---
+function selectHasValue(select, value) {
+  return Array.from(select.options).some(option => option.value === value);
+}
+
+function setSelectValue(select, value, fallback) {
+  select.value = selectHasValue(select, value) ? value : fallback;
+}
+
+function setTranscriptFontSize(size) {
+  const safeSize = ['sm', 'md', 'lg', 'xl'].includes(size) ? size : DEFAULT_OPERATOR_SETTINGS.transcriptFontSize;
+  document.querySelectorAll('.font-size-btn').forEach(btn => {
+    const isActive = btn.dataset.size === safeSize;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+  if (transcriptGridEl) transcriptGridEl.className = `transcript-grid font-${safeSize}`;
+  return safeSize;
+}
+
+function applyOperatorSettings(settings) {
+  setSelectValue(audioSourceSelect, settings.audioSource, DEFAULT_OPERATOR_SETTINGS.audioSource);
+  setSelectValue(targetLanguageSelect1, settings.targetLanguage1, DEFAULT_OPERATOR_SETTINGS.targetLanguage1);
+  setSelectValue(targetLanguageSelect2, settings.targetLanguage2, DEFAULT_OPERATOR_SETTINGS.targetLanguage2);
+  preferredMicDeviceId = typeof settings.microphoneDevice === 'string'
+    ? settings.microphoneDevice
+    : DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
+  playVoiceCheckbox1.checked = typeof settings.playVoice1 === 'boolean' ? settings.playVoice1 : DEFAULT_OPERATOR_SETTINGS.playVoice1;
+  playVoiceCheckbox2.checked = typeof settings.playVoice2 === 'boolean' ? settings.playVoice2 : DEFAULT_OPERATOR_SETTINGS.playVoice2;
+  systemInstructionInput.value = typeof settings.systemInstruction === 'string'
+    ? settings.systemInstruction
+    : DEFAULT_OPERATOR_SETTINGS.systemInstruction;
+  echoToggle.checked = typeof settings.echoTargetLanguage === 'boolean'
+    ? settings.echoTargetLanguage
+    : DEFAULT_OPERATOR_SETTINGS.echoTargetLanguage;
+  localPlaybackToggle.checked = typeof settings.localSpeaker === 'boolean'
+    ? settings.localSpeaker
+    : DEFAULT_OPERATOR_SETTINGS.localSpeaker;
+  const volume = Number(settings.localVolume);
+  hostVolumeSlider.value = String(Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : DEFAULT_OPERATOR_SETTINGS.localVolume);
+  setTranscriptFontSize(settings.transcriptFontSize);
+  micDeviceGroup.style.display = audioSourceSelect.value === 'mic' ? 'block' : 'none';
+}
+
+function getOperatorSettings() {
+  const activeFontButton = document.querySelector('.font-size-btn.active');
+  return {
+    audioSource: audioSourceSelect.value,
+    microphoneDevice: preferredMicDeviceId,
+    targetLanguage1: targetLanguageSelect1.value,
+    targetLanguage2: targetLanguageSelect2.value,
+    playVoice1: playVoiceCheckbox1.checked,
+    playVoice2: playVoiceCheckbox2.checked,
+    systemInstruction: systemInstructionInput.value,
+    echoTargetLanguage: echoToggle.checked,
+    localSpeaker: localPlaybackToggle.checked,
+    localVolume: Number(hostVolumeSlider.value),
+    transcriptFontSize: activeFontButton?.dataset.size || DEFAULT_OPERATOR_SETTINGS.transcriptFontSize
+  };
+}
+
+function saveOperatorSettings() {
+  try {
+    localStorage.setItem(OPERATOR_SETTINGS_KEY, JSON.stringify(getOperatorSettings()));
+    localStorage.removeItem('gemini_system_instruction');
+    localStorage.removeItem('transcript_font_size');
+  } catch (error) {
+    console.warn('Unable to save operator settings:', error);
+  }
+}
+
+function loadOperatorSettings() {
+  let savedSettings = {};
+  try {
+    savedSettings = JSON.parse(localStorage.getItem(OPERATOR_SETTINGS_KEY) || '{}');
+    if (!savedSettings || typeof savedSettings !== 'object' || Array.isArray(savedSettings)) savedSettings = {};
+    const legacyInstruction = localStorage.getItem('gemini_system_instruction');
+    const legacyFontSize = localStorage.getItem('transcript_font_size');
+    if (typeof savedSettings.systemInstruction !== 'string' && legacyInstruction !== null) {
+      savedSettings.systemInstruction = legacyInstruction;
+    }
+    if (!savedSettings.transcriptFontSize && legacyFontSize) savedSettings.transcriptFontSize = legacyFontSize;
+  } catch (error) {
+    console.warn('Unable to load operator settings:', error);
+  }
+  applyOperatorSettings({ ...DEFAULT_OPERATOR_SETTINGS, ...savedSettings });
+  saveOperatorSettings();
+}
+
+loadOperatorSettings();
 
 // --- API Key Runtime Configuration ---
 async function loadStoredApiKey() {
@@ -186,12 +296,24 @@ apiKeyInput.addEventListener('input', () => {
 
 loadStoredApiKey();
 
-// --- System Instruction Local Storage ---
-if (localStorage.getItem("gemini_system_instruction")) {
-  systemInstructionInput.value = localStorage.getItem("gemini_system_instruction");
-}
-systemInstructionInput.addEventListener("input", () => {
-  localStorage.setItem("gemini_system_instruction", systemInstructionInput.value);
+systemInstructionInput.addEventListener('input', saveOperatorSettings);
+targetLanguageSelect1.addEventListener('change', saveOperatorSettings);
+targetLanguageSelect2.addEventListener('change', saveOperatorSettings);
+playVoiceCheckbox1.addEventListener('change', saveOperatorSettings);
+playVoiceCheckbox2.addEventListener('change', saveOperatorSettings);
+echoToggle.addEventListener('change', saveOperatorSettings);
+localPlaybackToggle.addEventListener('change', saveOperatorSettings);
+hostVolumeSlider.addEventListener('input', saveOperatorSettings);
+micDeviceSelect.addEventListener('change', () => {
+  preferredMicDeviceId = micDeviceSelect.value || DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
+  saveOperatorSettings();
+});
+
+resetSettingsBtn.addEventListener('click', () => {
+  if (!window.confirm('Reset operator settings to their defaults? The saved Gemini API key will not be removed.')) return;
+  applyOperatorSettings(DEFAULT_OPERATOR_SETTINGS);
+  saveOperatorSettings();
+  setDiagnostic('Operator settings restored to defaults. Local Speaker and Echo Target Language are off.', 'good');
 });
 
 // Toggle API Key Visibility
@@ -219,6 +341,7 @@ toggleApiKeyBtn.addEventListener("click", () => {
 
 // --- Microphone Input Device Selector ---
 audioSourceSelect.addEventListener("change", async () => {
+  saveOperatorSettings();
   if (audioSourceSelect.value === "mic") {
     micDeviceGroup.style.display = "block";
   } else {
@@ -268,6 +391,10 @@ async function populateMicDevices() {
         }
       }
     });
+    micDeviceSelect.value = selectHasValue(micDeviceSelect, preferredMicDeviceId)
+      ? preferredMicDeviceId
+      : DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
+    preferredMicDeviceId = micDeviceSelect.value;
   } catch (err) {
     console.warn("Unable to list microphone devices:", err);
   }
@@ -372,6 +499,7 @@ function setSessionSettingsDisabled(disabled) {
   targetLanguageSelect2.disabled = disabled;
   echoToggle.disabled = disabled;
   systemInstructionInput.disabled = disabled;
+  resetSettingsBtn.disabled = disabled;
 }
 
 async function copyDiagnostics() {
@@ -640,10 +768,9 @@ function playPCMChunk(base64Data, channelId) {
   const sourceNode = audioContextOutput.createBufferSource();
   sourceNode.buffer = audioBuffer;
   
-  const localPlaybackToggle = document.getElementById('local-playback-toggle');
   const isLocalMuted = localPlaybackToggle ? !localPlaybackToggle.checked : false;
 
-  const hostVolume = isLocalMuted ? 0 : parseFloat(document.getElementById('host-volume-slider')?.value ?? 1);
+  const hostVolume = isLocalMuted ? 0 : parseFloat(hostVolumeSlider?.value ?? 1);
   const gainNode = audioContextOutput.createGain();
   gainNode.gain.value = hostVolume;
   sourceNode.connect(gainNode);
@@ -942,28 +1069,14 @@ if (muteMicBtn) {
 // 3. Dynamic Font Size Picker
 function initFontSizePicker() {
   const fontBtns = document.querySelectorAll(".font-size-btn");
-  const savedSize = localStorage.getItem("transcript_font_size") || "md";
-
-  function setFontSize(size) {
-    fontBtns.forEach(btn => {
-      const isActive = btn.getAttribute("data-size") === size;
-      btn.classList.toggle("active", isActive);
-      btn.setAttribute('aria-pressed', String(isActive));
-    });
-    if (transcriptGridEl) {
-      transcriptGridEl.className = `transcript-grid font-${size}`;
-    }
-    localStorage.setItem("transcript_font_size", size);
-  }
 
   fontBtns.forEach(btn => {
     btn.addEventListener("click", () => {
       const size = btn.getAttribute("data-size");
-      setFontSize(size);
+      setTranscriptFontSize(size);
+      saveOperatorSettings();
     });
   });
-
-  setFontSize(savedSize);
 }
 
 initFontSizePicker();
