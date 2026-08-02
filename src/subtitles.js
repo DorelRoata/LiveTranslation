@@ -174,9 +174,18 @@ window.addEventListener('focusin', resetControlsTimer);
 resetControlsTimer();
 
 function refreshVisibleLanes() {
-  if (viewMode !== 'lang2') rebuildSubtitleDOM('lang1');
-  if (viewMode !== 'lang1') rebuildSubtitleDOM('lang2');
+  if (viewMode !== 'lang2') reflowSubtitleLane('lang1');
+  if (viewMode !== 'lang1') reflowSubtitleLane('lang2');
 }
+
+let subtitleReflowFrame = 0;
+function scheduleVisibleLaneReflow() {
+  cancelAnimationFrame(subtitleReflowFrame);
+  subtitleReflowFrame = requestAnimationFrame(refreshVisibleLanes);
+}
+
+window.addEventListener('resize', scheduleVisibleLaneReflow, { passive: true });
+document.fonts?.ready.then(scheduleVisibleLaneReflow);
 
 // View toggling logic
 btnViewBoth.addEventListener('click', () => {
@@ -251,6 +260,12 @@ function getAppendedText(oldStr, newStr) {
 
 // Tracks the active-line DOM element per lane so we can append words incrementally
 const activeDOMLine = { lang1: null, lang2: null };
+const leavingDOMLine = { lang1: null, lang2: null };
+const MAX_VISIBLE_LINES = 2;
+const LINE_ADVANCE_DURATION_MS = 280;
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const measurementCanvas = document.createElement('canvas');
+const measurementContext = measurementCanvas.getContext('2d');
 
 function rebuildSubtitleDOM(lane, populateActive = true) {
   if (viewMode === 'lang1' && lane !== 'lang1') return;
@@ -260,7 +275,7 @@ function rebuildSubtitleDOM(lane, populateActive = true) {
   if (!element) return;
 
   // Full rebuild: history lines + fresh active line element
-  const historyLines = displayState[lane].lines.slice(-2);
+  const historyLines = displayState[lane].lines.slice(-(MAX_VISIBLE_LINES - 1));
   let html = historyLines
     .map(line => `<div class="sub-line">${escapeHtml(line)}</div>`)
     .join("");
@@ -306,6 +321,106 @@ function appendWordSpan(lane, word, animate = true) {
   container.appendChild(span);
 }
 
+function renderedLineWouldOverflow(lane, text) {
+  const container = activeDOMLine[lane];
+  if (!container || !measurementContext || container.clientWidth <= 0) return null;
+
+  const style = window.getComputedStyle(container);
+  measurementContext.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const letterSpacing = Number.parseFloat(style.letterSpacing) || 0;
+  const renderedWidth = measurementContext.measureText(text).width +
+    (letterSpacing * Math.max(0, text.length - 1));
+  return renderedWidth > container.clientWidth * 0.98;
+}
+
+function clearLeavingLine(lane) {
+  const line = leavingDOMLine[lane];
+  if (!line) return;
+  leavingDOMLine[lane] = null;
+  line.getAnimations?.().forEach(animation => animation.cancel());
+  line.remove();
+}
+
+function advanceSubtitleDOM(lane, word) {
+  if ((viewMode === 'lang1' && lane !== 'lang1') ||
+      (viewMode === 'lang2' && lane !== 'lang2')) return;
+
+  const element = document.getElementById(`sub-${lane}`);
+  const currentActive = activeDOMLine[lane];
+  if (!element || !currentActive) {
+    rebuildSubtitleDOM(lane, false);
+    appendWordSpan(lane, word, true);
+    return;
+  }
+
+  const previousLines = Array.from(element.children);
+  const previousPositions = new Map(previousLines.map(line => [line, line.getBoundingClientRect()]));
+  const outgoingLine = previousLines.length >= MAX_VISIBLE_LINES ? previousLines[0] : null;
+  previousLines.forEach(line => line.getAnimations?.().forEach(animation => animation.cancel()));
+  clearLeavingLine(lane);
+
+  let outgoingClone = null;
+  if (outgoingLine && !reducedMotionQuery.matches) {
+    const outgoingRect = previousPositions.get(outgoingLine);
+    outgoingClone = document.createElement('div');
+    outgoingClone.className = 'sub-line sub-line-leaving';
+    outgoingClone.textContent = outgoingLine.textContent;
+    outgoingClone.style.top = `${outgoingRect.top}px`;
+    outgoingClone.style.left = `${outgoingRect.left}px`;
+    outgoingClone.style.width = `${outgoingRect.width}px`;
+    document.body.appendChild(outgoingClone);
+    leavingDOMLine[lane] = outgoingClone;
+  }
+
+  outgoingLine?.remove();
+
+  currentActive.className = 'sub-line';
+  const nextActive = document.createElement('div');
+  nextActive.className = 'sub-line-active';
+  element.appendChild(nextActive);
+  activeDOMLine[lane] = nextActive;
+  appendWordSpan(lane, word, true);
+
+  if (reducedMotionQuery.matches) {
+    return;
+  }
+
+  for (const line of previousLines) {
+    if (line === outgoingLine || !line.isConnected || typeof line.animate !== 'function') continue;
+    const previousRect = previousPositions.get(line);
+    const nextRect = line.getBoundingClientRect();
+    const offsetY = previousRect.top - nextRect.top;
+    if (Math.abs(offsetY) < 1) continue;
+    line.animate([
+      { transform: `translateY(${offsetY}px)` },
+      { transform: 'translateY(0)' }
+    ], {
+      duration: LINE_ADVANCE_DURATION_MS,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+    });
+  }
+
+  if (outgoingClone && typeof outgoingClone.animate === 'function') {
+    const animation = outgoingClone.animate([
+      { opacity: 1, transform: 'translateY(0)' },
+      { opacity: 0, transform: 'translateY(-0.45em)' }
+    ], {
+      duration: LINE_ADVANCE_DURATION_MS,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'forwards'
+    });
+    const removeClone = () => {
+      if (leavingDOMLine[lane] === outgoingClone) leavingDOMLine[lane] = null;
+      outgoingClone.remove();
+    };
+    animation.onfinish = removeClone;
+    animation.oncancel = removeClone;
+  } else {
+    if (leavingDOMLine[lane] === outgoingClone) leavingDOMLine[lane] = null;
+    outgoingClone?.remove();
+  }
+}
+
 function appendWordToDisplayState(lane, word) {
   let active = displayState[lane].activeLine;
   const fallbackMaxChars = 60;
@@ -315,8 +430,9 @@ function appendWordToDisplayState(lane, word) {
     // Check if the current active line ends with sentence punctuation (. ? !)
     const endsWithPunctuation = /[.?!]$/.test(active);
 
-    // Check if adding the new word would exceed the character limit
-    const wouldExceedLimit = (active.length + 1 + word.length) > fallbackMaxChars;
+    const candidateLine = `${active} ${word}`;
+    const renderedLineOverflow = renderedLineWouldOverflow(lane, candidateLine);
+    const wouldExceedLimit = renderedLineOverflow ?? (candidateLine.length > fallbackMaxChars);
 
     if (endsWithPunctuation || wouldExceedLimit) {
       displayState[lane].lines.push(active);
@@ -334,6 +450,23 @@ function appendWordToDisplayState(lane, word) {
   }
 
   return breakReason;
+}
+
+function reflowSubtitleLane(lane) {
+  clearLeavingLine(lane);
+  const laneState = displayState[lane];
+  const displayedText = [...laneState.lines, laneState.activeLine]
+    .filter(Boolean)
+    .join(' ');
+
+  laneState.lines = [];
+  laneState.activeLine = '';
+  rebuildSubtitleDOM(lane, false);
+
+  for (const word of displayedText.split(/\s+/).filter(Boolean)) {
+    appendWordToDisplayState(lane, word);
+  }
+  rebuildSubtitleDOM(lane);
 }
 
 // rAF-based ticker state: last word timestamp per lane
@@ -368,8 +501,11 @@ function markQueueDrained(lane, now) {
 
 function appendQueuedWord(lane, word) {
   const breakReason = appendWordToDisplayState(lane, word);
-  if (breakReason) rebuildSubtitleDOM(lane, false);
-  appendWordSpan(lane, word, true);
+  if (breakReason) {
+    advanceSubtitleDOM(lane, word);
+  } else {
+    appendWordSpan(lane, word, true);
+  }
   return breakReason;
 }
 
@@ -452,6 +588,7 @@ function renderSubtitleLane(lane) {
       const allWords = newText.split(/\s+/).filter(Boolean);
       displayState[lane].lines = [];
       displayState[lane].activeLine = "";
+      rebuildSubtitleDOM(lane, false);
       
       for (const word of allWords) {
         appendWordToDisplayState(lane, word);
@@ -487,6 +624,7 @@ function updateUIElements() {
     btnViewBoth.style.display = 'none';
     if (viewMode === 'both' || viewMode === 'lang2') {
       viewMode = 'lang1';
+      requestAnimationFrame(() => reflowSubtitleLane('lang1'));
     }
   }
 
@@ -626,6 +764,8 @@ function connect() {
         resetLanePacing('lang2');
         activeDOMLine.lang1 = null;
         activeDOMLine.lang2 = null;
+        clearLeavingLine('lang1');
+        clearLeavingLine('lang2');
         
         const sec1 = document.getElementById("sub-lang1");
         if (sec1) sec1.innerHTML = "-";
