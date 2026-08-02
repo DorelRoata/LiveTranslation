@@ -242,6 +242,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     lang2: { accumulatedText: '' },
     targetLanguage1: '',
     targetLanguage2: '',
+    subtitlePacing: 'smooth',
     isDual: false,
     audioSenderStreaming: false
   };
@@ -320,6 +321,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
         } else if (data.type === 'setup') {
           subtitleState.targetLanguage1 = data.targetLanguage1;
           subtitleState.targetLanguage2 = data.targetLanguage2;
+          subtitleState.subtitlePacing = data.subtitlePacing === 'live' ? 'live' : 'smooth';
           subtitleState.isDual = data.isDual;
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
         } else if (data.type === 'clear') {

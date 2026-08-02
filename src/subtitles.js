@@ -1,5 +1,15 @@
 import QRCode from 'qrcode';
 import { createScreenWakeLock } from './wake-lock.js';
+import {
+  SMOOTH_START_BUFFER_MS,
+  easeTickDelay,
+  getLiveTickDelay,
+  getPunctuationPause,
+  getSmoothBatchSize,
+  getSmoothTargetDelay,
+  normalizePacingMode,
+  shouldEndSmoothBatch
+} from './subtitle-pacing.js';
 
 // Error Handler
 window.onerror = function (msg, url, line) {
@@ -25,6 +35,7 @@ let subtitleState = {
   lang2: { accumulatedText: "" },
   targetLanguage1: "",
   targetLanguage2: "",
+  subtitlePacing: "smooth",
   isDual: false
 };
 
@@ -47,6 +58,10 @@ let wordQueue = {
   lang1: [],
   lang2: []
 };
+let pacingMode = 'smooth';
+const queueReadyAt = { lang1: 0, lang2: 0 };
+const lastQueueDrainedAt = { lang1: 0, lang2: 0 };
+const smoothTickDelay = { lang1: 185, lang2: 185 };
 
 // DOM Elements
 const statusIndicator = document.getElementById('status-indicator');
@@ -294,7 +309,7 @@ function appendWordSpan(lane, word, animate = true) {
 function appendWordToDisplayState(lane, word) {
   let active = displayState[lane].activeLine;
   const fallbackMaxChars = 60;
-  let didBreakLine = false;
+  let breakReason = '';
 
   if (active) {
     // Check if the current active line ends with sentence punctuation (. ? !)
@@ -306,7 +321,7 @@ function appendWordToDisplayState(lane, word) {
     if (endsWithPunctuation || wouldExceedLimit) {
       displayState[lane].lines.push(active);
       active = "";
-      didBreakLine = true;
+      breakReason = endsWithPunctuation ? 'sentence' : 'length';
     }
   }
 
@@ -318,45 +333,90 @@ function appendWordToDisplayState(lane, word) {
     displayState[lane].lines.shift();
   }
 
-  return didBreakLine;
+  return breakReason;
 }
 
 // rAF-based ticker state: last word timestamp per lane
 const lastTickTime = { lang1: 0, lang2: 0 };
 
-function getTickDelay(lane) {
-  const qLen = wordQueue[lane].length;
-  if (qLen > 10) return 30;   // High speed catch-up
-  if (qLen > 5)  return 70;   // Medium speed catch-up
-  if (qLen > 2)  return 110;  // Low speed catch-up
-  if (qLen > 0)  return 160;  // Natural pacing (~370 wpm)
-  return 0; // Nothing to do
+function resetLanePacing(lane) {
+  queueReadyAt[lane] = 0;
+  lastQueueDrainedAt[lane] = 0;
+  smoothTickDelay[lane] = 185;
+}
+
+function enqueueWords(lane, words) {
+  if (words.length === 0) return;
+  const now = performance.now();
+  const wasEmpty = wordQueue[lane].length === 0;
+  wordQueue[lane].push(...words.map(word => ({ word, queuedAt: now })));
+
+  if (wasEmpty) {
+    const hasOnlyBrieflyDrained = lastQueueDrainedAt[lane] > 0 &&
+      now - lastQueueDrainedAt[lane] < 450;
+    queueReadyAt[lane] = pacingMode === 'smooth' && !hasOnlyBrieflyDrained
+      ? now + SMOOTH_START_BUFFER_MS
+      : now;
+    if (!hasOnlyBrieflyDrained) smoothTickDelay[lane] = 185;
+  }
+}
+
+function markQueueDrained(lane, now) {
+  queueReadyAt[lane] = 0;
+  lastQueueDrainedAt[lane] = now;
+}
+
+function appendQueuedWord(lane, word) {
+  const breakReason = appendWordToDisplayState(lane, word);
+  if (breakReason) rebuildSubtitleDOM(lane, false);
+  appendWordSpan(lane, word, true);
+  return breakReason;
 }
 
 function tickLane(lane, now) {
   if (wordQueue[lane].length === 0) return;
 
-  const delay = getTickDelay(lane);
-  if (now - lastTickTime[lane] < delay) return;
+  if (pacingMode === 'live') {
+    const delay = getLiveTickDelay(wordQueue[lane].length);
+    if (now - lastTickTime[lane] < delay) return;
+
+    lastTickTime[lane] = now;
+    const nextWord = wordQueue[lane].shift().word;
+    const breakReason = appendQueuedWord(lane, nextWord);
+    if (breakReason) {
+      const breakPause = wordQueue[lane].length > 10 ? 150 : 350;
+      lastTickTime[lane] += breakPause;
+    }
+    if (wordQueue[lane].length === 0) markQueueDrained(lane, now);
+    return;
+  }
+
+  if (now < queueReadyAt[lane] || now - lastTickTime[lane] < smoothTickDelay[lane]) return;
 
   lastTickTime[lane] = now;
-
-  const nextWord = wordQueue[lane].shift();
-  const didBreak = appendWordToDisplayState(lane, nextWord);
-
-  if (didBreak) {
-    // Line was finalized → full DOM rebuild (history changed)
-    rebuildSubtitleDOM(lane, false);
-    appendWordSpan(lane, nextWord, true);
-
-    // Add an extra pause after a line break so the user can read the completed line
-    const qLen = wordQueue[lane].length;
-    const breakPause = qLen > 10 ? 150 : 350;
-    lastTickTime[lane] += breakPause;
-  } else {
-    // Just append a single word span (no layout thrashing)
-    appendWordSpan(lane, nextWord);
+  const batchSize = Math.min(getSmoothBatchSize(wordQueue[lane].length), wordQueue[lane].length);
+  let lastWord = '';
+  let brokeWithoutPunctuation = false;
+  for (let index = 0; index < batchSize; index++) {
+    lastWord = wordQueue[lane].shift().word;
+    const breakReason = appendQueuedWord(lane, lastWord);
+    if (breakReason === 'length') brokeWithoutPunctuation = true;
+    if (shouldEndSmoothBatch(lastWord)) break;
   }
+
+  const remaining = wordQueue[lane].length;
+  const punctuationPause = getPunctuationPause(lastWord, remaining);
+  const fallbackLinePause = brokeWithoutPunctuation ? (remaining > 8 ? 60 : 160) : 0;
+  lastTickTime[lane] += Math.max(punctuationPause, fallbackLinePause);
+
+  if (remaining === 0) {
+    markQueueDrained(lane, now);
+    return;
+  }
+
+  const oldestWordAge = Math.max(0, now - wordQueue[lane][0].queuedAt);
+  const targetDelay = getSmoothTargetDelay(remaining, oldestWordAge);
+  smoothTickDelay[lane] = easeTickDelay(smoothTickDelay[lane], targetDelay);
 }
 
 function rafLoop(timestamp) {
@@ -378,6 +438,7 @@ function renderSubtitleLane(lane) {
       lastText: ""
     };
     wordQueue[lane] = [];
+    resetLanePacing(lane);
     rebuildSubtitleDOM(lane);
   } else {
     const oldText = displayState[lane].lastText;
@@ -403,7 +464,7 @@ function renderSubtitleLane(lane) {
     const appended = getAppendedText(oldText, newText);
     if (appended) {
       const newWords = appended.split(/\s+/).filter(Boolean);
-      wordQueue[lane].push(...newWords);
+      enqueueWords(lane, newWords);
     }
   }
 }
@@ -541,6 +602,7 @@ function connect() {
       
       if (data.type === 'sync') {
         subtitleState = data.state;
+        pacingMode = normalizePacingMode(subtitleState.subtitlePacing);
         
         updateUIElements();
         renderSubtitleLane("lang1");
@@ -560,6 +622,8 @@ function connect() {
         displayState.lang2 = { lines: [], activeLine: "", lastText: "" };
         wordQueue.lang1 = [];
         wordQueue.lang2 = [];
+        resetLanePacing('lang1');
+        resetLanePacing('lang2');
         activeDOMLine.lang1 = null;
         activeDOMLine.lang2 = null;
         

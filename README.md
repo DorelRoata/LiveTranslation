@@ -23,6 +23,7 @@ The current application version is `v1.2.0`.
 - A safety-oriented **Local Speaker** control that defaults to off.
 - **Echo Target Language** defaults to off.
 - Remembered operator settings with a **Reset Settings to Defaults** button.
+- Selectable **Smooth** subtitle pacing with a 200 ms buffer, plus the original **Live** pacing mode.
 - A projector/phone subtitle page with wake lock and automatic reconnection.
 - A certificate-free OBS Browser Source endpoint on local HTTP port `5174`.
 - A remote microphone page for another computer or phone.
@@ -117,7 +118,7 @@ The Gemini API key is stored in the current user's private application configura
 
 The file is created with user-only permissions. API-key configuration is available only from the host computer.
 
-Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, Echo Target Language, Local Speaker, local volume, and transcript font size.
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, subtitle pacing, Echo Target Language, Local Speaker, local volume, and transcript font size.
 
 Important defaults include:
 
@@ -128,6 +129,7 @@ Important defaults include:
 - Language 2: disabled.
 - Voice 1 and Voice 2 output: on.
 - Local volume: 100%, but silent while Local Speaker is off.
+- Subtitle Pace: Smooth with a 200 ms start buffer.
 - Transcript size: medium.
 
 **Reset Settings to Defaults** restores operator preferences but deliberately keeps the saved Gemini API key.
@@ -168,15 +170,12 @@ If the projector displays words but OBS does not, verify the `http://...:5174/?o
 
 ## Subtitle pacing
 
-Shared subtitles use an automatic word queue:
+The saved **Subtitle Pace** setting offers two modes:
 
-- `160 ms` per word under a light queue.
-- `110 ms`, `70 ms`, or `30 ms` per word as the backlog grows.
-- A `350 ms` pause after a completed line under normal load.
-- A shorter `150 ms` line pause when the queue must catch up.
-- Sentence punctuation (`.`, `?`, `!`) and a 60-character fallback determine line locking.
+- **Smooth (default):** waits 200 ms after an idle period, displays short one-to-three-word phrases, eases continuously from about `185 ms` toward `45 ms` as backlog grows, and targets a maximum oldest-word delay of 1.5 seconds. Commas and sentence endings receive natural pauses that shrink during catch-up.
+- **Live (Legacy / Lowest Delay):** preserves the original immediate word-by-word thresholds of `160`, `110`, `70`, and `30 ms`, with the original line-break pauses.
 
-This pacing affects displayed subtitles. There is currently no operator pacing selector and no separate speed control for Gemini's spoken translation.
+Both modes use sentence punctuation (`.`, `?`, `!`) and a 60-character fallback for line locking. The built-in Gemini instruction also requests continuous short phrases, natural cadence, no repetition of emitted text, and no long response gaps. Prompt guidance can improve phrase structure but cannot guarantee API timing; the client-side queue provides the deterministic smoothing. There is no separate speed control for Gemini's spoken translation.
 
 ## Browser and macOS permissions
 

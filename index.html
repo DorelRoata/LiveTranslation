@@ -157,7 +157,16 @@
               <!-- Translation System Instructions & Hints -->
               <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
                 <label for="system-instruction-input">System Instructions & Hints</label>
-                <textarea id="system-instruction-input" style="width: 100%; flex: 1; box-sizing: border-box; padding: 0.75rem; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.85rem; resize: none;" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.</textarea>
+                <textarea id="system-instruction-input" style="width: 100%; flex: 1; box-sizing: border-box; padding: 0.75rem; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.85rem; resize: none;" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language. Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.</textarea>
+              </div>
+
+              <div class="input-group">
+                <label for="subtitle-pacing-select">Subtitle Pace</label>
+                <select id="subtitle-pacing-select">
+                  <option value="smooth" selected>Smooth (200 ms buffer)</option>
+                  <option value="live">Live (Legacy / Lowest Delay)</option>
+                </select>
+                <small class="helper-text">Smooth groups short phrases and accelerates gradually when needed.</small>
               </div>
 
               <!-- Options Toggles -->

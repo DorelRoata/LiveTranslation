@@ -9,7 +9,8 @@ const MODEL = "models/gemini-3.5-live-translate-preview";
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
+const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
+const DEFAULT_SYSTEM_INSTRUCTION = `${LEGACY_DEFAULT_SYSTEM_INSTRUCTION} Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.`;
 const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   audioSource: 'mic',
   microphoneDevice: 'default',
@@ -21,6 +22,7 @@ const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   echoTargetLanguage: false,
   localSpeaker: false,
   localVolume: 1,
+  subtitlePacing: 'smooth',
   transcriptFontSize: 'md'
 });
 
@@ -75,6 +77,7 @@ const audioSourceSelect = document.getElementById("audio-source-select");
 const micDeviceGroup = document.getElementById("mic-device-group");
 const micDeviceSelect = document.getElementById("mic-device-select");
 const systemInstructionInput = document.getElementById("system-instruction-input");
+const subtitlePacingSelect = document.getElementById('subtitle-pacing-select');
 
 const targetLanguageSelect1 = document.getElementById("target-language-select-1");
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
@@ -182,6 +185,7 @@ function applyOperatorSettings(settings) {
     : DEFAULT_OPERATOR_SETTINGS.localSpeaker;
   const volume = Number(settings.localVolume);
   hostVolumeSlider.value = String(Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : DEFAULT_OPERATOR_SETTINGS.localVolume);
+  setSelectValue(subtitlePacingSelect, settings.subtitlePacing, DEFAULT_OPERATOR_SETTINGS.subtitlePacing);
   setTranscriptFontSize(settings.transcriptFontSize);
   micDeviceGroup.style.display = audioSourceSelect.value === 'mic' ? 'block' : 'none';
 }
@@ -199,6 +203,7 @@ function getOperatorSettings() {
     echoTargetLanguage: echoToggle.checked,
     localSpeaker: localPlaybackToggle.checked,
     localVolume: Number(hostVolumeSlider.value),
+    subtitlePacing: subtitlePacingSelect.value,
     transcriptFontSize: activeFontButton?.dataset.size || DEFAULT_OPERATOR_SETTINGS.transcriptFontSize
   };
 }
@@ -224,6 +229,9 @@ function loadOperatorSettings() {
       savedSettings.systemInstruction = legacyInstruction;
     }
     if (!savedSettings.transcriptFontSize && legacyFontSize) savedSettings.transcriptFontSize = legacyFontSize;
+    if (savedSettings.systemInstruction === LEGACY_DEFAULT_SYSTEM_INSTRUCTION) {
+      savedSettings.systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
+    }
   } catch (error) {
     console.warn('Unable to load operator settings:', error);
   }
@@ -313,6 +321,7 @@ playVoiceCheckbox2.addEventListener('change', saveOperatorSettings);
 echoToggle.addEventListener('change', saveOperatorSettings);
 localPlaybackToggle.addEventListener('change', saveOperatorSettings);
 hostVolumeSlider.addEventListener('input', saveOperatorSettings);
+subtitlePacingSelect.addEventListener('change', saveOperatorSettings);
 micDeviceSelect.addEventListener('change', () => {
   preferredMicDeviceId = micDeviceSelect.value || DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
   saveOperatorSettings();
@@ -508,6 +517,7 @@ function setSessionSettingsDisabled(disabled) {
   targetLanguageSelect2.disabled = disabled;
   echoToggle.disabled = disabled;
   systemInstructionInput.disabled = disabled;
+  subtitlePacingSelect.disabled = disabled;
   resetSettingsBtn.disabled = disabled;
 }
 
@@ -1248,6 +1258,7 @@ async function startSession() {
     targetLanguage1: targetLanguageSelect1.value,
     targetLanguage2: targetLanguageSelect2.value,
     echoTargetLanguage: echoToggle.checked,
+    subtitlePacing: subtitlePacingSelect.value,
     systemInstructionText: systemInstructionInput.value.trim()
   };
   sessionConfig = pendingSessionConfig;
@@ -1785,10 +1796,12 @@ function syncLocalSubtitlesSetup() {
   if (isSocketOpen(localSubtitlesWS)) {
     const targetLanguage1 = sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value;
     const targetLanguage2 = sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value;
+    const subtitlePacing = sessionConfig?.subtitlePacing ?? subtitlePacingSelect.value;
     localSubtitlesWS.send(JSON.stringify({
       type: 'setup',
       targetLanguage1,
       targetLanguage2,
+      subtitlePacing,
       isDual: targetLanguage2 !== "none"
     }));
   }

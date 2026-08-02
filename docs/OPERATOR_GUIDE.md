@@ -96,6 +96,7 @@ The following values are saved immediately in browser storage:
 - Echo Target Language.
 - Local Speaker.
 - Local playback volume.
+- Subtitle pacing mode.
 - Transcript font size.
 
 Browser storage belongs to the exact origin and browser profile. For predictable restoration, always operate the host dashboard at `https://localhost:5173/` in the same browser profile. Private browsing, clearing site data, changing profiles, or opening the dashboard by network IP creates or uses a different settings store.
@@ -115,8 +116,9 @@ Browser storage belongs to the exact origin and browser profile. For predictable
 | Echo Target Language | Off |
 | Local Speaker | Off |
 | Local volume | 100% |
+| Subtitle Pace | Smooth (200 ms buffer) |
 | Transcript size | Medium |
-| System instructions | Built-in church-sermon interpreter prompt |
+| System instructions | Built-in church-sermon interpreter and short-phrase pacing prompt |
 
 Reset does not delete the Gemini API key.
 
@@ -186,7 +188,21 @@ Interpret the result:
 
 ## 11. Subtitle pacing
 
-The shared subtitle engine buffers incoming words and adjusts display timing to queue depth:
+The dashboard's saved **Subtitle Pace** selector controls every projector, phone, and OBS subtitle client through the local relay.
+
+### Smooth (default)
+
+- Starts after a conservative 200 ms buffer following an idle gap.
+- Does not reapply the full buffer between closely arriving chunks.
+- Displays one-word updates under a light queue and groups two or three words when a backlog is available.
+- Eases its timing gradually instead of jumping between fixed speeds.
+- Operates from roughly `185 ms` down to `45 ms` per phrase tick.
+- Forces catch-up when the oldest queued word approaches 1.5 seconds.
+- Pauses up to `100 ms` at commas and `280 ms` at sentence endings, shortening those pauses during catch-up.
+
+### Live (Legacy / Lowest Delay)
+
+Live preserves the exact pre-change thresholds:
 
 | Queue condition | Delay per word |
 | --- | --- |
@@ -195,9 +211,9 @@ The shared subtitle engine buffers incoming words and adjusts display timing to 
 | Medium backlog | `70 ms` |
 | Large backlog | `30 ms` |
 
-It pauses `350 ms` after a normal line break or `150 ms` when catching up. Sentence punctuation triggers a semantic line break; a 60-character fallback prevents excessively long active lines.
+Live retains the original `350 ms` normal line-break pause and `150 ms` catch-up pause.
 
-Pacing applies to displayed subtitles only. There is no user-selectable pacing preset and no spoken-translation speed control at this time.
+Both modes use sentence punctuation for semantic line breaks and a 60-character fallback for long lines. The built-in Gemini prompt requests short complete phrases, natural cadence, no repetition or revision of already emitted text, and no long response pauses. This prompt can improve structure, while the client queue remains responsible for deterministic screen timing. Neither mode changes the translated audio playback speed.
 
 ## 12. Recovery and diagnostics
 
