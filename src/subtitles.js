@@ -71,6 +71,8 @@ const btnViewLang1 = document.getElementById('btn-view-lang1');
 const btnViewLang2 = document.getElementById('btn-view-lang2');
 const btnAudioToggle = document.getElementById('btn-audio-toggle');
 const btnWakeLock = document.getElementById('btn-wake-lock');
+const subtitleLineButtons = document.querySelectorAll('.subtitle-lines-btn');
+const subtitleSizeButtons = document.querySelectorAll('.subtitle-size-btn');
 const secLang1 = document.getElementById('sec-lang1');
 const secLang2 = document.getElementById('sec-lang2');
 
@@ -84,6 +86,9 @@ const qrUrlText = document.getElementById('qr-url-text');
 // UI state configurations
 let viewMode = 'both'; // 'both', 'lang1', 'lang2'
 let audioEnabled = false;
+let visibleLineCount = 3;
+let subtitleTextSize = 'md';
+const SUBTITLE_DISPLAY_SETTINGS_KEY = 'live_translate_subtitle_display';
 
 const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
   btnWakeLock.classList.toggle('audio-active', active);
@@ -187,6 +192,59 @@ function scheduleVisibleLaneReflow() {
 window.addEventListener('resize', scheduleVisibleLaneReflow, { passive: true });
 document.fonts?.ready.then(scheduleVisibleLaneReflow);
 
+function applySubtitleDisplaySettings(lineCount, textSize, persist = true) {
+  visibleLineCount = Number(lineCount) === 2 ? 2 : 3;
+  subtitleTextSize = ['sm', 'md', 'lg'].includes(textSize) ? textSize : 'md';
+  document.body.dataset.subtitleSize = subtitleTextSize;
+
+  subtitleLineButtons.forEach(button => {
+    const active = Number(button.dataset.lines) === visibleLineCount;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  subtitleSizeButtons.forEach(button => {
+    const active = button.dataset.size === subtitleTextSize;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+
+  if (persist) {
+    try {
+      localStorage.setItem(SUBTITLE_DISPLAY_SETTINGS_KEY, JSON.stringify({
+        lineCount: visibleLineCount,
+        textSize: subtitleTextSize
+      }));
+    } catch (error) {
+      console.warn('Unable to save subtitle display settings:', error);
+    }
+  }
+  scheduleVisibleLaneReflow();
+}
+
+function loadSubtitleDisplaySettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SUBTITLE_DISPLAY_SETTINGS_KEY) || '{}');
+    applySubtitleDisplaySettings(saved.lineCount, saved.textSize, false);
+  } catch (error) {
+    console.warn('Unable to load subtitle display settings:', error);
+    applySubtitleDisplaySettings(3, 'md', false);
+  }
+}
+
+subtitleLineButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    applySubtitleDisplaySettings(button.dataset.lines, subtitleTextSize);
+    resetControlsTimer();
+  });
+});
+subtitleSizeButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    applySubtitleDisplaySettings(visibleLineCount, button.dataset.size);
+    resetControlsTimer();
+  });
+});
+loadSubtitleDisplaySettings();
+
 // View toggling logic
 btnViewBoth.addEventListener('click', () => {
   viewMode = 'both';
@@ -261,7 +319,6 @@ function getAppendedText(oldStr, newStr) {
 // Tracks the active-line DOM element per lane so we can append words incrementally
 const activeDOMLine = { lang1: null, lang2: null };
 const leavingDOMLine = { lang1: null, lang2: null };
-const MAX_VISIBLE_LINES = 2;
 const LINE_ADVANCE_DURATION_MS = 280;
 const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 const measurementCanvas = document.createElement('canvas');
@@ -275,7 +332,7 @@ function rebuildSubtitleDOM(lane, populateActive = true) {
   if (!element) return;
 
   // Full rebuild: history lines + fresh active line element
-  const historyLines = displayState[lane].lines.slice(-(MAX_VISIBLE_LINES - 1));
+  const historyLines = displayState[lane].lines.slice(-(visibleLineCount - 1));
   let html = historyLines
     .map(line => `<div class="sub-line">${escapeHtml(line)}</div>`)
     .join("");
@@ -355,7 +412,7 @@ function advanceSubtitleDOM(lane, word) {
 
   const previousLines = Array.from(element.children);
   const previousPositions = new Map(previousLines.map(line => [line, line.getBoundingClientRect()]));
-  const outgoingLine = previousLines.length >= MAX_VISIBLE_LINES ? previousLines[0] : null;
+  const outgoingLine = previousLines.length >= visibleLineCount ? previousLines[0] : null;
   previousLines.forEach(line => line.getAnimations?.().forEach(animation => animation.cancel()));
   clearLeavingLine(lane);
 
