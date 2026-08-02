@@ -89,6 +89,8 @@ The Dock app:
 
 If Live Translate is already running, clicking the Dock icon does not start another server or reload the active dashboard. It displays an **Already Running** dialog. Choose **OK** to leave the session untouched or **Open Dashboard** to navigate to it deliberately.
 
+While translation is active, the dashboard also asks for confirmation before a browser reload, tab close, or navigation can destroy the live Gemini session. This browser guard is a second layer of protection if someone clicks through the launcher or tries to refresh the page during an event.
+
 Do not delete or move the linked repository. If it moves, run `install-mac-app.command` again from the new location. This is one of the few cases that requires reinstalling the Dock app.
 
 ## Updating the Mac app

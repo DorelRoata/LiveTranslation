@@ -38,6 +38,8 @@ On a normal cold start, the launcher:
 
 If the app is already running, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance and may affect the current browser tab, so use it only when needed.
 
+The dashboard adds a second safety layer while translation is active: the browser must confirm any reload, tab close, or navigation that would destroy the page-held Gemini session. If this warning appears during an event, choose the option that stays on the page.
+
 ## 4. Updating without reinstalling
 
 Feature updates do not require reinstalling the Dock app because the installed wrapper invokes the launcher from the linked repository.
@@ -231,7 +233,7 @@ The browser dashboard also includes System Status Logs and a Copy Diagnostics co
 
 ### Clicking the Dock app resets the dashboard
 
-Update to the latest `main` revision. A second launch now displays an Already Running dialog and leaves the current dashboard untouched when **OK** is selected.
+Update to the latest `main` revision. A second launch now displays an Already Running dialog and leaves the current dashboard untouched when **OK** is selected. If a navigation still reaches the dashboard, the active-session browser guard requires another explicit confirmation before the translation can be destroyed.
 
 ### Changes are not visible after an update
 

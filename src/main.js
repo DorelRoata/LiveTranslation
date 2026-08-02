@@ -233,6 +233,15 @@ function loadOperatorSettings() {
 
 loadOperatorSettings();
 
+// Gemini sessions live in this browser page. Protect an active translation
+// from accidental reloads, tab closes, or a launcher/browser navigation.
+window.addEventListener('beforeunload', event => {
+  saveOperatorSettings();
+  if (!isRunning && !isStarting) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 // --- API Key Runtime Configuration ---
 async function loadStoredApiKey() {
   try {
