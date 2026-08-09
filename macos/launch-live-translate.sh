@@ -302,7 +302,7 @@ if [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ]; then
 fi
 
 dependencies_are_ready() {
-  "$NODE_BIN" -e "Promise.all([import('@vitejs/plugin-basic-ssl'), import('qrcode'), import('ws')]).catch(() => process.exit(1))" >/dev/null 2>&1
+  "$NODE_BIN" scripts/runtime-state.js dependencies-ready >/dev/null 2>&1
 }
 
 if ! dependencies_are_ready; then
@@ -313,10 +313,14 @@ if ! dependencies_are_ready; then
   fi
 fi
 
-# Release checkouts include a tested production build. Rebuilding it on every
-# Dock launch made cold starts depend unnecessarily on npm/Vite and could fail
-# on a second Mac even though the shipped dashboard was ready to serve.
-if [ "$BUILD_READY" != "1" ] && [ ! -f dist/index.html ]; then
+build_is_ready() {
+  "$NODE_BIN" scripts/runtime-state.js build-ready >/dev/null 2>&1
+}
+
+# A content fingerprint makes manual Git pulls deterministic too: if source,
+# HTML, public assets, or the lockfile changed, the dashboard is rebuilt before
+# the server starts. Unchanged launches continue to start without rebuilding.
+if [ "$BUILD_READY" != "1" ] && ! build_is_ready; then
   show_notice "Preparing the dashboard..."
   if ! "$NPM_BIN" run build >>"$LOG_FILE" 2>&1; then
     show_error "The Live Translate dashboard could not be built. Check $LOG_FILE for details."

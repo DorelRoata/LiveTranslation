@@ -150,6 +150,14 @@
                   <span class="switch-label">Play Voice 2 Output</span>
                 </label>
               </div>
+
+              <div class="input-group">
+                <label for="ignored-input-language-select">Do Not Translate Speech In</label>
+                <select id="ignored-input-language-select">
+                  <option value="none" selected>None (Translate Every Language)</option>
+                </select>
+                <small class="helper-text">Use this when a human interpreter is already speaking one translated language. Gemini stays silent for that language.</small>
+              </div>
             </div>
 
             <!-- Column 3: Instructions & Echo -->
@@ -468,7 +476,7 @@
 
       <!-- Global Footer -->
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.2.0</p>
+        <p>Powered by Google Gemini Live API | v1.3.0</p>
       </footer>
     </div>
 

@@ -24,12 +24,17 @@ if errorlevel 1 (
   exit /b 1
 )
 
-:: Install only on first setup. Routine launches never contact the package registry.
-if not exist node_modules call npm ci
+:: Reinstall only when the lockfile changed or a required package is missing.
+call node scripts\runtime-state.js dependencies-ready >nul 2>nul
+if errorlevel 1 call npm ci
 if errorlevel 1 exit /b 1
 
-call npm run build
-if errorlevel 1 exit /b 1
+:: Rebuild after a pull or source/asset change, while keeping unchanged launches fast.
+call node scripts\runtime-state.js build-ready >nul 2>nul
+if errorlevel 1 (
+  call npm run build
+  if errorlevel 1 exit /b 1
+)
 
 :: Open the browser automatically
 start "" powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; Start-Process 'https://localhost:5173'"

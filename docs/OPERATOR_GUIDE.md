@@ -64,13 +64,15 @@ Reinstall only when:
 2. Confirm Connection Health shows the local relay as connected.
 3. Confirm the correct audio source and microphone.
 4. Confirm the target languages.
-5. Review the system instructions and terminology hints.
-6. Decide whether Voice 1 and Voice 2 should be distributed.
-7. Leave **Local Speaker** off unless host playback is intentional.
-8. Leave **Echo Target Language** off unless the source-language behavior requires it.
-9. Open the projector and/or OBS destination.
-10. Speak a short test sentence and verify translated words at every destination.
-11. Clear the projector screen before the live program begins.
+5. If a human interpreter will also be heard, set **Do Not Translate Speech In** to that interpreter's language.
+6. Review the system instructions and terminology hints.
+7. Decide whether Voice 1 and Voice 2 should be distributed.
+8. Leave **Local Speaker** off unless host playback is intentional.
+9. Leave **Echo Target Language** off unless the source-language behavior requires it.
+10. Open the projector and/or OBS destination.
+11. Speak a short test sentence in a translated language and in the ignored language, if enabled.
+12. Verify that translation appears only for the intended speech at every destination.
+13. Clear the projector screen before the live program begins.
 
 ## 6. What is saved
 
@@ -194,7 +196,7 @@ The saved **Automatically Ignore Songs** switch defaults to off and can be enabl
 
 When enabled:
 
-1. The browser loads the on-device MediaPipe/YAMNet classifier. The first load requires internet access for the classifier runtime and model; the browser can cache them afterward.
+1. The browser loads the on-device MediaPipe/YAMNet classifier from the Live Translate server. Its runtime and model are bundled locally, so first use does not require access to an external CDN.
 2. The same 16 kHz audio used by translation is classified locally, including microphone, system-audio, and network-audio sources.
 3. Two consecutive song-like windows pause the audio feed. Pending translated playback stops and subsequent Gemini translation output is ignored, but the session remains connected.
 4. The status under the switch changes to **Song detected — translation paused**.

@@ -7,6 +7,10 @@ import {
   getSongEvidence,
   updateSongGateState
 } from './song-detection.js';
+import {
+  buildTranslationInstruction,
+  shouldEchoTargetLanguage
+} from './translation-instructions.js';
 
 // --- Constants ---
 const HOST = "generativelanguage.googleapis.com";
@@ -16,8 +20,8 @@ const MODEL = "models/gemini-3.5-live-translate-preview";
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const SONG_DETECTOR_WASM_ROOT = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-audio@1.0.1/wasm';
-const SONG_DETECTOR_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite';
+const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
+const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
 const DEFAULT_SYSTEM_INSTRUCTION = `${LEGACY_DEFAULT_SYSTEM_INSTRUCTION} Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.`;
 const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
@@ -25,6 +29,7 @@ const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   microphoneDevice: 'default',
   targetLanguage1: 'en',
   targetLanguage2: 'none',
+  ignoredInputLanguage: 'none',
   playVoice1: true,
   playVoice2: true,
   systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
@@ -101,6 +106,7 @@ const targetLanguageSelect1 = document.getElementById("target-language-select-1"
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
 const targetLanguageSelect2 = document.getElementById("target-language-select-2");
 const playVoiceCheckbox2 = document.getElementById("play-voice-2");
+const ignoredInputLanguageSelect = document.getElementById('ignored-input-language-select');
 
 const echoToggle = document.getElementById("echo-toggle");
 const startBtn = document.getElementById("start-btn");
@@ -172,6 +178,12 @@ function setSelectValue(select, value, fallback) {
   select.value = selectHasValue(select, value) ? value : fallback;
 }
 
+function populateIgnoredInputLanguages() {
+  for (const option of targetLanguageSelect1.options) {
+    ignoredInputLanguageSelect.add(new Option(option.textContent, option.value));
+  }
+}
+
 function setTranscriptFontSize(size) {
   const safeSize = ['sm', 'md', 'lg', 'xl'].includes(size) ? size : DEFAULT_OPERATOR_SETTINGS.transcriptFontSize;
   document.querySelectorAll('.font-size-btn').forEach(btn => {
@@ -187,6 +199,7 @@ function applyOperatorSettings(settings) {
   setSelectValue(audioSourceSelect, settings.audioSource, DEFAULT_OPERATOR_SETTINGS.audioSource);
   setSelectValue(targetLanguageSelect1, settings.targetLanguage1, DEFAULT_OPERATOR_SETTINGS.targetLanguage1);
   setSelectValue(targetLanguageSelect2, settings.targetLanguage2, DEFAULT_OPERATOR_SETTINGS.targetLanguage2);
+  setSelectValue(ignoredInputLanguageSelect, settings.ignoredInputLanguage, DEFAULT_OPERATOR_SETTINGS.ignoredInputLanguage);
   preferredMicDeviceId = typeof settings.microphoneDevice === 'string'
     ? settings.microphoneDevice
     : DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
@@ -218,6 +231,7 @@ function getOperatorSettings() {
     microphoneDevice: preferredMicDeviceId,
     targetLanguage1: targetLanguageSelect1.value,
     targetLanguage2: targetLanguageSelect2.value,
+    ignoredInputLanguage: ignoredInputLanguageSelect.value,
     playVoice1: playVoiceCheckbox1.checked,
     playVoice2: playVoiceCheckbox2.checked,
     systemInstruction: systemInstructionInput.value,
@@ -261,6 +275,7 @@ function loadOperatorSettings() {
   saveOperatorSettings();
 }
 
+populateIgnoredInputLanguages();
 loadOperatorSettings();
 syncSongDetectorPreference();
 
@@ -339,6 +354,7 @@ loadStoredApiKey();
 systemInstructionInput.addEventListener('input', saveOperatorSettings);
 targetLanguageSelect1.addEventListener('change', saveOperatorSettings);
 targetLanguageSelect2.addEventListener('change', saveOperatorSettings);
+ignoredInputLanguageSelect.addEventListener('change', saveOperatorSettings);
 playVoiceCheckbox1.addEventListener('change', saveOperatorSettings);
 playVoiceCheckbox2.addEventListener('change', saveOperatorSettings);
 echoToggle.addEventListener('change', saveOperatorSettings);
@@ -543,6 +559,7 @@ function setSessionSettingsDisabled(disabled) {
   apiKeyInput.disabled = disabled;
   targetLanguageSelect1.disabled = disabled;
   targetLanguageSelect2.disabled = disabled;
+  ignoredInputLanguageSelect.disabled = disabled;
   echoToggle.disabled = disabled;
   systemInstructionInput.disabled = disabled;
   subtitlePacingSelect.disabled = disabled;
@@ -561,10 +578,11 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.2.0 diagnostics',
+    'Live Translate v1.3.0 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
+    `Ignored input language: ${ignoredInputLanguageSelect.selectedOptions[0]?.textContent || 'None'}`,
     `Automatic song filter: ${ignoreSongsToggle.checked ? songFilterStatus.textContent : 'Off'}`,
     ...statusLines,
     `Operator message: ${diagnosticMessage.textContent}`,
@@ -1438,6 +1456,7 @@ async function startSession() {
   const pendingSessionConfig = {
     targetLanguage1: targetLanguageSelect1.value,
     targetLanguage2: targetLanguageSelect2.value,
+    ignoredInputLanguage: ignoredInputLanguageSelect.value,
     echoTargetLanguage: echoToggle.checked,
     subtitlePacing: subtitlePacingSelect.value,
     systemInstructionText: systemInstructionInput.value.trim()
@@ -1559,18 +1578,18 @@ function connectGeminiSockets() {
   sessionGeneration++;
   const generation = sessionGeneration;
   const apiKey = sessionApiKey;
-  const { targetLanguage1, targetLanguage2, echoTargetLanguage, systemInstructionText } = sessionConfig;
+  const { targetLanguage1, targetLanguage2, ignoredInputLanguage, echoTargetLanguage, systemInstructionText } = sessionConfig;
   const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
   setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
 
   socket1 = new WebSocket(url);
   setHealthItem('gemini1', 'connecting', 'Opening connection');
-  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, systemInstructionText, generation);
+  setupSocket(socket1, 1, targetLanguage1, ignoredInputLanguage, echoTargetLanguage, systemInstructionText, generation);
   if (targetLanguage2 !== "none") {
     healthItems.gemini2.hidden = false;
     socket2 = new WebSocket(url);
     setHealthItem('gemini2', 'connecting', 'Opening connection');
-    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, systemInstructionText, generation);
+    setupSocket(socket2, 2, targetLanguage2, ignoredInputLanguage, echoTargetLanguage, systemInstructionText, generation);
   } else {
     healthItems.gemini2.hidden = true;
     setHealthItem('gemini2', 'idle', 'Not enabled');
@@ -1638,13 +1657,22 @@ function stopForGeminiError(message) {
   alert(`Gemini could not start this session: ${message}`);
 }
 
-function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemInstructionText, generation) {
+function setupSocket(ws, channelId, targetLanguage, ignoredInputLanguage, echoTargetLanguage, systemInstructionText, generation) {
   ws.onopen = () => {
     if (!isCurrentSocket(ws, channelId, generation)) return;
     logDebug(`WebSocket ${channelId} opened successfully.`, "info");
     setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
     
     // Send Setup Message
+    const effectiveEchoTargetLanguage = shouldEchoTargetLanguage(
+      echoTargetLanguage,
+      targetLanguage,
+      ignoredInputLanguage
+    );
+    const effectiveSystemInstruction = buildTranslationInstruction(
+      systemInstructionText,
+      ignoredInputLanguage
+    );
     const setupMsg = {
       setup: {
         model: MODEL,
@@ -1652,7 +1680,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
           responseModalities: ["AUDIO"],
           translationConfig: {
             targetLanguageCode: targetLanguage,
-            echoTargetLanguage: echoTargetLanguage
+            echoTargetLanguage: effectiveEchoTargetLanguage
           }
         },
         inputAudioTranscription: {},
@@ -1660,13 +1688,14 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
       }
     };
 
-    if (systemInstructionText) {
+    if (effectiveSystemInstruction) {
       setupMsg.setup.systemInstruction = {
-        parts: [{ text: systemInstructionText }]
+        parts: [{ text: effectiveSystemInstruction }]
       };
     }
     
-    logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
+    const ignoredLanguageLog = ignoredInputLanguage === 'none' ? '' : `; ignoring ${ignoredInputLanguage}`;
+    logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}${ignoredLanguageLog}...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
   };
   

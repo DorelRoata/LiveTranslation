@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.2.0`.
+The current application version is `v1.3.0`.
 
 ## Screenshots
 
@@ -18,6 +18,7 @@ The current application version is `v1.2.0`.
 
 - Microphone, system-audio, or remote network-audio input at 16 kHz PCM.
 - One or two concurrent Gemini translation sessions.
+- A saved input-language filter that keeps Gemini silent when a selected language is already being interpreted by a person.
 - Low-latency translated speech playback at 24 kHz.
 - Independent Voice 1 and Voice 2 output controls.
 - A safety-oriented **Local Speaker** control that defaults to off.
@@ -107,6 +108,8 @@ To install an update:
 
 The update check runs only when no Live Translate server is already running. When an update is approved, the launcher performs a fast-forward-only pull of `origin/main`, installs locked dependencies with `npm ci`, builds the dashboard, and starts it. Interrupted updates use transaction markers and backups so the previous revision can be recovered safely.
 
+If the repository is updated manually with `git pull`, the next launch compares the current lockfile and dashboard sources with local runtime stamps. It automatically runs `npm ci` when dependencies changed and rebuilds `dist` when source files or bundled assets changed. A second restart or manual rebuild is not required.
+
 The **Check Updates** control in Connection Health reports whether a newer commit is available. If it finds one, quit and reopen the Dock app to install it.
 
 ## Saved settings and safety defaults
@@ -119,7 +122,7 @@ The Gemini API key is stored in the current user's private application configura
 
 The file is created with user-only permissions. API-key configuration is available only from the host computer.
 
-Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, languages, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target and ignored input languages, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
 
 Important defaults include:
 
@@ -128,6 +131,7 @@ Important defaults include:
 - Audio source: system default microphone.
 - Language 1: English.
 - Language 2: disabled.
+- Do Not Translate Speech In: disabled.
 - Voice 1 and Voice 2 output: on.
 - Local volume: 100%, but silent while Local Speaker is off.
 - Subtitle Pace: Smooth with a 200 ms start buffer.
@@ -180,7 +184,7 @@ If the projector displays words but OBS does not, verify the `http://...:5174/?o
 - Turning the switch off resumes translation immediately.
 - If the classifier cannot load or fails, the filter fails open: the dashboard shows an error and translation continues normally.
 
-The first activation downloads the MediaPipe WebAssembly runtime and YAMNet model from their official distribution locations, after which normal browser caching applies. Detection is probabilistic. Speech over loud music and unusual vocal sounds can cause false results, so the dashboard status and live switch remain the operator override.
+The MediaPipe WebAssembly runtime and YAMNet model are served locally by Live Translate. Song detection therefore does not depend on the dashboard browser reaching jsDelivr or Google Cloud Storage during an event. Detection is probabilistic. Speech over loud music and unusual vocal sounds can cause false results, so the dashboard status and live switch remain the operator override.
 
 ## Subtitle pacing
 

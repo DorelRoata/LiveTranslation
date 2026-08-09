@@ -17,12 +17,15 @@ if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-# Install only on first setup. Routine launches never contact the package registry.
-if [ ! -d "node_modules" ]; then
+# Reinstall only when the lockfile changed or a required package is missing.
+if ! node scripts/runtime-state.js dependencies-ready >/dev/null 2>&1; then
   npm ci || exit 1
 fi
 
-npm run build || exit 1
+# Rebuild after a pull or source/asset change, while keeping unchanged launches fast.
+if ! node scripts/runtime-state.js build-ready >/dev/null 2>&1; then
+  npm run build || exit 1
+fi
 
 # Open the browser automatically after 2 seconds
 (sleep 2 && open "https://localhost:5173") &
