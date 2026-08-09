@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { obsLanguageToViewMode } from './obs-language.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
@@ -165,11 +166,7 @@ function setControlsHidden(hidden) {
 function resetControlsTimer() {
   setControlsHidden(false);
   clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    if (!controlBar.matches(':hover') && !controlBar.matches(':focus-within')) {
-      setControlsHidden(true);
-    }
-  }, 3000);
+  controlsTimeout = setTimeout(() => setControlsHidden(true), 3000);
 }
 window.addEventListener('pointermove', resetControlsTimer, { passive: true });
 window.addEventListener('pointerdown', resetControlsTimer, { passive: true });
@@ -692,6 +689,7 @@ function updateUIElements() {
   btnViewBoth.setAttribute('aria-pressed', String(viewMode === 'both'));
   btnViewLang1.setAttribute('aria-pressed', String(viewMode === 'lang1'));
   btnViewLang2.setAttribute('aria-pressed', String(viewMode === 'lang2'));
+  document.body.classList.toggle('single-language-layout', viewMode !== 'both');
 
   // 3. Grid Columns Visibility
   if (viewMode === 'both') {
@@ -913,8 +911,9 @@ window.addEventListener('keydown', (event) => {
 });
 
 // --- OBS Broadcast Mode ---
-// If the URL contains ?obs=true, enable transparent backgrounds and hide controls
+// OBS URLs hide the viewer chrome and may lock the overlay to one language lane.
 const urlParams = new URLSearchParams(window.location.search);
+viewMode = obsLanguageToViewMode(urlParams.get('lang'));
 if (urlParams.get('obs') === 'true') {
   document.body.classList.add('obs-mode');
 }

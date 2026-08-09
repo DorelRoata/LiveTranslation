@@ -64,14 +64,14 @@ Reinstall only when:
 2. Confirm Connection Health shows the local relay as connected.
 3. Confirm the correct audio source and microphone.
 4. Confirm the target languages.
-5. If a human interpreter will also be heard, set **Do Not Translate Speech In** to that interpreter's language.
+5. If a human interpreter shares the room mix, route only the original speaker's microphone to the separate input selected by Live Translate.
 6. Review the system instructions and terminology hints.
 7. Decide whether Voice 1 and Voice 2 should be distributed.
 8. Leave **Local Speaker** off unless host playback is intentional.
 9. Leave **Echo Target Language** off unless the source-language behavior requires it.
-10. Open the projector and/or OBS destination.
-11. Speak a short test sentence in a translated language and in the ignored language, if enabled.
-12. Verify that translation appears only for the intended speech at every destination.
+10. Choose the OBS language and open the projector and/or OBS destination.
+11. Speak a short test sentence from each microphone.
+12. Verify that only the intended microphone reaches Live Translate and that every destination shows the selected translation language.
 13. Clear the projector screen before the live program begins.
 
 ## 6. What is saved
@@ -160,10 +160,10 @@ If the sender disconnects, the host displays a warning. Live audio is not retain
 
 ## 10. OBS setup
 
-Use the dedicated HTTP OBS Overlay URL, not the HTTPS projector URL:
+Choose the OBS language on the dashboard, then use the generated HTTP OBS Overlay URL, not the HTTPS projector URL:
 
 ```text
-http://HOST-IP:5174/?obs=true
+http://HOST-IP:5174/?obs=true&lang=1
 ```
 
 Recommended Browser Source settings:
@@ -174,7 +174,7 @@ Recommended Browser Source settings:
 - **Control audio via OBS** off for text only.
 - **Control audio via OBS** on only when translated speech should enter OBS.
 
-The OBS page is intentionally transparent, hides all controls, and remains blank until translation text arrives.
+Use `lang=1` for Language 1 only, `lang=2` for Language 2 only, or `lang=both` for both lanes. A single lane is positioned in the upper half of the canvas. The OBS page is intentionally transparent, hides all controls, and remains blank until translation text arrives.
 
 ### OBS diagnostic sequence
 

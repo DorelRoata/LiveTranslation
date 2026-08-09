@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.0`.
+The current application version is `v1.3.1`.
 
 ## Screenshots
 
@@ -18,7 +18,6 @@ The current application version is `v1.3.0`.
 
 - Microphone, system-audio, or remote network-audio input at 16 kHz PCM.
 - One or two concurrent Gemini translation sessions.
-- A saved input-language filter that keeps Gemini silent when a selected language is already being interpreted by a person.
 - Low-latency translated speech playback at 24 kHz.
 - Independent Voice 1 and Voice 2 output controls.
 - A safety-oriented **Local Speaker** control that defaults to off.
@@ -39,7 +38,7 @@ The current application version is `v1.3.0`.
 | Local dashboard | HTTPS `5173` | `https://localhost:5173/` |
 | Projector/phone subtitles | HTTPS `5173` | `https://192.168.1.67:5173/subtitles.html` |
 | Remote microphone | HTTPS `5173` | `https://192.168.1.67:5173/audio-sender.html` |
-| OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true` |
+| OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true&lang=1` |
 
 Use `localhost` only on the Mac that is running Live Translate. Other computers must use the network address displayed by the dashboard.
 
@@ -122,7 +121,7 @@ The Gemini API key is stored in the current user's private application configura
 
 The file is created with user-only permissions. API-key configuration is available only from the host computer.
 
-Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target and ignored input languages, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target languages, OBS language, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
 
 Important defaults include:
 
@@ -131,7 +130,6 @@ Important defaults include:
 - Audio source: system default microphone.
 - Language 1: English.
 - Language 2: disabled.
-- Do Not Translate Speech In: disabled.
 - Voice 1 and Voice 2 output: on.
 - Local volume: 100%, but silent while Local Speaker is off.
 - Subtitle Pace: Smooth with a 200 ms start buffer.
@@ -153,6 +151,8 @@ Copy the **Projector Screen URL** from the dashboard. On the projector computer 
 
 Subtitle viewers automatically reconnect after network or server interruptions and receive the current subtitle history after reconnecting. Wake lock can keep supported phone screens awake.
 
+The projector controls hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Selecting only one language positions that subtitle lane in the upper half of the screen.
+
 ## Remote microphone
 
 1. Select **Network Audio (Stream from another PC)** as the dashboard audio source.
@@ -166,13 +166,18 @@ The dashboard warns the operator if the remote sender disconnects and clears the
 ## OBS live-stream overlay
 
 1. In OBS, add a **Browser** source.
-2. Copy the dashboard's dedicated **OBS Overlay URL**. It resembles `http://192.168.1.67:5174/?obs=true`.
-3. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
-4. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.
+2. Choose **Both Languages**, **Language 1 Only**, or **Language 2 Only** in the dashboard's **OBS Language** selector.
+3. Copy the dedicated **OBS Overlay URL**. A one-language URL resembles `http://192.168.1.67:5174/?obs=true&lang=1`.
+4. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
+5. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.
 
 OBS mode hides controls and the connection indicator and makes the page background transparent. A completely blank overlay is expected before translated words arrive.
 
-If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties.
+The `lang` query is `both`, `1`, or `2`. When one language is selected, it uses the upper half of the canvas. If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true&lang=...` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties.
+
+## Mixed-language microphone routing
+
+When two microphones are combined into the same input, Live Translate cannot reliably identify and remove one speaker's language without speech classification and added delay. For a dependable live setup, send both microphones to the room's main mix, but send only the original speaker's microphone to a separate mixer AUX/USB bus selected as Live Translate's input. The speakers can continue alternating naturally; no pause or language detector is required.
 
 ## Automatic song filtering
 

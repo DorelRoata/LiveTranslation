@@ -151,13 +151,6 @@
                 </label>
               </div>
 
-              <div class="input-group">
-                <label for="ignored-input-language-select">Do Not Translate Speech In</label>
-                <select id="ignored-input-language-select">
-                  <option value="none" selected>None (Translate Every Language)</option>
-                </select>
-                <small class="helper-text">Use this when a human interpreter is already speaking one translated language. Gemini stays silent for that language.</small>
-              </div>
             </div>
 
             <!-- Column 3: Instructions & Echo -->
@@ -271,7 +264,16 @@
               <div class="network-info-box" id="obs-overlay-info-box">
                 <p style="font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.25rem;">OBS Overlay URL:</p>
                 <p>Paste this certificate-free URL into an OBS Browser Source. The transparent page stays blank until translated words arrive:</p>
-                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true</p>
+                <div class="input-group" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">
+                  <label for="obs-language-select">OBS Language</label>
+                  <select id="obs-language-select">
+                    <option value="both" selected>Both Languages</option>
+                    <option value="lang1">Language 1 Only</option>
+                    <option value="lang2">Language 2 Only</option>
+                  </select>
+                  <small class="helper-text">Choosing one language also places its subtitles in the upper half of the OBS canvas.</small>
+                </div>
+                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true&amp;lang=both</p>
                 <div class="share-link-actions">
                   <button id="copy-obs-url" class="share-link-btn" type="button">Copy URL</button>
                   <button id="open-obs-url" class="share-link-btn" type="button">Open Page</button>
@@ -476,7 +478,7 @@
 
       <!-- Global Footer -->
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.0</p>
+        <p>Powered by Google Gemini Live API | v1.3.1</p>
       </footer>
     </div>
 
