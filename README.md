@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.3`.
+The current application version is `v1.3.4`.
 
 ## Screenshots
 
@@ -151,7 +151,7 @@ Copy the **Projector Screen URL** from the dashboard. On the projector computer 
 
 Subtitle viewers automatically reconnect after network or server interruptions and receive the current subtitle history after reconnecting. Wake lock can keep supported phone screens awake.
 
-The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, scale against both width and height, and retain a bottom safe area to prevent three-line clipping at common 1080p and 1440p resolutions. Selecting only one language positions that subtitle lane in the upper half of the screen.
+The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, vertically center each language with compact lane padding, scale against both width and height, and retain a bottom safe area to prevent three-line clipping at common 1080p and 1440p resolutions. Selecting only one language positions that subtitle lane in the upper half of the screen.
 
 ## Remote microphone
 
