@@ -7,14 +7,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     body {
-      --subtitle-font-size: clamp(1.4rem, min(3.5vw, 6.8vh), 4.5rem);
+      --subtitle-font-size: clamp(1.4rem, min(3.5vw, 6vh), 4.5rem);
       --subtitle-line-height: 1.15;
       --subtitle-line-gap: 0.25rem;
+      --subtitle-bottom-safe: clamp(1rem, 3vh, 2.5rem);
       background-color: #000000;
       color: #ffffff;
       font-family: 'Outfit', sans-serif;
       margin: 0;
-      padding: 3rem;
+      padding: 0 clamp(0.75rem, 3vw, 3rem);
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -24,13 +25,13 @@
       position: relative;
     }
     body[data-subtitle-size="sm"] {
-      --subtitle-font-size: clamp(1.25rem, min(3vw, 6.2vh), 3.9rem);
+      --subtitle-font-size: clamp(1.25rem, min(3vw, 5.3vh), 3.9rem);
     }
     body[data-subtitle-size="lg"] {
-      --subtitle-font-size: clamp(1.5rem, min(4vw, 7.5vh), 5.1rem);
+      --subtitle-font-size: clamp(1.5rem, min(4vw, 6.8vh), 5.1rem);
     }
     .status-dot {
-      position: absolute;
+      position: fixed;
       top: 1.5rem;
       right: 1.5rem;
       width: 12px;
@@ -50,16 +51,21 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      min-height: 0;
+      width: 100%;
+      box-sizing: border-box;
       gap: 0.75rem;
       justify-content: center;
       transition: all 0.5s ease;
     }
     .section {
       flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       justify-content: center;
       padding: 1.25rem 2.5rem;
+      box-sizing: border-box;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.01);
       border: 1px solid rgba(255, 255, 255, 0.03);
@@ -75,25 +81,25 @@
     }
     body.single-language-layout .section {
       flex: 0 0 50%;
-      min-height: 0;
-      box-sizing: border-box;
     }
     body.single-language-layout .text {
-      height: 100%;
       justify-content: center;
     }
     .text {
+      flex: 1 1 auto;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       align-items: stretch;
       position: relative;
-      height: 22rem;
+      width: 100%;
+      height: auto;
       min-height: 0;
-      max-height: 100%;
+      max-height: none;
+      box-sizing: border-box;
       overflow: hidden;
       color: #ffffff;
-      padding: 0 10%;
+      padding: 0 10% var(--subtitle-bottom-safe);
     }
     .sub-line,
     .sub-line-active {
@@ -123,7 +129,7 @@
 
     /* Floating Control Bar Styles */
     .control-bar {
-      position: absolute;
+      position: fixed;
       top: 1.5rem;
       left: 50%;
       transform: translateX(-50%);
@@ -271,7 +277,7 @@
         min-height: 100dvh;
         height: 100dvh;
         overflow: hidden;
-        padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+        padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
       }
       .control-bar {
         position: fixed;
@@ -304,7 +310,7 @@
         padding: 1rem;
       }
       .text {
-        padding: 0;
+        padding: 0 0 max(1rem, env(safe-area-inset-bottom));
       }
       .qr-card {
         padding: 1.25rem;
@@ -318,7 +324,8 @@
     @media (max-height: 650px) {
       body {
         --subtitle-font-size: clamp(1.2rem, 3vw, 2.1rem);
-        padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+        --subtitle-bottom-safe: max(0.75rem, env(safe-area-inset-bottom));
+        padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
       }
       body[data-subtitle-size="sm"] {
         --subtitle-font-size: clamp(1.05rem, 2.6vw, 1.8rem);
@@ -333,8 +340,8 @@
         padding: 0.75rem;
       }
       .text {
-        height: 100%;
-        padding: 0 2%;
+        height: auto;
+        padding: 0 2% var(--subtitle-bottom-safe);
       }
     }
 
@@ -385,7 +392,7 @@
       <button class="control-btn" id="btn-qr-toggle">Share QR</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.3.2</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.3.3</span>
   </div>
 
   <div class="container" id="subtitles-container">
