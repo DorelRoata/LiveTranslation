@@ -345,11 +345,7 @@ if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/de
   fi
   if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
     if running_server_is_stale "$INSTANCE_JSON"; then
-      RESTART_CHOICE="$(ask_to_restart_running "Live Translate is already running, but a newer version is ready (from a git pull or an unfinished rebuild). Restarting will stop the current translation session, rebuild if needed, and start the updated app.")"
-      if [ "$RESTART_CHOICE" != "Restart and Update" ]; then
-        exit 0
-      fi
-      show_notice "Stopping the current session so the update can start..."
+      show_notice "A pulled update is ready. Restarting Live Translate..."
       if ! stop_running_server; then
         show_error "Live Translate could not stop the running server. Quit it from Activity Monitor or the terminal, then open the app again."
         exit 1

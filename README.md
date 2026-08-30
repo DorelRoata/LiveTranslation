@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.11`.
+The current application version is `v1.3.12`.
 
 ## Screenshots
 
@@ -102,17 +102,19 @@ Do not delete or move the linked repository. If it moves, run `install-mac-app.c
 
 Normal code updates do **not** require reinstalling `Live Translate.app`.
 
-To install an update:
+To install an update, double-click:
 
-1. Stop the running translation session and quit Live Translate.
-2. Reopen the Dock app.
-3. Choose **Update and Start** when prompted.
+```text
+update-live-translate.command
+```
 
-The update check runs only when no Live Translate server is already running. When an update is approved, the launcher performs a fast-forward-only pull of `origin/main`, installs locked dependencies with `npm ci`, builds the dashboard, and starts it. Interrupted updates use transaction markers and backups so the previous revision can be recovered safely.
+That pulls `origin/main`, then opens the Dock app. If Live Translate is already running with an older build, it restarts automatically, rebuilds if needed, and opens the new dashboard. You do not need to rebuild by hand.
 
-If the repository is updated manually with `git pull`, the next launch compares the current lockfile and dashboard sources with local runtime stamps. It automatically runs `npm ci` when dependencies changed and rebuilds `dist` when source files or bundled assets changed. A second restart or manual rebuild is not required.
+You can also `git pull` and click the Dock icon. A pulled update is applied without an extra confirmation dialog.
 
-The **Check Updates** control in Connection Health reports whether a newer commit is available. If it finds one, quit and reopen the Dock app to install it.
+The launcher still offers **Update and Start** on a cold start when GitHub is ahead and the files have not been pulled yet. Interrupted updates use transaction markers and backups so the previous revision can be recovered safely.
+
+The **Check Updates** control in Connection Health reports whether a newer commit is available.
 
 ## Saved settings and safety defaults
 

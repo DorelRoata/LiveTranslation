@@ -129,6 +129,7 @@ const muteMicBtn = document.getElementById("mute-mic-btn");
 const muteMicLabel = document.getElementById("mute-mic-label");
 const sessionTimerEl = document.getElementById("session-timer");
 const wordCounterEl = document.getElementById("word-counter");
+const chunkStatsEl = document.getElementById("chunk-stats");
 const transcriptGridEl = document.getElementById("transcript-grid");
 
 const micDb = document.getElementById("mic-db");
@@ -680,7 +681,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.11 diagnostics',
+    'Live Translate v1.3.12 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -763,6 +764,13 @@ restartAudioBtn.addEventListener('click', async () => {
 
 // --- Debug Logging Utility ---
 let chunksSent = 0;
+let chunksReceived = 0;
+
+function updateChunkStats() {
+  if (chunkStatsEl) {
+    chunkStatsEl.textContent = `${chunksSent} sent / ${chunksReceived} recv`;
+  }
+}
 
 function logDebug(message, type = "info") {
   if (!debugLogList) return;
@@ -1280,8 +1288,9 @@ async function startAudioCapture() {
     }
     
     chunksSent++;
-    if (chunksSent % 25 === 0) {
-      logDebug(`Sent ${chunksSent} audio chunks to Google...`, "ws-sent");
+    updateChunkStats();
+    if (chunksSent === 1 || chunksSent % 25 === 0) {
+      logDebug(`Sent ${chunksSent} audio chunks to Google.`, "ws-sent");
     }
   };
   
@@ -1344,7 +1353,10 @@ function startSessionTimer() {
   if (sessionTimerInterval) clearInterval(sessionTimerInterval);
   sessionStartTime = Date.now();
   totalWordsCount = 0;
+  chunksSent = 0;
+  chunksReceived = 0;
   updateWordCounterUI();
+  updateChunkStats();
 
   sessionTimerInterval = setInterval(() => {
     const elapsedSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
@@ -1833,6 +1845,12 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
+              chunksReceived++;
+              updateChunkStats();
+              if (chunksReceived === 1 || chunksReceived % 25 === 0) {
+                logDebug(`Received ${chunksReceived} audio chunks from Google on channel ${channelId}.`, "ws-recv");
+                setHealthItem(`gemini${channelId}`, 'good', `Receiving (${chunksReceived})`);
+              }
               playPCMChunk(part.inlineData.data, channelId);
             }
           });
@@ -1852,6 +1870,9 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
       if (outputTx) {
         const text = outputTx.text;
         if (text) {
+          if (chunksReceived === 0) {
+            logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
+          }
           updateOutputTranscript(text, channelId, outputTx.final);
           updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
@@ -2065,8 +2086,9 @@ function handleIncomingNetworkAudio(base64Data) {
   if (canSendAudio(socket2, true, 2)) socket2.send(msgStr);
   
   chunksSent++;
-  if (chunksSent % 25 === 0) {
-    logDebug(`Sent ${chunksSent} network audio chunks to Google...`, "ws-sent");
+  updateChunkStats();
+  if (chunksSent === 1 || chunksSent % 25 === 0) {
+    logDebug(`Sent ${chunksSent} network audio chunks to Google.`, "ws-sent");
   }
 
   const binaryString = atob(base64Data);

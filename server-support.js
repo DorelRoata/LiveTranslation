@@ -8,7 +8,7 @@ import { applyLaneUpdate, buildSystemSetup, emptyLaneState } from './src/system-
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
-const MAX_WS_PAYLOAD_BYTES = 512 * 1024;
+const MAX_WS_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_BUFFERED_BYTES = 256 * 1024;
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
@@ -447,9 +447,18 @@ function sendOrDrop(socket, data, isBinary) {
   socket.send(toTextPayload(data), { binary: false });
 }
 
+function sendAlways(socket, data, isBinary) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  if (isBinary) {
+    socket.send(data, { binary: true });
+    return;
+  }
+  socket.send(toTextPayload(data), { binary: false });
+}
+
 function forwardSocket(from, to) {
   from.on('message', (data, isBinary) => {
-    sendOrDrop(to, data, isBinary);
+    sendAlways(to, data, isBinary);
   });
   from.on('close', (code, reason) => {
     safeCloseSocket(to, code, reason);
