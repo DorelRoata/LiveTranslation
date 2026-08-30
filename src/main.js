@@ -1904,16 +1904,12 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
-              if (channelId === 1) {
-                chunksReceived++;
-                updateChunkStats();
-                if (chunksReceived === 1 || chunksReceived % 25 === 0) {
-                  logDebug(`Received ${chunksReceived} audio chunks from Google.`, "ws-recv");
-                  setHealthItem('gemini1', 'good', `Receiving (${chunksReceived})`);
-                }
-              } else if (channelId === 2) {
-                setHealthItem('gemini2', 'good', 'Receiving');
+              chunksReceived++;
+              updateChunkStats();
+              if (chunksReceived === 1 || chunksReceived % 25 === 0) {
+                logDebug(`Received ${chunksReceived} translated audio chunks from Google.`, "ws-recv");
               }
+              setHealthItem(`gemini${channelId}`, 'good', `Receiving (${chunksReceived})`);
               playPCMChunk(part.inlineData.data, channelId);
             }
           });
