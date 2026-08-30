@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
 import { emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
-import { nextPlaybackTime } from './pcm-audio.js';
+import { schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
@@ -745,15 +745,12 @@ function playPCMChunk(base64Data, channelId) {
 
     const now = audioContext.currentTime;
     const queuedStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
-    const nextStart = nextPlaybackTime(now, queuedStart);
+    const scheduled = schedulePlayback(now, queuedStart, audioBuffer.duration);
+    if (channelId === 1) nextStartTime1 = scheduled.nextQueued;
+    else nextStartTime2 = scheduled.nextQueued;
+    if (!scheduled.play) return;
 
-    sourceNode.start(nextStart);
-
-    if (channelId === 1) {
-      nextStartTime1 = nextStart + audioBuffer.duration;
-    } else {
-      nextStartTime2 = nextStart + audioBuffer.duration;
-    }
+    sourceNode.start(scheduled.start);
   } catch (err) {
     console.error("Subtitles player failed to play PCM audio:", err);
   }

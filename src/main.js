@@ -14,9 +14,10 @@ import {
   downsampleToRate,
   floatToPcm16,
   GEMINI_FRAME_SAMPLES,
-  nextPlaybackTime,
   PcmAccumulator,
   peakAmplitude,
+  QUIET_FRAME_PEAK,
+  schedulePlayback,
   TARGET_CAPTURE_RATE
 } from './pcm-audio.js';
 
@@ -623,7 +624,11 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
     return;
   }
 
+  const geminiBackedUp = (socket1Ready && socket1.bufferedAmount > 64 * 1024) ||
+    (socket2Ready && socket2.bufferedAmount > 64 * 1024);
+
   for (const frame of frames) {
+    if (geminiBackedUp && peakAmplitude(frame) < QUIET_FRAME_PEAK) continue;
     const msgStr = JSON.stringify(buildGeminiAudioMessage(pcm16ToBase64(floatToPcm16(frame))));
     if (socket1Ready) socket1.send(msgStr);
     if (socket2Ready) socket2.send(msgStr);
@@ -722,7 +727,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.19 diagnostics',
+    'Live Translate v1.3.20 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -998,9 +1003,12 @@ function playPCMChunk(base64Data, channelId) {
   
   const now = audioContextOutput.currentTime;
   const queuedStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
-  const nextStart = nextPlaybackTime(now, queuedStart);
-  
-  sourceNode.start(nextStart);
+  const scheduled = schedulePlayback(now, queuedStart, audioBuffer.duration);
+  if (channelId === 1) nextStartTime1 = scheduled.nextQueued;
+  else nextStartTime2 = scheduled.nextQueued;
+  if (!scheduled.play) return;
+
+  sourceNode.start(scheduled.start);
   
   if (channelId === 1) {
     activeSources1.push(sourceNode);
@@ -1011,7 +1019,6 @@ function playPCMChunk(base64Data, channelId) {
         outputIndicator1.classList.remove("active");
       }
     };
-    nextStartTime1 = nextStart + audioBuffer.duration;
   } else {
     activeSources2.push(sourceNode);
     outputIndicator2.classList.add("active");
@@ -1021,7 +1028,6 @@ function playPCMChunk(base64Data, channelId) {
         outputIndicator2.classList.remove("active");
       }
     };
-    nextStartTime2 = nextStart + audioBuffer.duration;
   }
 }
 

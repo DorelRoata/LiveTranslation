@@ -6,7 +6,8 @@ import {
   GEMINI_FRAME_SAMPLES,
   nextPlaybackTime,
   PcmAccumulator,
-  peakAmplitude
+  peakAmplitude,
+  schedulePlayback
 } from '../src/pcm-audio.js';
 
 test('leaves 16 kHz audio unchanged', () => {
@@ -34,7 +35,19 @@ test('converts float samples to 16-bit PCM', () => {
 test('drops an oversized playback queue instead of letting delay grow', () => {
   assert.equal(nextPlaybackTime(10, 9), 10);
   assert.equal(nextPlaybackTime(10, 10.2), 10.2);
-  assert.equal(nextPlaybackTime(10, 12), 10);
+  assert.equal(schedulePlayback(10, 12, 0.02).play, false);
+  assert.equal(schedulePlayback(10, 12, 0.02).nextQueued, 10);
+});
+
+test('does not overlap already-scheduled audio when a lag burst would exceed the live window', () => {
+  const first = schedulePlayback(10, 10, 0.4);
+  assert.equal(first.play, true);
+  assert.equal(first.nextQueued, 10.4);
+  const rest = schedulePlayback(10, first.nextQueued, 0.4);
+  assert.equal(rest.play, true);
+  const overflow = schedulePlayback(10, rest.nextQueued, 0.2);
+  assert.equal(overflow.play, false);
+  assert.equal(overflow.nextQueued, rest.nextQueued);
 });
 
 test('reports peak amplitude for the input meter', () => {

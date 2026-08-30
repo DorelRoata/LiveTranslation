@@ -1,6 +1,7 @@
 export const TARGET_CAPTURE_RATE = 16000;
 export const TARGET_PLAYBACK_RATE = 24000;
-export const MAX_PLAYBACK_AHEAD_SEC = 0.35;
+export const MAX_PLAYBACK_AHEAD_SEC = 0.85;
+export const QUIET_FRAME_PEAK = 0.025;
 export const GEMINI_FRAME_SAMPLES = 1600;
 
 export class PcmAccumulator {
@@ -85,8 +86,19 @@ export function peakAmplitude(float32) {
 }
 
 export function nextPlaybackTime(now, queuedStart, maxAhead = MAX_PLAYBACK_AHEAD_SEC) {
-  if (!Number.isFinite(now)) return 0;
-  if (!Number.isFinite(queuedStart) || queuedStart < now) return now;
-  if (queuedStart - now > maxAhead) return now;
-  return queuedStart;
+  return schedulePlayback(now, queuedStart, 0, maxAhead).start;
+}
+
+export function schedulePlayback(now, queuedStart, duration = 0, maxAhead = MAX_PLAYBACK_AHEAD_SEC) {
+  if (!Number.isFinite(now)) {
+    return { play: false, start: 0, nextQueued: 0 };
+  }
+  const start = Number.isFinite(queuedStart) && queuedStart > now ? queuedStart : now;
+  if (start - now > maxAhead) {
+    return { play: false, start: now, nextQueued: now };
+  }
+  if (duration > 0 && start + duration - now > maxAhead) {
+    return { play: false, start, nextQueued: start };
+  }
+  return { play: true, start, nextQueued: start + Math.max(0, duration) };
 }

@@ -44,7 +44,13 @@ export function buildGeminiSetupMessage({
       inputAudioTranscription: inputTranscriptionConfig(sourceLanguage),
       outputAudioTranscription: {},
       realtimeInputConfig: {
-        automaticActivityDetection: { disabled: false },
+        automaticActivityDetection: {
+          disabled: false,
+          startOfSpeechSensitivity: 'START_SENSITIVITY_LOW',
+          endOfSpeechSensitivity: 'END_SENSITIVITY_LOW',
+          prefixPaddingMs: 20,
+          silenceDurationMs: 800
+        },
         activityHandling: 'NO_INTERRUPTION'
       }
     }

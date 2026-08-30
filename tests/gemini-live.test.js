@@ -18,10 +18,9 @@ test('Live Translate setup omits instructions and keeps transcription at setup t
   });
   assert.deepEqual(message.setup.inputAudioTranscription, {});
   assert.deepEqual(message.setup.outputAudioTranscription, {});
-  assert.deepEqual(message.setup.realtimeInputConfig, {
-    automaticActivityDetection: { disabled: false },
-    activityHandling: 'NO_INTERRUPTION'
-  });
+  assert.equal(message.setup.realtimeInputConfig.activityHandling, 'NO_INTERRUPTION');
+  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.disabled, false);
+  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs, 800);
   assert.equal('systemInstruction' in message.setup, false);
   assert.equal('inputAudioTranscription' in message.setup.generationConfig, false);
   assert.equal('outputAudioTranscription' in message.setup.generationConfig, false);

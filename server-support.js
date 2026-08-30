@@ -493,7 +493,13 @@ export function attachGeminiProxy(httpServer) {
     const session = { upstream: null, ready: false };
 
     const sendUpstream = (data, isBinary) => {
-      sendAlways(session.upstream, data, false);
+      const text = toTextPayload(data);
+      const audio = text.includes('"audio"') || text.includes('mediaChunks');
+      if (audio) {
+        sendOrDrop(session.upstream, text, false);
+        return;
+      }
+      sendAlways(session.upstream, text, false);
     };
 
     client.on('message', (data, isBinary) => {
