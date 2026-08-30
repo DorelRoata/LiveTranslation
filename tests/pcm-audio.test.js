@@ -54,13 +54,13 @@ test('accumulates short capture buffers into 100 ms Gemini frames', () => {
 
 test('copies capture buffers so ScriptProcessor reuse cannot corrupt Gemini audio', () => {
   const accumulator = new PcmAccumulator(4);
-  const reused = new Float32Array([0.1, 0.2, 0.3]);
+  const reused = new Float32Array([1, 2, 3]);
   accumulator.push(reused);
   reused[0] = 9;
   reused[1] = 9;
   reused[2] = 9;
-  const frames = accumulator.push(new Float32Array([0.4]));
+  const frames = accumulator.push(new Float32Array([4]));
   assert.equal(frames.length, 1);
-  assert.equal(frames[0][0], 0.1);
-  assert.equal(frames[0][3], 0.4);
+  assert.equal(frames[0][0], 1);
+  assert.equal(frames[0][3], 4);
 });
