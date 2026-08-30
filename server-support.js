@@ -1,11 +1,12 @@
 import { execFile } from 'node:child_process';
-import { promises as fs } from 'node:fs';
+import { promises as fs, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
 import { applyLaneUpdate, buildSystemSetup, emptyLaneState } from './src/system-setup.js';
 
+const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
 const MAX_WS_PAYLOAD_BYTES = 512 * 1024;
 const MAX_BUFFERED_BYTES = 256 * 1024;
@@ -197,6 +198,21 @@ async function storeApiKey(apiKey) {
   process.env.GEMINI_API_KEY = apiKey;
 }
 
+export async function getInstanceInfo() {
+  let commit = '';
+  try {
+    commit = await runGit(['rev-parse', 'HEAD']);
+  } catch (error) {
+    commit = '';
+  }
+  return {
+    application: 'live-translate',
+    repositoryPath: await fs.realpath(process.cwd()).catch(() => path.resolve(process.cwd())),
+    version: packageVersion,
+    commit
+  };
+}
+
 export async function handleRuntimeApi(req, res) {
   const url = new URL(req.url, 'https://localhost');
 
@@ -210,14 +226,21 @@ export async function handleRuntimeApi(req, res) {
   }
 
   if (url.pathname === '/api/instance' && req.method === 'GET') {
-    if (!isLoopback(req.socket.remoteAddress)) {
+    if (!isLocalClient(req.socket.remoteAddress)) {
       sendJson(res, 403, { error: 'Instance details are only available on this computer.' });
       return true;
     }
-    sendJson(res, 200, {
-      application: 'live-translate',
-      repositoryPath: await fs.realpath(process.cwd()).catch(() => path.resolve(process.cwd()))
-    });
+    sendJson(res, 200, await getInstanceInfo());
+    return true;
+  }
+
+  if (url.pathname === '/api/shutdown' && req.method === 'POST') {
+    if (!isLocalClient(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'The server can only be stopped from this computer.' });
+      return true;
+    }
+    sendJson(res, 200, { ok: true });
+    setTimeout(() => process.exit(0), 50);
     return true;
   }
 

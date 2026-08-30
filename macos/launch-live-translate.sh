@@ -62,6 +62,19 @@ end run
 APPLESCRIPT
 }
 
+ask_to_restart_running() {
+  if [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ]; then
+    /usr/bin/printf 'Restart and Update\n'
+    return 0
+  fi
+  /usr/bin/osascript - "$1" <<'APPLESCRIPT'
+on run argv
+  set result to display dialog (item 1 of argv) with title "Live Translate Update" buttons {"Keep Running", "Restart and Update"} default button "Restart and Update" cancel button "Keep Running" with icon caution
+  return button returned of result
+end run
+APPLESCRIPT
+}
+
 write_update_marker() {
   local phase="$1" marker_temp="$CONFIG_DIR/.update-transaction.$$"
   /usr/bin/printf '%s\n%s\n%s\n%s\n%s\n%s\n' \
@@ -234,7 +247,85 @@ fi
 export PATH="$SELECTED_NODE_DIR:$BASE_PATH"
 NODE_BIN="$SELECTED_NODE_DIR/node"
 NPM_BIN="$SELECTED_NODE_DIR/npm"
+LOCAL_VERSION="$("$NODE_BIN" -p "require('./package.json').version" 2>/dev/null || true)"
+DASHBOARD_OPEN_URL="$DASHBOARD_URL/"
+if [ -n "$LOCAL_VERSION" ]; then
+  DASHBOARD_OPEN_URL="$DASHBOARD_URL/?v=$LOCAL_VERSION"
+fi
 /usr/bin/printf 'Repository: %s\nNode: %s (%s)\n' "$REPO_ROOT" "$NODE_BIN" "$($NODE_BIN --version)" >>"$LOG_FILE"
+
+dependencies_are_ready() {
+  "$NODE_BIN" scripts/runtime-state.js dependencies-ready >/dev/null 2>&1
+}
+
+build_is_ready() {
+  "$NODE_BIN" scripts/runtime-state.js build-ready >/dev/null 2>&1
+}
+
+read_instance_json() {
+  /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/instance" 2>/dev/null || true
+}
+
+instance_field() {
+  /usr/bin/printf '%s' "$1" | "$NODE_BIN" -e 'let value=""; process.stdin.on("data", chunk => value += chunk); process.stdin.on("end", () => { try { const data=JSON.parse(value); if (data.application==="live-translate") process.stdout.write(String(data[process.argv[2]] ?? "")); } catch {} });' "$2"
+}
+
+sync_installed_app() {
+  local installed_app="$HOME/Applications/Live Translate.app"
+  local source_app="$REPO_ROOT/macos/Live Translate.app"
+  local installed_version source_version
+  [ -d "$installed_app" ] && [ -d "$source_app" ] || return 0
+  installed_version="$(/usr/bin/defaults read "$installed_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
+  source_version="$(/usr/bin/defaults read "$source_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
+  [ -n "$source_version" ] || return 0
+  [ "$installed_version" = "$source_version" ] && return 0
+  /usr/bin/printf 'Refreshing installed app bundle %s -> %s\n' "$installed_version" "$source_version" >>"$LOG_FILE"
+  if /usr/bin/ditto "$source_app" "$installed_app" &&
+     /bin/chmod +x "$installed_app/Contents/MacOS/live-translate" "$REPO_ROOT/macos/launch-live-translate.sh"; then
+    /usr/bin/codesign --force --deep --sign - "$installed_app" >/dev/null 2>&1 || true
+    /usr/bin/xattr -dr com.apple.quarantine "$installed_app" 2>/dev/null || true
+    /usr/bin/touch "$installed_app"
+  fi
+}
+
+stop_running_server() {
+  /usr/bin/curl --insecure --silent --fail -X POST "$DASHBOARD_URL/api/shutdown" >/dev/null 2>&1 || true
+  local attempt
+  for attempt in {1..40}; do
+    if ! /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
+      return 0
+    fi
+    /bin/sleep 0.25
+  done
+  local pids
+  pids="$(/usr/sbin/lsof -nP -tiTCP:5173 -sTCP:LISTEN 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    /bin/kill $pids 2>/dev/null || true
+    /bin/sleep 0.5
+  fi
+  if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
+    return 1
+  fi
+  return 0
+}
+
+running_server_is_stale() {
+  local instance_json="$1"
+  local running_version running_commit local_commit
+  running_version="$(instance_field "$instance_json" version)"
+  running_commit="$(instance_field "$instance_json" commit)"
+  local_commit="$(/usr/bin/git rev-parse HEAD 2>/dev/null || true)"
+  if [ -n "$running_commit" ] && [ -n "$local_commit" ] && [ "$running_commit" != "$local_commit" ]; then
+    return 0
+  fi
+  if [ -n "$running_version" ] && [ -n "$LOCAL_VERSION" ] && [ "$running_version" != "$LOCAL_VERSION" ]; then
+    return 0
+  fi
+  if ! build_is_ready; then
+    return 0
+  fi
+  return 1
+}
 
 NODE_BACKUP="$REPO_ROOT/.live-translate-node_modules-backup"
 DIST_BACKUP="$REPO_ROOT/.live-translate-dist-backup"
@@ -244,17 +335,36 @@ else
   /bin/rm -rf "$NODE_BACKUP" "$DIST_BACKUP"
 fi
 
+sync_installed_app
+
 if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
-  RUNNING_REPO="$(get_running_repository)"
-  if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
-    RUNNING_CHOICE="$(show_already_running)"
-    if [ "$RUNNING_CHOICE" = "Open Dashboard" ]; then
-      /usr/bin/open "$DASHBOARD_URL"
-    fi
-    exit 0
+  INSTANCE_JSON="$(read_instance_json)"
+  RUNNING_REPO="$(instance_field "$INSTANCE_JSON" repositoryPath)"
+  if [ -z "$RUNNING_REPO" ]; then
+    RUNNING_REPO="$(get_running_repository)"
   fi
-  show_error "Port 5173 is already being used by another or older server. Stop that server, then open Live Translate again."
-  exit 1
+  if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
+    if running_server_is_stale "$INSTANCE_JSON"; then
+      RESTART_CHOICE="$(ask_to_restart_running "Live Translate is already running, but a newer version is ready (from a git pull or an unfinished rebuild). Restarting will stop the current translation session, rebuild if needed, and start the updated app.")"
+      if [ "$RESTART_CHOICE" != "Restart and Update" ]; then
+        exit 0
+      fi
+      show_notice "Stopping the current session so the update can start..."
+      if ! stop_running_server; then
+        show_error "Live Translate could not stop the running server. Quit it from Activity Monitor or the terminal, then open the app again."
+        exit 1
+      fi
+    else
+      RUNNING_CHOICE="$(show_already_running)"
+      if [ "$RUNNING_CHOICE" = "Open Dashboard" ]; then
+        /usr/bin/open "$DASHBOARD_OPEN_URL"
+      fi
+      exit 0
+    fi
+  else
+    show_error "Port 5173 is already being used by another or older server. Stop that server, then open Live Translate again."
+    exit 1
+  fi
 fi
 
 if [ "$(/usr/bin/git rev-parse --is-inside-work-tree 2>/dev/null || true)" = "true" ] && [ "${LIVE_TRANSLATE_SKIP_UPDATE:-0}" != "1" ]; then
@@ -301,10 +411,6 @@ if [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ]; then
   exit 0
 fi
 
-dependencies_are_ready() {
-  "$NODE_BIN" scripts/runtime-state.js dependencies-ready >/dev/null 2>&1
-}
-
 if ! dependencies_are_ready; then
   show_notice "Installing Live Translate dependencies..."
   if ! "$NPM_BIN" ci >>"$LOG_FILE" 2>&1; then
@@ -312,10 +418,6 @@ if ! dependencies_are_ready; then
     exit 1
   fi
 fi
-
-build_is_ready() {
-  "$NODE_BIN" scripts/runtime-state.js build-ready >/dev/null 2>&1
-}
 
 # A content fingerprint makes manual Git pulls deterministic too: if source,
 # HTML, public assets, or the lockfile changed, the dashboard is rebuilt before
@@ -335,7 +437,7 @@ for ATTEMPT in {1..60}; do
   if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/dev/null 2>&1; then
     READY_REPO="$(get_running_repository)"
     if [ "$READY_REPO" = "$REPO_ROOT" ]; then
-      /usr/bin/open "$DASHBOARD_URL"
+      /usr/bin/open "$DASHBOARD_OPEN_URL"
       show_notice "Dashboard ready"
       wait "$SERVER_PID"
       exit $?

@@ -1,13 +1,24 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import {
   buildGeminiUpstreamUrl,
   geminiProxyAllowed,
+  getInstanceInfo,
   isLocalClient,
   isObsAllowedPath,
   publicApiKeyStatus
 } from '../server-support.js';
+
+test('instance info reports version and commit without secrets', async () => {
+  const info = await getInstanceInfo();
+  const packageVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url))).version;
+  assert.equal(info.application, 'live-translate');
+  assert.equal(info.version, packageVersion);
+  assert.match(info.commit, /^[0-9a-f]{7,40}$/);
+  assert.equal('apiKey' in info, false);
+});
 
 test('API key status never includes the secret', () => {
   const configured = publicApiKeyStatus('A'.repeat(40));

@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.8`.
+The current application version is `v1.3.9`.
 
 ## Screenshots
 
@@ -90,7 +90,9 @@ The Dock app:
 - Writes startup output to `~/Library/Logs/LiveTranslate.log`.
 - Protects local or diverged Git work from automatic updates.
 
-If Live Translate is already running, clicking the Dock icon does not start another server or reload the active dashboard. It displays an **Already Running** dialog. Choose **OK** to leave the session untouched or **Open Dashboard** to navigate to it deliberately.
+If Live Translate is already running and the current session is up to date, clicking the Dock icon does not start another server. It displays an **Already Running** dialog. Choose **OK** to leave the session untouched or **Open Dashboard** to navigate to it.
+
+If you have already pulled a newer revision, or the dashboard build is stale, the Dock icon offers **Restart and Update**. That stops the current translation session, rebuilds if needed, and starts the pulled version. You do not need to rebuild by hand.
 
 While translation is active, the dashboard also asks for confirmation before a browser reload, tab close, or navigation can destroy the live Gemini session. This browser guard is a second layer of protection if someone clicks through the launcher or tries to refresh the page during an event.
 

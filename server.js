@@ -51,7 +51,9 @@ async function serveStaticFile(req, res, requestedPath) {
   const fileStat = await stat(filePath);
   if (!fileStat.isFile()) throw Object.assign(new Error('Not found'), { code: 'ENOENT' });
   res.statusCode = 200;
-  res.setHeader('Content-Type', contentTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream');
+  const extension = path.extname(filePath).toLowerCase();
+  res.setHeader('Content-Type', contentTypes[extension] || 'application/octet-stream');
+  if (extension === '.html') res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'HEAD') {
     res.end();
     return;

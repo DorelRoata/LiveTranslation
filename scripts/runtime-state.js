@@ -23,6 +23,8 @@ const buildInputs = [
   'public',
   'scripts/prepare-mediapipe-assets.js',
   'scripts/runtime-state.js',
+  'server-support.js',
+  'server.js',
   'src',
   'subtitles.html',
   'vite.config.js'

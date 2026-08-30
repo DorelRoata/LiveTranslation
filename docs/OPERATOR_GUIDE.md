@@ -36,7 +36,9 @@ On a normal cold start, the launcher:
 7. Starts both application ports.
 8. Opens the dashboard after its health endpoint responds.
 
-If the app is already running, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance and may affect the current browser tab, so use it only when needed.
+If the app is already running and up to date, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance.
+
+If a newer revision is already on disk (for example after `git pull`) or the dashboard needs a rebuild, the Dock app offers **Restart and Update**. That stops the live session, rebuilds if the pulled files changed, and opens the new dashboard. You do not need to run `npm run build` yourself.
 
 The dashboard adds a second safety layer while translation is active: the browser must confirm any reload, tab close, or navigation that would destroy the page-held Gemini session. If this warning appears during an event, choose the option that stays on the page.
 
@@ -271,11 +273,11 @@ The browser dashboard also includes System Status Logs and a Copy Diagnostics co
 
 ### Clicking the Dock app resets the dashboard
 
-Update to the latest `main` revision. A second launch now displays an Already Running dialog and leaves the current dashboard untouched when **OK** is selected. If a navigation still reaches the dashboard, the active-session browser guard requires another explicit confirmation before the translation can be destroyed.
+If the running session is already the current version, a second launch displays an Already Running dialog and leaves it untouched when **OK** is selected. If a newer pulled version is waiting, choose **Restart and Update**. If a navigation still reaches the dashboard during a live session, the browser guard requires another explicit confirmation before the translation can be destroyed.
 
 ### Changes are not visible after an update
 
-Stop the existing server before reopening the Dock app. A running server causes the launcher to protect the active session and skip the update check. Choose **Update and Start** on the next cold launch.
+If you pulled or the Dock app installed an update, click the Dock icon and choose **Restart and Update**. That stops the old server, rebuilds the dashboard if the pulled files changed, and opens the new version. You should not need to run `npm run build` by hand. Confirm the footer version after it reopens.
 
 ### Settings do not appear to persist
 
