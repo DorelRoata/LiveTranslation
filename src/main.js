@@ -8,12 +8,11 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName, mergeIncomingTranscript } from './system-setup.js';
+import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
 import {
   downsampleToRate,
   floatToPcm16,
   nextPlaybackTime,
-  PcmAccumulator,
   peakAmplitude,
   TARGET_CAPTURE_RATE
 } from './pcm-audio.js';
@@ -53,7 +52,6 @@ let audioContextOutput = null;
 let micStream = null;
 let scriptProcessor = null;
 let captureKeepAlive = null;
-let pcmAccumulator = new PcmAccumulator();
 let audioCaptureGeneration = 0;
 
 let nextStartTime1 = 0;
@@ -683,7 +681,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.13 diagnostics',
+    'Live Translate v1.3.14 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1209,8 +1207,7 @@ async function startAudioCapture() {
       throw cancelledError;
     }
     captureSource = captureContext.createMediaStreamSource(captureStream);
-    captureProcessor = captureContext.createScriptProcessor(1024, 1, 1);
-    pcmAccumulator.reset();
+    captureProcessor = captureContext.createScriptProcessor(2048, 1, 1);
     chunksSent = 0;
   } catch (error) {
     captureProcessor?.disconnect();
@@ -1269,27 +1266,23 @@ async function startAudioCapture() {
     }
     if (isSongSuppressed) return;
 
-    const frames = pcmAccumulator.push(float32);
-    for (const frame of frames) {
-      const pcm16 = floatToPcm16(frame);
-      const base64Data = base64ArrayBuffer(pcm16.buffer);
-      const msgStr = JSON.stringify({
-        realtimeInput: {
-          mediaChunks: [
-            {
-              mimeType: "audio/pcm;rate=16000",
-              data: base64Data
-            }
-          ]
-        }
-      });
-      if (socket1Ready) socket1.send(msgStr);
-      if (socket2Ready) socket2.send(msgStr);
-      chunksSent++;
-      updateChunkStats();
-      if (chunksSent === 1 || chunksSent % 25 === 0) {
-        logDebug(`Sent ${chunksSent} audio frames to Google.`, "ws-sent");
+    const pcm16 = floatToPcm16(float32);
+    const msgStr = JSON.stringify({
+      realtimeInput: {
+        mediaChunks: [
+          {
+            mimeType: "audio/pcm;rate=16000",
+            data: base64ArrayBuffer(pcm16.buffer)
+          }
+        ]
       }
+    });
+    if (socket1Ready) socket1.send(msgStr);
+    if (socket2Ready) socket2.send(msgStr);
+    chunksSent++;
+    updateChunkStats();
+    if (chunksSent === 1 || chunksSent % 25 === 0) {
+      logDebug(`Sent ${chunksSent} audio chunks to Google.`, "ws-sent");
     }
   };
   
@@ -1315,7 +1308,6 @@ async function startAudioCapture() {
 
 function stopAudioCapture() {
   audioCaptureGeneration++;
-  pcmAccumulator.reset();
   if (audioSourceSelect.value === "network") {
     logDebug("Stopped listening for network audio stream.", "info");
   }
@@ -1433,23 +1425,34 @@ let currentInputBubble = null;
 let lastInputTranscript = '';
 
 function addInputTranscript(text, isFinal = false) {
-  const merged = mergeIncomingTranscript(lastInputTranscript, text);
-  if (!merged) return;
+  const incoming = typeof text === 'string' ? text.trim() : '';
+  if (!incoming) return;
 
   inputPlaceholder.style.display = "none";
-  incrementWordCountBy(addedWordCount(lastInputTranscript, merged));
-  lastInputTranscript = merged;
 
-  if (!currentInputBubble) {
+  const sameUtterance = lastInputTranscript &&
+    (incoming === lastInputTranscript ||
+     incoming.startsWith(lastInputTranscript) ||
+     lastInputTranscript.startsWith(incoming));
+
+  if (sameUtterance && currentInputBubble) {
+    const display = incoming.length >= lastInputTranscript.length ? incoming : lastInputTranscript;
+    incrementWordCountBy(addedWordCount(lastInputTranscript, display));
+    lastInputTranscript = display;
+    currentInputBubble.textContent = display;
+  } else {
+    if (currentInputBubble) finalizeInputTranscript();
+    incrementWordCountBy(addedWordCount('', incoming));
+    lastInputTranscript = incoming;
     currentInputBubble = document.createElement("div");
     currentInputBubble.className = "transcript-bubble streaming-text";
+    currentInputBubble.textContent = incoming;
     inputList.appendChild(currentInputBubble);
     while (inputList.children.length > 100) {
       inputList.removeChild(inputList.firstChild);
     }
   }
 
-  currentInputBubble.textContent = merged;
   if (isFinal) finalizeInputTranscript();
   else document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
 }
@@ -1866,11 +1869,13 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
             if (part.inlineData && part.inlineData.data) {
-              chunksReceived++;
-              updateChunkStats();
-              if (chunksReceived === 1 || chunksReceived % 25 === 0) {
-                logDebug(`Received ${chunksReceived} audio chunks from Google on channel ${channelId}.`, "ws-recv");
-                setHealthItem(`gemini${channelId}`, 'good', `Receiving (${chunksReceived})`);
+              if (channelId === 1) {
+                chunksReceived++;
+                updateChunkStats();
+                if (chunksReceived === 1 || chunksReceived % 25 === 0) {
+                  logDebug(`Received ${chunksReceived} audio chunks from Google.`, "ws-recv");
+                  setHealthItem('gemini1', 'good', `Receiving (${chunksReceived})`);
+                }
               }
               playPCMChunk(part.inlineData.data, channelId);
             }
@@ -2093,25 +2098,20 @@ function handleIncomingNetworkAudio(base64Data) {
 
   if (isSongSuppressed) return;
 
-  const incomingSamples = decodeBase64Pcm16(base64Data);
-  const frames = pcmAccumulator.push(incomingSamples);
-  for (const frame of frames) {
-    const pcm16 = floatToPcm16(frame);
-    const frameData = base64ArrayBuffer(pcm16.buffer);
-    const msgStr = JSON.stringify({
-      realtimeInput: {
-        mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: frameData }]
-      }
-    });
-    if (canSendAudio(socket1, true, 1)) socket1.send(msgStr);
-    if (canSendAudio(socket2, true, 2)) socket2.send(msgStr);
-    chunksSent++;
-    updateChunkStats();
-    if (chunksSent === 1 || chunksSent % 25 === 0) {
-      logDebug(`Sent ${chunksSent} network audio frames to Google.`, "ws-sent");
+  const msgStr = JSON.stringify({
+    realtimeInput: {
+      mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: base64Data }]
     }
+  });
+  if (canSendAudio(socket1, true, 1)) socket1.send(msgStr);
+  if (canSendAudio(socket2, true, 2)) socket2.send(msgStr);
+  chunksSent++;
+  updateChunkStats();
+  if (chunksSent === 1 || chunksSent % 25 === 0) {
+    logDebug(`Sent ${chunksSent} network audio chunks to Google.`, "ws-sent");
   }
 
+  const incomingSamples = decodeBase64Pcm16(base64Data);
   const int16Array = floatToPcm16(incomingSamples);
   
   const float32 = new Float32Array(int16Array.length);

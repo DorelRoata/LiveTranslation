@@ -493,7 +493,7 @@ export function attachGeminiProxy(httpServer) {
     const session = { upstream: null, ready: false };
 
     const sendUpstream = (data, isBinary) => {
-      sendOrDrop(session.upstream, data, false);
+      sendAlways(session.upstream, data, false);
     };
 
     client.on('message', (data, isBinary) => {
