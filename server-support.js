@@ -108,6 +108,22 @@ export function isLoopback(address = '') {
   return address === '::1' || address === '127.0.0.1' || address.startsWith('127.') || address === '::ffff:127.0.0.1';
 }
 
+export function normalizeIp(address = '') {
+  return address.startsWith('::ffff:') ? address.slice(7) : address;
+}
+
+export function isLocalClient(address = '') {
+  if (isLoopback(address)) return true;
+  const ip = normalizeIp(address);
+  if (!ip || isLoopback(ip)) return true;
+  for (const addresses of Object.values(os.networkInterfaces())) {
+    for (const iface of addresses ?? []) {
+      if (iface.address === ip) return true;
+    }
+  }
+  return false;
+}
+
 export function publicApiKeyStatus(apiKey, warning) {
   const body = { configured: Boolean(apiKey) };
   if (warning) body.warning = warning;
@@ -131,8 +147,8 @@ export function buildGeminiUpstreamUrl(apiKey) {
 }
 
 export function geminiProxyAllowed(remoteAddress, apiKey) {
-  if (!isLoopback(remoteAddress)) {
-    return { ok: false, reason: 'Gemini translation is only available on this computer.' };
+  if (!isLocalClient(remoteAddress)) {
+    return { ok: false, reason: 'Gemini translation is only available on this computer. Open https://localhost:5173/ on the host Mac.' };
   }
   if (!apiKey) {
     return { ok: false, reason: 'API key is not configured.' };
@@ -225,8 +241,8 @@ export async function handleRuntimeApi(req, res) {
 
   if (url.pathname !== '/api/config/api-key') return false;
 
-  if (!isLoopback(req.socket.remoteAddress)) {
-    sendJson(res, 403, { error: 'API key configuration is only available on this computer.' });
+  if (!isLocalClient(req.socket.remoteAddress)) {
+    sendJson(res, 403, { error: 'API key configuration is only available on this computer. Open https://localhost:5173/ on the host Mac.' });
     return true;
   }
 
@@ -414,7 +430,7 @@ export function attachGeminiProxy(httpServer) {
     const { pathname } = new URL(request.url, 'https://localhost');
     if (pathname !== GEMINI_LIVE_WS_PATH) return;
 
-    if (!isLoopback(request.socket.remoteAddress)) {
+    if (!isLocalClient(request.socket.remoteAddress)) {
       socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;
@@ -425,46 +441,65 @@ export function attachGeminiProxy(httpServer) {
     });
   });
 
-  wss.on('connection', async (client, request) => {
-    let apiKey = '';
-    try {
-      apiKey = await readStoredApiKey();
-    } catch (error) {
-      safeCloseSocket(client, 1011, 'Unable to read API key');
-      return;
-    }
-
-    const allowed = geminiProxyAllowed(request.socket.remoteAddress, apiKey);
-    if (!allowed.ok) {
-      safeCloseSocket(client, 1008, allowed.reason);
-      return;
-    }
-
+  wss.on('connection', (client, request) => {
     const pending = [];
-    let upstreamReady = false;
-    const upstream = new WebSocket(buildGeminiUpstreamUrl(apiKey));
+    const session = { upstream: null, ready: false };
+
+    const sendUpstream = (data, isBinary) => {
+      const upstream = session.upstream;
+      if (!upstream || upstream.readyState !== WebSocket.OPEN) return;
+      if (upstream.bufferedAmount > MAX_BUFFERED_BYTES) {
+        upstream.terminate();
+        return;
+      }
+      if (isBinary) {
+        upstream.send(data, { binary: true });
+        return;
+      }
+      upstream.send(typeof data === 'string' ? data : data.toString(), { binary: false });
+    };
 
     client.on('message', (data, isBinary) => {
-      if (upstreamReady && upstream.readyState === WebSocket.OPEN) {
-        if (upstream.bufferedAmount > MAX_BUFFERED_BYTES) {
-          upstream.terminate();
-          return;
-        }
-        upstream.send(data, { binary: isBinary });
+      if (session.ready) {
+        sendUpstream(data, isBinary);
         return;
       }
       if (pending.length < 32) pending.push([data, isBinary]);
     });
-    client.on('close', () => safeCloseSocket(upstream, 1000, ''));
-    client.on('error', () => safeCloseSocket(upstream, 1011, 'Client error'));
+    client.on('close', () => safeCloseSocket(session.upstream, 1000, ''));
+    client.on('error', () => safeCloseSocket(session.upstream, 1011, 'Client error'));
 
-    upstream.on('open', () => {
-      upstreamReady = true;
-      for (const [data, isBinary] of pending) {
-        if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary: isBinary });
-      }
-      pending.length = 0;
-    });
-    forwardSocket(upstream, client);
+    void connectGeminiUpstream(client, request, session, pending, sendUpstream);
   });
+}
+
+async function connectGeminiUpstream(client, request, session, pending, sendUpstream) {
+  let apiKey = '';
+  try {
+    apiKey = await readStoredApiKey();
+  } catch (error) {
+    console.error('Gemini proxy could not read the saved API key:', error.message);
+    safeCloseSocket(client, 1011, 'Unable to read API key');
+    return;
+  }
+
+  const allowed = geminiProxyAllowed(request.socket.remoteAddress, apiKey);
+  if (!allowed.ok) {
+    console.error('Gemini proxy rejected a connection:', allowed.reason);
+    safeCloseSocket(client, 1008, allowed.reason);
+    return;
+  }
+
+  const upstream = new WebSocket(buildGeminiUpstreamUrl(apiKey));
+  session.upstream = upstream;
+
+  upstream.on('open', () => {
+    session.ready = true;
+    for (const [data, isBinary] of pending) sendUpstream(data, isBinary);
+    pending.length = 0;
+  });
+  upstream.on('error', error => {
+    console.error('Gemini proxy upstream error:', error.message);
+  });
+  forwardSocket(upstream, client);
 }

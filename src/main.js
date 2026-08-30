@@ -624,7 +624,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.6 diagnostics',
+    'Live Translate v1.3.7 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1800,6 +1800,9 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
     if (!isCurrentSocket(ws, channelId, generation)) return;
     console.log(`WebSocket ${channelId} connection closed:`, event);
     logDebug(`WebSocket ${channelId} connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
+    if (event.code === 1008 || event.code === 1011) {
+      setDiagnostic(event.reason || 'Gemini connection was rejected by the host app.', 'error');
+    }
     if ([1002, 1003, 1007, 1008].includes(event.code)) {
       stopForGeminiError(event.reason || `WebSocket closed with code ${event.code}`);
       return;

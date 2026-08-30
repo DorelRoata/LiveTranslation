@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildGeminiUpstreamUrl,
   geminiProxyAllowed,
+  isLocalClient,
   isObsAllowedPath,
   publicApiKeyStatus
 } from '../server-support.js';
@@ -39,8 +40,11 @@ test('Gemini proxy stays on this computer and hides the key from the dashboard U
   assert.match(url, /^wss:\/\/generativelanguage\.googleapis\.com\//);
   assert.match(url, /key=secret-key/);
 
+  assert.equal(isLocalClient('127.0.0.1'), true);
+  assert.equal(isLocalClient('::1'), true);
+  assert.equal(isLocalClient('::ffff:127.0.0.1'), true);
   assert.equal(geminiProxyAllowed('127.0.0.1', 'secret-key').ok, true);
   assert.equal(geminiProxyAllowed('::1', 'secret-key').ok, true);
-  assert.equal(geminiProxyAllowed('192.168.1.20', 'secret-key').ok, false);
+  assert.equal(geminiProxyAllowed('8.8.8.8', 'secret-key').ok, false);
   assert.equal(geminiProxyAllowed('127.0.0.1', '').ok, false);
 });
