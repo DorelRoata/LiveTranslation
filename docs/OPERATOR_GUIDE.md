@@ -4,13 +4,15 @@ This guide covers the normal operating workflow and the recovery steps most like
 
 ## 1. Know which computer is the host
 
-The host is the Mac or PC running the Live Translate server. Only the host can use:
+The host is the Mac running the Live Translate server. On that Mac you can use:
 
 ```text
 https://localhost:5173/
 ```
 
-`localhost` always means the computer on which the address is opened. A projector, remote microphone, or OBS computer must use the host's network IP shown in the dashboard.
+`localhost` always means the computer on which the address is opened. A laptop, projector, remote microphone, or OBS computer must use the host's network IP shown in the dashboard.
+
+The Mac stays the host even on laptop-control days. Open the **Laptop dashboard URL** on the laptop. Save the Gemini API key and keep Mac audio running on the Mac.
 
 ## 2. Ports and protocols
 
@@ -34,9 +36,12 @@ On a normal cold start, the launcher:
 5. Verifies or installs dependencies.
 6. Builds the dashboard when required.
 7. Starts both application ports.
-8. Opens the dashboard after its health endpoint responds.
+8. Opens the dashboard and the Mac audio window after the health endpoint responds.
+9. Keeps the Mac from sleeping while the server is running.
 
-If the app is already running and up to date, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance.
+The Mac audio window reconnects automatically if you restart the server. Keep that window open whenever a laptop might take over the dashboard.
+
+If the app is already running and up to date, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance and also reopens the Mac audio page.
 
 If a newer revision is already on disk (for example after `git pull` or `update-live-translate.command`) or the dashboard needs a rebuild, the Dock app restarts automatically, rebuilds if the pulled files changed, and opens the new dashboard. You do not need to run `npm run build` yourself.
 
@@ -147,12 +152,24 @@ Use the HTTPS Projector Screen URL displayed by the dashboard.
 
 Subtitle state is retained by the local relay. A newly opened or reconnected viewer receives the current accumulated text immediately.
 
-## 9. Remote microphone setup
+## 9. Remote microphone and laptop control
 
-Use the HTTPS Remote microphone URL displayed by the dashboard.
+The full app stays on the Mac. On days when you bring a laptop:
 
-1. Select Network Audio on the host.
-2. Open the sender URL remotely and accept the certificate warning.
+1. Start Live Translate on the Mac. Leave the **Mac audio** window streaming.
+2. Copy the **Laptop dashboard URL** from the share panel.
+3. Open that URL on the laptop and accept the certificate warning once.
+4. Confirm Audio Source is **Host Mac audio / remote microphone**.
+5. Start, stop, and diagnose translation from the laptop.
+
+The laptop dashboard uses the Mac's saved API key. It cannot replace that key. Do not start translation on the Mac dashboard and the laptop at the same time — one Gemini session at a time.
+
+If you reload the laptop dashboard, press Start Translation again. The Mac audio window keeps capturing and reconnects by itself if the Mac server restarts. You do not need to walk back to the Mac unless that audio window was closed.
+
+To send audio from a phone or another computer instead:
+
+1. Select Host Mac audio / remote microphone on the operator dashboard.
+2. Open the sender URL remotely without `?host=1` and accept the certificate warning.
 3. Grant microphone permission.
 4. Start streaming on the sender.
 5. Verify the host input meter moves.

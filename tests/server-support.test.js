@@ -8,6 +8,8 @@ import {
   getInstanceInfo,
   isLocalClient,
   isObsAllowedPath,
+  isOperatorClient,
+  isPrivateLan,
   publicApiKeyStatus
 } from '../server-support.js';
 
@@ -46,7 +48,7 @@ test('OBS overlay cannot traverse into the dashboard', () => {
   assert.equal(isObsAllowedPath('audio-sender.html', distDir), false);
 });
 
-test('Gemini proxy stays on this computer and hides the key from the dashboard URL', () => {
+test('Gemini proxy allows this computer and private LAN clients, and hides the key from the dashboard URL', () => {
   const url = buildGeminiUpstreamUrl('secret-key');
   assert.match(url, /^wss:\/\/generativelanguage\.googleapis\.com\//);
   assert.match(url, /v1beta/);
@@ -56,8 +58,20 @@ test('Gemini proxy stays on this computer and hides the key from the dashboard U
   assert.equal(isLocalClient('127.0.0.1'), true);
   assert.equal(isLocalClient('::1'), true);
   assert.equal(isLocalClient('::ffff:127.0.0.1'), true);
+  assert.equal(isPrivateLan('192.168.1.50'), true);
+  assert.equal(isPrivateLan('10.0.0.12'), true);
+  assert.equal(isPrivateLan('172.16.0.8'), true);
+  assert.equal(isPrivateLan('::ffff:192.168.0.20'), true);
+  assert.equal(isPrivateLan('169.254.1.1'), true);
+  assert.equal(isPrivateLan('172.15.0.1'), false);
+  assert.equal(isPrivateLan('8.8.8.8'), false);
+  assert.equal(isOperatorClient('127.0.0.1'), true);
+  assert.equal(isOperatorClient('192.168.1.50'), true);
+  assert.equal(isOperatorClient('8.8.8.8'), false);
   assert.equal(geminiProxyAllowed('127.0.0.1', 'secret-key').ok, true);
   assert.equal(geminiProxyAllowed('::1', 'secret-key').ok, true);
+  assert.equal(geminiProxyAllowed('192.168.1.50', 'secret-key').ok, true);
+  assert.equal(geminiProxyAllowed('10.8.0.2', 'secret-key').ok, true);
   assert.equal(geminiProxyAllowed('8.8.8.8', 'secret-key').ok, false);
   assert.equal(geminiProxyAllowed('127.0.0.1', '').ok, false);
 });

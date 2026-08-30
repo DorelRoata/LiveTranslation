@@ -3,6 +3,8 @@ import { createScreenWakeLock } from './wake-lock.js';
 import { downsampleToRate, floatToPcm16, peakAmplitude, TARGET_CAPTURE_RATE } from './pcm-audio.js';
 
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
+const HOST_MODE = new URLSearchParams(window.location.search).get('host') === '1';
+const PREFS_KEY = HOST_MODE ? 'live_translate_host_audio_v1' : 'live_translate_sender_v1';
 const micDeviceSelect = document.getElementById("mic-device-select");
 const toggleStreamBtn = document.getElementById("toggle-stream-btn");
 const statusDot = document.getElementById("status-dot");
@@ -11,6 +13,9 @@ const micBar = document.getElementById("mic-bar");
 const micDb = document.getElementById("mic-db");
 const btnText = toggleStreamBtn.querySelector(".btn-text");
 const wakeLockStatus = document.getElementById('wake-lock-status');
+const autoStreamToggle = document.getElementById('auto-stream-toggle');
+const pageTitle = document.getElementById('sender-title');
+const pageCopy = document.getElementById('sender-copy');
 
 let ws = null;
 let isStreaming = false;
@@ -22,14 +27,53 @@ let mediaStream = null;
 let scriptProcessor = null;
 let source = null;
 let captureKeepAlive = null;
+let autoStartAttempted = false;
+
+function loadPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      deviceId: micDeviceSelect.value,
+      autoStream: Boolean(autoStreamToggle?.checked)
+    }));
+  } catch (error) {
+    console.warn('Unable to save microphone sender preferences:', error);
+  }
+}
+
+function shouldAutoStream() {
+  if (autoStreamToggle) return autoStreamToggle.checked;
+  return HOST_MODE;
+}
+
+function applyHostMode() {
+  document.title = HOST_MODE ? 'Mac audio - Live Translate' : 'Remote microphone - Live Translate';
+  if (pageTitle) pageTitle.textContent = HOST_MODE ? 'Mac audio' : 'Remote microphone';
+  if (pageCopy) {
+    pageCopy.textContent = HOST_MODE
+      ? 'This Mac keeps capturing audio for the dashboard, including when you operate Live Translate from a laptop on the same network.'
+      : 'Capture microphone audio on this device and stream it to the Live Translate dashboard.';
+  }
+  if (autoStreamToggle && loadPrefs().autoStream !== false) autoStreamToggle.checked = true;
+}
 
 const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
   if (!supported) {
     wakeLockStatus.dataset.state = 'warning';
-    wakeLockStatus.textContent = 'This browser cannot prevent screen dimming. Keep the phone connected to power if needed.';
+    wakeLockStatus.textContent = 'This browser cannot prevent screen dimming. Keep the Mac connected to power if needed.';
   } else if (active) {
     wakeLockStatus.dataset.state = 'active';
-    wakeLockStatus.textContent = 'Screen will stay awake while microphone streaming is active.';
+    wakeLockStatus.textContent = HOST_MODE
+      ? 'Screen will stay awake while Mac audio is streaming.'
+      : 'Screen will stay awake while microphone streaming is active.';
   } else if (desired && (status === 'blocked' || status === 'released')) {
     wakeLockStatus.dataset.state = 'warning';
     wakeLockStatus.textContent = 'Screen wake lock was blocked. Disable Low Power Mode and tap Start Streaming again.';
@@ -38,7 +82,9 @@ const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) =
     wakeLockStatus.textContent = 'Waiting to keep the screen awake...';
   } else {
     wakeLockStatus.dataset.state = 'idle';
-    wakeLockStatus.textContent = 'Screen wake lock activates while streaming.';
+    wakeLockStatus.textContent = HOST_MODE
+      ? 'Keep this window open. It reconnects automatically if the dashboard restarts.'
+      : 'Screen wake lock activates while streaming.';
   }
 });
 
@@ -47,7 +93,20 @@ function sendStreamingStatus() {
   ws.send(JSON.stringify({ type: 'audio-sender-streaming', streaming: isStreaming }));
 }
 
-// Connect WebSocket
+function updateIdleStatus() {
+  if (isStreaming) {
+    statusText.textContent = ws?.readyState === WebSocket.OPEN
+      ? (HOST_MODE ? 'Streaming this Mac to the dashboard' : 'Streaming to Dashboard')
+      : 'Reconnecting - microphone remains active';
+    return;
+  }
+  if (ws?.readyState === WebSocket.OPEN) {
+    statusText.textContent = HOST_MODE ? 'Connected (Mac audio idle)' : 'Connected to Dashboard (Idle)';
+    return;
+  }
+  statusText.textContent = 'Disconnected - retrying...';
+}
+
 function connectWebSocket() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -60,9 +119,10 @@ function connectWebSocket() {
     clearTimeout(reconnectTimer);
     reconnectAttempt = 0;
     statusDot.classList.add("active");
-    statusText.textContent = isStreaming ? "Streaming to Dashboard" : "Connected to Dashboard (Idle)";
     socket.send(JSON.stringify({ type: 'audio-sender-hello' }));
     sendStreamingStatus();
+    updateIdleStatus();
+    if (shouldAutoStream() && !isStreaming && !isStarting) startStreaming();
   };
 
   socket.onclose = () => {
@@ -85,10 +145,10 @@ function connectWebSocket() {
   };
 }
 
-// Populate Microphones
 async function populateMicDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
+    const previous = micDeviceSelect.value || loadPrefs().deviceId || 'default';
     micDeviceSelect.innerHTML = "";
     
     const defaultOpt = document.createElement("option");
@@ -104,18 +164,16 @@ async function populateMicDevices() {
         micDeviceSelect.appendChild(option);
       }
     });
+    if (previous && Array.from(micDeviceSelect.options).some(option => option.value === previous)) {
+      micDeviceSelect.value = previous;
+    }
   } catch (err) {
     console.error("Error enumerating devices:", err);
   }
 }
 
-// Start Capture
 async function startStreaming() {
   if (isStarting || isStreaming) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    alert("Not connected to the dashboard. Please wait.");
-    return;
-  }
 
   isStarting = true;
   toggleStreamBtn.disabled = true;
@@ -188,8 +246,10 @@ async function startStreaming() {
     toggleStreamBtn.style.background = "#ef4444";
     toggleStreamBtn.style.boxShadow = "0 0 15px rgba(239, 68, 68, 0.4)";
     btnText.textContent = "Stop Streaming";
-    statusText.textContent = "Streaming to Dashboard";
     sendStreamingStatus();
+    updateIdleStatus();
+    savePrefs();
+    populateMicDevices();
   } catch (err) {
     isStreaming = false;
     wakeLock.setEnabled(false);
@@ -204,7 +264,9 @@ async function startStreaming() {
     source = null;
     scriptProcessor = null;
     console.error("Error accessing microphone:", err);
-    alert("Could not access microphone: " + err.message);
+    statusText.textContent = err.name === 'NotAllowedError'
+      ? 'Microphone permission is required. Click Start Streaming once.'
+      : `Could not access microphone: ${err.message}`;
   } finally {
     isStarting = false;
     toggleStreamBtn.disabled = false;
@@ -212,7 +274,6 @@ async function startStreaming() {
   }
 }
 
-// Stop Capture
 function stopStreaming() {
   if (!isStreaming && !isStarting) return;
   isStreaming = false;
@@ -249,20 +310,28 @@ function stopStreaming() {
   toggleStreamBtn.style.background = "";
   toggleStreamBtn.style.boxShadow = "";
   btnText.textContent = "Start Streaming";
-  statusText.textContent = ws?.readyState === WebSocket.OPEN
-    ? "Connected to Dashboard (Idle)"
-    : "Disconnected - Retrying...";
+  updateIdleStatus();
 }
 
-// Event Listeners
 toggleStreamBtn.addEventListener("click", () => {
   if (isStarting) return;
   if (isStreaming) {
+    if (autoStreamToggle) autoStreamToggle.checked = false;
+    savePrefs();
     stopStreaming();
   } else {
+    if (autoStreamToggle) autoStreamToggle.checked = true;
+    savePrefs();
     startStreaming();
   }
 });
+
+autoStreamToggle?.addEventListener('change', () => {
+  savePrefs();
+  if (autoStreamToggle.checked && !isStreaming && !isStarting) startStreaming();
+});
+
+micDeviceSelect.addEventListener('change', savePrefs);
 
 if (navigator.mediaDevices) {
   navigator.mediaDevices.addEventListener('devicechange', populateMicDevices);
@@ -271,6 +340,17 @@ if (navigator.mediaDevices) {
   statusText.textContent = 'Microphone access is unavailable in this browser.';
 }
 
-// Initialize
-if (navigator.mediaDevices) populateMicDevices();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') connectWebSocket();
+});
+
+applyHostMode();
+if (navigator.mediaDevices) {
+  populateMicDevices().then(() => {
+    if (shouldAutoStream() && !autoStartAttempted) {
+      autoStartAttempted = true;
+      startStreaming();
+    }
+  });
+}
 connectWebSocket();

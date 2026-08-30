@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.20`.
+The current application version is `v1.3.21`.
 
 ## Screenshots
 
@@ -37,11 +37,14 @@ The current application version is `v1.3.20`.
 | Purpose | Protocol and port | Typical address |
 | --- | --- | --- |
 | Local dashboard | HTTPS `5173` | `https://localhost:5173/` |
+| Laptop operator dashboard | HTTPS `5173` | `https://192.168.1.67:5173/` |
 | Projector/phone subtitles | HTTPS `5173` | `https://192.168.1.67:5173/subtitles.html` |
-| Remote microphone | HTTPS `5173` | `https://192.168.1.67:5173/audio-sender.html` |
+| Mac audio / remote microphone | HTTPS `5173` | `https://192.168.1.67:5173/audio-sender.html?host=1` |
 | OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true` |
 
 Use `localhost` only on the Mac that is running Live Translate. Other computers must use the network address displayed by the dashboard.
+
+The Mac remains the host: it runs the server, keeps the Gemini API key, and captures audio. On days when you bring a laptop, open the **Laptop dashboard URL** from the Mac's share panel. The laptop can start/stop translation and read diagnostics while the Mac audio window keeps sending the mixer or microphone. If you restart the server from the laptop or Mac, that audio window reconnects by itself.
 
 The dashboard, API-key configuration, projector page, and microphone page remain on HTTPS. The OBS-only listener uses HTTP because OBS can silently reject the application's self-signed HTTPS certificate. Port `5174` exposes only the subtitle overlay, its compiled assets, and the subtitle WebSocket; it does not expose the dashboard or configuration API.
 
@@ -86,6 +89,8 @@ The Dock app:
 - Checks dependency integrity and installs missing dependencies when necessary.
 - Builds the production dashboard when required.
 - Starts the HTTPS dashboard on port `5173` and the OBS overlay on port `5174`.
+- Opens the operator dashboard and a **Mac audio** window that keeps capturing after a server restart.
+- Prevents the Mac from sleeping while Live Translate is running.
 - Waits for the dashboard to become ready before opening it.
 - Writes startup output to `~/Library/Logs/LiveTranslate.log`.
 - Protects local or diverged Git work from automatic updates.
@@ -158,15 +163,19 @@ Subtitle viewers automatically reconnect after network or server interruptions a
 
 The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, vertically center each language with compact lane padding, scale against both width and height, and retain a bottom safe area to prevent three-line clipping at common 1080p and 1440p resolutions. Selecting only one language positions that subtitle lane in the upper half of the screen.
 
-## Remote microphone
+## Remote microphone and laptop control
 
-1. Select **Network Audio (Stream from another PC)** as the dashboard audio source.
-2. Copy or scan the **Remote microphone URL**.
-3. Open it on the remote computer or phone and accept the certificate warning.
-4. Grant microphone access and select **Start Streaming**.
-5. Start translation on the host dashboard.
+The full app stays on the Mac. Some days you can operate it from a laptop on the same Wi-Fi:
 
-The dashboard warns the operator if the remote sender disconnects and clears the warning when it reconnects.
+1. Start Live Translate on the Mac as usual. Leave the **Mac audio** window open and streaming.
+2. Copy the **Laptop dashboard URL** from the Mac share panel.
+3. On the laptop, open that HTTPS address and accept the certificate warning once.
+4. Set **Audio Source** to **Host Mac audio / remote microphone**.
+5. Start translation on the laptop. Diagnostics, language, OBS, and projector controls all work there.
+
+The Mac audio window keeps the microphone running if you restart the server. It retries on its own. You do not need to walk back to the Mac unless that window was closed or the Mac went to sleep.
+
+To send audio from a phone or another computer instead of the host Mac window, open `/audio-sender.html` without `?host=1`, grant microphone access, and select **Start Streaming**.
 
 ## OBS live-stream overlay
 

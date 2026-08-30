@@ -26,6 +26,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
+const APP_VERSION = '1.3.21';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -189,6 +190,32 @@ const outputIndicator1 = document.querySelector(".output-pulse-1");
 const outputIndicator2 = document.querySelector(".output-pulse-2");
 
 // --- Remembered Operator Settings ---
+function isRemoteOperator() {
+  const host = window.location.hostname;
+  return host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]';
+}
+
+function applyRemoteOperatorMode() {
+  if (!isRemoteOperator()) return;
+  document.body.dataset.operator = 'remote';
+  const banner = document.getElementById('remote-operator-banner');
+  if (banner) banner.hidden = false;
+  if (streamerBtn) streamerBtn.hidden = true;
+  if (checkUpdatesBtn) checkUpdatesBtn.hidden = true;
+  const hint = document.getElementById('audio-source-hint');
+  if (hint) {
+    hint.textContent = 'This laptop is the operator. Choose Host Mac audio so the mixer or microphone on the Mac is used.';
+  }
+  if (replaceApiKeyBtn) replaceApiKeyBtn.hidden = true;
+}
+
+function networkAudioHealthDetail(active) {
+  if (isRemoteOperator()) {
+    return active ? 'Mac audio active' : 'Waiting for Mac audio';
+  }
+  return active ? 'Remote microphone active' : 'Waiting for remote sender';
+}
+
 function selectHasValue(select, value) {
   return Array.from(select.options).some(option => option.value === value);
 }
@@ -288,7 +315,10 @@ function loadOperatorSettings() {
   } catch (error) {
     console.warn('Unable to load operator settings:', error);
   }
-  applyOperatorSettings({ ...DEFAULT_OPERATOR_SETTINGS, ...savedSettings });
+  const defaults = { ...DEFAULT_OPERATOR_SETTINGS };
+  if (isRemoteOperator()) defaults.audioSource = 'network';
+  applyOperatorSettings({ ...defaults, ...savedSettings });
+  applyRemoteOperatorMode();
   saveOperatorSettings();
 }
 
@@ -327,7 +357,8 @@ function refreshStartEnabled() {
     return;
   }
   const needsFirstKey = !apiKeyConfigured && !apiKeyInput.value.trim();
-  startBtn.disabled = !mediaSupported || needsFirstKey;
+  const needsLocalCapture = audioSourceSelect.value !== 'network';
+  startBtn.disabled = (needsLocalCapture && !mediaSupported) || needsFirstKey;
 }
 
 async function loadStoredApiKey() {
@@ -352,12 +383,19 @@ async function loadStoredApiKey() {
     localStorage.removeItem('gemini_api_key');
 
     setApiKeyConfigured(data.configured);
-    apiKeyStatus.textContent = data.warning || (data.configured
-      ? 'The saved key is used automatically and is not shown.'
-      : 'Enter once. After it is saved, this field is hidden.');
+    if (isRemoteOperator()) {
+      apiKeyStatus.textContent = data.warning || (data.configured
+        ? 'The Mac already has a saved key. This laptop uses it without showing it.'
+        : 'Save the Gemini API key on the Mac first. This laptop cannot store it.');
+      apiKeyInput.disabled = true;
+    } else {
+      apiKeyStatus.textContent = data.warning || (data.configured
+        ? 'The saved key is used automatically and is not shown.'
+        : 'Enter once. After it is saved, this field is hidden.');
+      apiKeyInput.disabled = false;
+    }
     apiKeyStatus.classList.toggle('error', Boolean(data.warning));
     if (data.warning) setDiagnostic(data.warning, 'warning');
-    apiKeyInput.disabled = false;
     refreshStartEnabled();
   } catch (error) {
     apiKeyInput.disabled = true;
@@ -727,8 +765,9 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.20 diagnostics',
+    `Live Translate v${APP_VERSION} diagnostics`,
     `Time: ${new Date().toISOString()}`,
+    `Operator: ${isRemoteOperator() ? 'laptop' : 'host'} (${window.location.host})`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
     `Spoken language: ${sourceLanguageSelect.value}`,
@@ -1195,10 +1234,10 @@ function decodeBase64Pcm16(base64Data) {
 async function startAudioCapture() {
   const captureGeneration = ++audioCaptureGeneration;
   const sourceVal = audioSourceSelect.value;
-  setHealthItem('audio', 'connecting', sourceVal === 'network' ? 'Waiting for remote sender' : 'Requesting audio access');
+  setHealthItem('audio', 'connecting', sourceVal === 'network' ? networkAudioHealthDetail(false) : 'Requesting audio access');
   if (sourceVal === "network") {
     logDebug("Network audio source selected. Ready to receive audio stream from another PC...", "info");
-    setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
+    setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', networkAudioHealthDetail(remoteAudioStreaming));
     return;
   }
   
@@ -2042,7 +2081,7 @@ subtitlesBtn.addEventListener("click", () => {
 
 if (streamerBtn) {
   streamerBtn.addEventListener("click", () => {
-    window.open('/audio-sender.html', 'AudioSenderWindow', 'width=800,height=850');
+    window.open(isRemoteOperator() ? '/audio-sender.html' : '/audio-sender.html?host=1', 'AudioSenderWindow', 'width=800,height=850');
   });
 }
 
@@ -2090,21 +2129,23 @@ function initLocalSubtitlesWS() {
       if (data.type === 'sync') {
         remoteAudioStreaming = Boolean(data.state?.audioSenderStreaming);
         if (audioSourceSelect.value === 'network') {
-          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
+          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', networkAudioHealthDetail(remoteAudioStreaming));
         }
       } else if (data.type === 'input-audio') {
         remoteAudioStreaming = true;
-        if (audioSourceSelect.value === 'network') setHealthItem('audio', 'good', 'Remote microphone active');
+        if (audioSourceSelect.value === 'network') setHealthItem('audio', 'good', networkAudioHealthDetail(true));
         handleIncomingNetworkAudio(data.audioData);
       } else if (data.type === 'audio-sender-status') {
         remoteAudioStreaming = Boolean(data.streaming);
         if (audioSourceSelect.value === 'network') {
-          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', remoteAudioStreaming ? 'Remote microphone active' : 'Waiting for remote sender');
+          setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', networkAudioHealthDetail(remoteAudioStreaming));
         }
         if (remoteAudioStreaming && networkDisconnectWarning && networkDisconnectWarning.style.display !== "none") {
           networkDisconnectWarning.style.display = "none";
           logDebug("Remote audio stream reconnected.", "info");
-          setDiagnostic('Remote microphone reconnected. Translation can continue.', 'good');
+          setDiagnostic(isRemoteOperator()
+            ? 'Mac audio reconnected. Translation can continue.'
+            : 'Remote microphone reconnected. Translation can continue.', 'good');
         } else if (!remoteAudioStreaming) {
           const isNetworkSource = audioSourceSelect.value === 'network';
           const isTranslating = socketSetupReady[1] || socketSetupReady[2];
@@ -2240,11 +2281,26 @@ async function initProjectorSharingQR() {
 
   const streamerTip = document.getElementById("streamer-url-tip");
   const streamerQrCanvas = document.getElementById("streamer-qr-canvas");
-  const streamerUrl = `${window.location.protocol}//${networkIP}${port}/audio-sender.html`;
+  const streamerUrl = `${window.location.protocol}//${networkIP}${port}/audio-sender.html?host=1`;
   if (streamerTip) streamerTip.textContent = streamerUrl;
   
   if (streamerQrCanvas) {
     QRCode.toCanvas(streamerQrCanvas, streamerUrl, {
+      width: 116,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    }, function (error) {
+      if (error) console.error("QR Code generation error:", error);
+    });
+  }
+
+  const laptopDashboardUrl = `${window.location.protocol}//${networkIP}${port}/`;
+  const laptopTip = document.getElementById('laptop-dashboard-url-tip');
+  const laptopQrCanvas = document.getElementById('laptop-dashboard-qr-canvas');
+  if (laptopTip) laptopTip.textContent = laptopDashboardUrl;
+  if (laptopQrCanvas) {
+    QRCode.toCanvas(laptopQrCanvas, laptopDashboardUrl, {
       width: 116,
       margin: 1,
       color: { dark: '#000000', light: '#ffffff' },
@@ -2285,6 +2341,7 @@ async function initProjectorSharingQR() {
 
   bindShareActions('copy-projector-url', 'open-projector-url', subtitlesUrl);
   bindShareActions('copy-streamer-url', 'open-streamer-url', streamerUrl);
+  bindShareActions('copy-laptop-dashboard-url', 'open-laptop-dashboard-url', laptopDashboardUrl);
   const obsBaseUrl = obsPort
     ? `http://${networkIP}:${obsPort}/`
     : subtitlesUrl;

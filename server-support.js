@@ -125,6 +125,18 @@ export function isLocalClient(address = '') {
   return false;
 }
 
+export function isPrivateLan(address = '') {
+  const ip = normalizeIp(address);
+  if (!ip) return false;
+  if (ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('169.254.')) return true;
+  return /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
+}
+
+export function isOperatorClient(address = '') {
+  return isLocalClient(address) || isPrivateLan(address);
+}
+
+
 export function publicApiKeyStatus(apiKey, warning) {
   const body = { configured: Boolean(apiKey) };
   if (warning) body.warning = warning;
@@ -148,8 +160,8 @@ export function buildGeminiUpstreamUrl(apiKey) {
 }
 
 export function geminiProxyAllowed(remoteAddress, apiKey) {
-  if (!isLocalClient(remoteAddress)) {
-    return { ok: false, reason: 'Gemini translation is only available on this computer. Open https://localhost:5173/ on the host Mac.' };
+  if (!isOperatorClient(remoteAddress)) {
+    return { ok: false, reason: 'Gemini translation is only available on this computer or another device on the same local network.' };
   }
   if (!apiKey) {
     return { ok: false, reason: 'API key is not configured.' };
@@ -226,8 +238,8 @@ export async function handleRuntimeApi(req, res) {
   }
 
   if (url.pathname === '/api/instance' && req.method === 'GET') {
-    if (!isLocalClient(req.socket.remoteAddress)) {
-      sendJson(res, 403, { error: 'Instance details are only available on this computer.' });
+    if (!isOperatorClient(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'Instance details are only available on this computer or the local network.' });
       return true;
     }
     sendJson(res, 200, await getInstanceInfo());
@@ -264,12 +276,11 @@ export async function handleRuntimeApi(req, res) {
 
   if (url.pathname !== '/api/config/api-key') return false;
 
-  if (!isLocalClient(req.socket.remoteAddress)) {
-    sendJson(res, 403, { error: 'API key configuration is only available on this computer. Open https://localhost:5173/ on the host Mac.' });
-    return true;
-  }
-
   if (req.method === 'GET') {
+    if (!isOperatorClient(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'API key status is only available on this computer or the local network.' });
+      return true;
+    }
     try {
       const apiKey = await readStoredApiKey();
       sendJson(res, 200, publicApiKeyStatus(apiKey));
@@ -277,6 +288,11 @@ export async function handleRuntimeApi(req, res) {
       console.error('Unable to read LiveTranslation configuration:', error.message);
       sendJson(res, 200, publicApiKeyStatus('', 'The saved API key settings could not be read. Enter the key again to replace them.'));
     }
+    return true;
+  }
+
+  if (!isLocalClient(req.socket.remoteAddress)) {
+    sendJson(res, 403, { error: 'API key can only be saved on the host computer. Open https://localhost:5173/ on the Mac.' });
     return true;
   }
 
@@ -477,7 +493,7 @@ export function attachGeminiProxy(httpServer) {
     const { pathname } = new URL(request.url, 'https://localhost');
     if (pathname !== GEMINI_LIVE_WS_PATH) return;
 
-    if (!isLocalClient(request.socket.remoteAddress)) {
+    if (!isOperatorClient(request.socket.remoteAddress)) {
       socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       socket.destroy();
       return;

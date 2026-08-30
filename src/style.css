@@ -261,6 +261,24 @@ body {
   align-self: center;
 }
 
+.remote-operator-banner {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(240, 163, 77, 0.45);
+  border-radius: 10px;
+  background: rgba(240, 163, 77, 0.14);
+  color: #f3d5a3;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+body[data-operator="remote"] #replace-api-key-btn,
+body[data-operator="remote"] #streamer-btn,
+body[data-operator="remote"] #check-updates-btn {
+  display: none;
+}
+
 .network-disconnect-warning {
   display: none;
   align-items: center;

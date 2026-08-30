@@ -28,7 +28,7 @@ if ! node scripts/runtime-state.js build-ready >/dev/null 2>&1; then
 fi
 
 # Open the browser automatically after 2 seconds
-(sleep 2 && open "https://localhost:5173") &
+(sleep 2 && open "https://localhost:5173" && open "https://localhost:5173/audio-sender.html?host=1") &
 
 # Start the production local server
 npm start
