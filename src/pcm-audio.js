@@ -12,8 +12,9 @@ export class PcmAccumulator {
 
   push(samples) {
     if (!samples?.length) return [];
-    this.pending.push(samples);
-    this.pendingLength += samples.length;
+    const copy = samples instanceof Float32Array ? samples.slice() : Float32Array.from(samples);
+    this.pending.push(copy);
+    this.pendingLength += copy.length;
     const frames = [];
     while (this.pendingLength >= this.targetSamples) {
       frames.push(this.#take(this.targetSamples));

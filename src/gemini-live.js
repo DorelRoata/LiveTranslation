@@ -1,10 +1,23 @@
 export const GEMINI_LIVE_MODEL = 'models/gemini-3.5-live-translate-preview';
 export const GEMINI_AUDIO_MIME = 'audio/pcm;rate=16000';
 
-export function normalizeSourceLanguage(code) {
+const GEMINI_LANGUAGE_ALIASES = Object.freeze({
+  pt: 'pt-BR',
+  'pt-br': 'pt-BR',
+  'pt-pt': 'pt-PT',
+  'zh-hans': 'zh-Hans',
+  'zh-hant': 'zh-Hant',
+  no: 'nb'
+});
+
+export function toGeminiLanguageCode(code) {
   const value = String(code || '').trim();
   if (!value || value === 'auto' || value === 'none') return '';
-  return value;
+  return GEMINI_LANGUAGE_ALIASES[value.toLowerCase()] || value;
+}
+
+export function normalizeSourceLanguage(code) {
+  return toGeminiLanguageCode(code);
 }
 
 export function inputTranscriptionConfig(sourceLanguage) {
@@ -17,13 +30,14 @@ export function buildGeminiSetupMessage({
   echoTargetLanguage = false,
   sourceLanguage = 'auto'
 } = {}) {
+  const targetLanguageCode = toGeminiLanguageCode(targetLanguage);
   return {
     setup: {
       model: GEMINI_LIVE_MODEL,
       generationConfig: {
         responseModalities: ['AUDIO'],
         translationConfig: {
-          targetLanguageCode: targetLanguage,
+          targetLanguageCode,
           echoTargetLanguage: Boolean(echoTargetLanguage)
         }
       },

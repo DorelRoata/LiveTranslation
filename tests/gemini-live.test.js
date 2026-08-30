@@ -36,6 +36,12 @@ test('Spoken language is sent as an input transcription hint, not a system instr
   assert.equal(message.setup.generationConfig.translationConfig.targetLanguageCode, 'en');
 });
 
+test('maps short language codes to Live Translate BCP-47 values', () => {
+  const portuguese = buildGeminiSetupMessage({ targetLanguage: 'pt', sourceLanguage: 'pt' });
+  assert.equal(portuguese.setup.generationConfig.translationConfig.targetLanguageCode, 'pt-BR');
+  assert.deepEqual(portuguese.setup.inputAudioTranscription, { languageCodes: ['pt-BR'] });
+});
+
 test('Live Translate audio uses realtimeInput.audio instead of deprecated mediaChunks', () => {
   const message = buildGeminiAudioMessage('abc123');
   assert.deepEqual(message, {

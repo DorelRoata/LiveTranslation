@@ -728,7 +728,7 @@ function playPCMChunk(base64Data, channelId) {
     }
 
     // 2. Convert raw little-endian 16-bit PCM bytes to Float32
-    const pcm16 = new Int16Array(bytes.buffer);
+    const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(len / 2));
     const float32 = new Float32Array(pcm16.length);
     for (let i = 0; i < pcm16.length; i++) {
       float32[i] = pcm16[i] / 32768.0;

@@ -284,9 +284,6 @@ function loadOperatorSettings() {
     if (savedSettings.systemInstruction === LEGACY_DEFAULT_SYSTEM_INSTRUCTION) {
       savedSettings.systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
     }
-    if (savedSettings.sourceLanguage === 'ro') {
-      savedSettings.sourceLanguage = 'auto';
-    }
   } catch (error) {
     console.warn('Unable to load operator settings:', error);
   }
@@ -725,7 +722,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.17 diagnostics',
+    'Live Translate v1.3.18 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -814,7 +811,7 @@ let chunksReceived = 0;
 
 function updateChunkStats() {
   if (chunkStatsEl) {
-    chunkStatsEl.textContent = `${chunksSent} sent / ${chunksReceived} recv`;
+    chunkStatsEl.textContent = `${chunksSent} mic / ${chunksReceived} translated`;
   }
 }
 
@@ -956,7 +953,7 @@ function playPCMChunk(base64Data, channelId) {
   }
   
   // 2. Decode raw little-endian 16-bit PCM bytes to Float32
-  const pcm16 = new Int16Array(bytes.buffer);
+  const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(len / 2));
   const float32 = new Float32Array(pcm16.length);
   
   let maxVal = 0;
@@ -1804,6 +1801,18 @@ function stopForGeminiError(message) {
   alert(`Gemini could not start this session: ${message}`);
 }
 
+function maybeWarnTargetLanguageMatch(heardLanguage) {
+  if (!sessionConfig || sessionConfig.echoTargetLanguage) return;
+  if (chunksReceived > 0 || chunksSent < 25) return;
+  const heard = String(heardLanguage).split('-')[0].toLowerCase();
+  const target = String(sessionConfig.targetLanguage1 || '').split('-')[0].toLowerCase();
+  if (!heard || !target || heard !== target) return;
+  setDiagnostic(
+    `Gemini heard ${getLanguageName(heardLanguage, heardLanguage)}, which is already Language 1. Turn on “Repeat words already in the target language”, or set Translate To to a different language.`,
+    'warning'
+  );
+}
+
 function noteHeardLanguage(languageCode) {
   if (!languageCode) return;
   const heard = String(languageCode);
@@ -1902,6 +1911,8 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
                   logDebug(`Received ${chunksReceived} audio chunks from Google.`, "ws-recv");
                   setHealthItem('gemini1', 'good', `Receiving (${chunksReceived})`);
                 }
+              } else if (channelId === 2) {
+                setHealthItem('gemini2', 'good', 'Receiving');
               }
               playPCMChunk(part.inlineData.data, channelId);
             }
@@ -1914,11 +1925,16 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         || data.serverContent?.inputTranscription
         || data.serverContent?.interimInputTranscription;
       if (channelId === 1 && inputTx) {
-        if (inputTx.languageCode) noteHeardLanguage(inputTx.languageCode);
+        if (inputTx.languageCode) {
+          noteHeardLanguage(inputTx.languageCode);
+          maybeWarnTargetLanguageMatch(inputTx.languageCode);
+        }
         if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final));
       }
       
-      const outputTx = data.outputTranscription || (data.serverContent && data.serverContent.outputTranscription);
+      const outputTx = data.outputTranscription
+        || data.serverContent?.outputTranscription
+        || data.serverContent?.interimOutputTranscription;
       if (outputTx) {
         const text = outputTx.text;
         if (text) {
