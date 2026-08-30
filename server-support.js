@@ -4,10 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
+import { applyLaneUpdate, buildSystemSetup, emptyLaneState } from './src/system-setup.js';
 
 const MAX_REQUEST_BYTES = 8 * 1024;
 const MAX_WS_PAYLOAD_BYTES = 512 * 1024;
 const MAX_BUFFERED_BYTES = 256 * 1024;
+const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
+const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 const execFileAsync = promisify(execFile);
 
 async function runGit(args) {
@@ -101,8 +104,40 @@ export function getConfigDir() {
   return path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'LiveTranslation');
 }
 
-function isLoopback(address = '') {
+export function isLoopback(address = '') {
   return address === '::1' || address === '127.0.0.1' || address.startsWith('127.') || address === '::ffff:127.0.0.1';
+}
+
+export function publicApiKeyStatus(apiKey, warning) {
+  const body = { configured: Boolean(apiKey) };
+  if (warning) body.warning = warning;
+  return body;
+}
+
+export function isObsAllowedPath(requestedPath, distDir) {
+  const filePath = path.resolve(distDir, requestedPath);
+  if (filePath !== distDir && !filePath.startsWith(`${distDir}${path.sep}`)) return false;
+  const relative = path.relative(distDir, filePath);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return false;
+  const normalized = relative.split(path.sep).join('/');
+  return normalized === 'subtitles.html' ||
+    normalized === 'favicon.svg' ||
+    normalized === 'icons.svg' ||
+    normalized.startsWith('assets/');
+}
+
+export function buildGeminiUpstreamUrl(apiKey) {
+  return `${GEMINI_UPSTREAM_URL}?key=${encodeURIComponent(apiKey)}`;
+}
+
+export function geminiProxyAllowed(remoteAddress, apiKey) {
+  if (!isLoopback(remoteAddress)) {
+    return { ok: false, reason: 'Gemini translation is only available on this computer.' };
+  }
+  if (!apiKey) {
+    return { ok: false, reason: 'API key is not configured.' };
+  }
+  return { ok: true };
 }
 
 function sendJson(res, statusCode, body) {
@@ -198,14 +233,10 @@ export async function handleRuntimeApi(req, res) {
   if (req.method === 'GET') {
     try {
       const apiKey = await readStoredApiKey();
-      sendJson(res, 200, { configured: Boolean(apiKey), apiKey });
+      sendJson(res, 200, publicApiKeyStatus(apiKey));
     } catch (error) {
       console.error('Unable to read LiveTranslation configuration:', error.message);
-      sendJson(res, 200, {
-        configured: false,
-        apiKey: '',
-        warning: 'The saved API key settings could not be read. Enter the key again to replace them.'
-      });
+      sendJson(res, 200, publicApiKeyStatus('', 'The saved API key settings could not be read. Enter the key again to replace them.'));
     }
     return true;
   }
@@ -238,12 +269,9 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
   }
 
   const subtitleState = {
-    lang1: { accumulatedText: '' },
-    lang2: { accumulatedText: '' },
-    targetLanguage1: '',
-    targetLanguage2: '',
-    subtitlePacing: 'smooth',
-    isDual: false,
+    lang1: emptyLaneState(),
+    lang2: emptyLaneState(),
+    ...buildSystemSetup(),
     audioSenderStreaming: false
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
@@ -303,30 +331,15 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
         const data = JSON.parse(message.toString());
 
         if (data.type === 'update') {
-          const state = subtitleState[data.lane];
-          if (!state || typeof data.text !== 'string') return;
-          const trimmedText = data.text.trim();
-          if (trimmedText) {
-            const needsSpace = state.accumulatedText.length > 0 &&
-              !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) &&
-              !/^[。？！.?!;；\s]/.test(trimmedText);
-            state.accumulatedText += `${needsSpace ? ' ' : ''}${trimmedText}`;
-          }
-          if (state.accumulatedText.length > 800) {
-            state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
-            const spaceIndex = state.accumulatedText.indexOf(' ');
-            if (spaceIndex !== -1) state.accumulatedText = state.accumulatedText.substring(spaceIndex + 1);
-          }
+          if (!subtitleState[data.lane] || typeof data.text !== 'string') return;
+          subtitleState[data.lane] = applyLaneUpdate(subtitleState[data.lane], data.text, Boolean(data.isFinal));
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }), ws);
         } else if (data.type === 'setup') {
-          subtitleState.targetLanguage1 = data.targetLanguage1;
-          subtitleState.targetLanguage2 = data.targetLanguage2;
-          subtitleState.subtitlePacing = data.subtitlePacing === 'live' ? 'live' : 'smooth';
-          subtitleState.isDual = data.isDual;
+          Object.assign(subtitleState, buildSystemSetup(data));
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
         } else if (data.type === 'clear') {
-          subtitleState.lang1 = { accumulatedText: '' };
-          subtitleState.lang2 = { accumulatedText: '' };
+          subtitleState.lang1 = emptyLaneState();
+          subtitleState.lang2 = emptyLaneState();
           broadcast(JSON.stringify({ type: 'clear' }));
         } else if (data.type === 'audio' || data.type === 'input-audio') {
           broadcast(message.toString(), ws, true);
@@ -363,4 +376,95 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
   const relay = { attach, wss };
   attach(httpServer);
   return relay;
+}
+
+function safeCloseSocket(socket, code, reason) {
+  if (!socket || (socket.readyState !== WebSocket.OPEN && socket.readyState !== WebSocket.CONNECTING)) return;
+  const valid = code === 1000 || (code >= 3000 && code <= 4999);
+  try {
+    socket.close(valid ? code : 1011, String(reason || '').slice(0, 120));
+  } catch (error) {
+    socket.terminate();
+  }
+}
+
+function forwardSocket(from, to) {
+  from.on('message', (data, isBinary) => {
+    if (to.readyState !== WebSocket.OPEN) return;
+    if (to.bufferedAmount > MAX_BUFFERED_BYTES) {
+      to.terminate();
+      return;
+    }
+    to.send(data, { binary: isBinary });
+  });
+  from.on('close', (code, reason) => {
+    safeCloseSocket(to, code, reason);
+  });
+  from.on('error', () => {
+    safeCloseSocket(to, 1011, 'Connection error');
+  });
+}
+
+export function attachGeminiProxy(httpServer) {
+  if (!httpServer || httpServer.__liveTranslateGeminiProxy) return;
+  httpServer.__liveTranslateGeminiProxy = true;
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
+
+  httpServer.on('upgrade', (request, socket, head) => {
+    const { pathname } = new URL(request.url, 'https://localhost');
+    if (pathname !== GEMINI_LIVE_WS_PATH) return;
+
+    if (!isLoopback(request.socket.remoteAddress)) {
+      socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(request, socket, head, client => {
+      wss.emit('connection', client, request);
+    });
+  });
+
+  wss.on('connection', async (client, request) => {
+    let apiKey = '';
+    try {
+      apiKey = await readStoredApiKey();
+    } catch (error) {
+      safeCloseSocket(client, 1011, 'Unable to read API key');
+      return;
+    }
+
+    const allowed = geminiProxyAllowed(request.socket.remoteAddress, apiKey);
+    if (!allowed.ok) {
+      safeCloseSocket(client, 1008, allowed.reason);
+      return;
+    }
+
+    const pending = [];
+    let upstreamReady = false;
+    const upstream = new WebSocket(buildGeminiUpstreamUrl(apiKey));
+
+    client.on('message', (data, isBinary) => {
+      if (upstreamReady && upstream.readyState === WebSocket.OPEN) {
+        if (upstream.bufferedAmount > MAX_BUFFERED_BYTES) {
+          upstream.terminate();
+          return;
+        }
+        upstream.send(data, { binary: isBinary });
+        return;
+      }
+      if (pending.length < 32) pending.push([data, isBinary]);
+    });
+    client.on('close', () => safeCloseSocket(upstream, 1000, ''));
+    client.on('error', () => safeCloseSocket(upstream, 1011, 'Client error'));
+
+    upstream.on('open', () => {
+      upstreamReady = true;
+      for (const [data, isBinary] of pending) {
+        if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary: isBinary });
+      }
+      pending.length = 0;
+    });
+    forwardSocket(upstream, client);
+  });
 }

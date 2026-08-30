@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Live Translate provides real-time voice translation and shared subtitles." />
     <title>Live Translate</title>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,9 +12,8 @@
   <body>
     <div class="glass-bg"></div>
     <div class="app-container">
-      
-      <!-- Top Navigation/Header -->
-      <header class="app-header">
+
+      <header class="live-bar" aria-label="Live session controls">
         <div class="logo-area">
           <div class="logo-icon">
             <span aria-hidden="true">T</span>
@@ -24,218 +22,265 @@
             <h1>Live Translate</h1>
           </div>
         </div>
-        
-        <!-- Header Right Area (Stats + Connection Badge) -->
-        <div class="header-right-area" style="display: flex; align-items: center; gap: 0.75rem;">
-          <!-- Session Stats Badge -->
-          <div class="session-stats-badge" id="session-stats-badge" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.85rem; border-radius: 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--panel-border); font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-secondary);">
-            <span id="session-timer" title="Session Duration">⏱️ 00:00:00</span>
-            <span style="color: var(--panel-border);">|</span>
-            <span id="word-counter" title="Total Words Processed">📝 0 words</span>
-          </div>
 
-          <!-- Connection Status Badge -->
+        <div class="live-health" aria-label="Connection health">
+          <div class="health-item health-chip" id="health-local" data-state="connecting">
+            <span class="health-dot" aria-hidden="true"></span>
+            <div>
+              <strong>Relay</strong>
+              <span class="health-detail">Connecting...</span>
+            </div>
+          </div>
+          <div class="health-item health-chip" id="health-gemini-1" data-state="idle">
+            <span class="health-dot" aria-hidden="true"></span>
+            <div>
+              <strong>Gemini 1</strong>
+              <span class="health-detail">Not started</span>
+            </div>
+          </div>
+          <div class="health-item health-chip" id="health-gemini-2" data-state="idle" hidden>
+            <span class="health-dot" aria-hidden="true"></span>
+            <div>
+              <strong>Gemini 2</strong>
+              <span class="health-detail">Not enabled</span>
+            </div>
+          </div>
+          <div class="health-item health-chip" id="health-audio" data-state="idle">
+            <span class="health-dot" aria-hidden="true"></span>
+            <div>
+              <strong>Audio</strong>
+              <span class="health-detail">Not started</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="live-actions">
+          <div class="session-stats-badge" id="session-stats-badge">
+            <span id="session-timer" title="Session Duration">00:00:00</span>
+            <span class="stat-divider" aria-hidden="true">|</span>
+            <span id="word-counter" title="Total Words Processed">0 words</span>
+          </div>
+          <button id="mute-mic-btn" type="button" class="live-bar-btn" aria-pressed="false" title="Temporarily pause the selected audio source without disconnecting">
+            <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+            </svg>
+            <span id="mute-mic-label">Pause input</span>
+          </button>
           <div class="status-badge" id="connection-status" role="status" aria-live="polite">
             <span class="status-dot"></span>
             <span class="status-text">Disconnected</span>
           </div>
+          <button id="start-btn" class="primary-btn live-start-btn">
+            <span class="btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </span>
+            <span class="btn-text">Start Translation</span>
+          </button>
         </div>
       </header>
 
-      <!-- Main Dashboard Grid -->
       <main class="dashboard-grid">
-        
-        <!-- Top Section: Controls and Settings -->
+
+        <section class="operator-strip" aria-label="Operator status">
+          <div class="diagnostic-banner" id="diagnostic-banner" data-state="idle" role="status" aria-live="polite">
+            <span class="diagnostic-icon" aria-hidden="true">i</span>
+            <span id="diagnostic-message">Ready. Start translation when your audio source is prepared.</span>
+          </div>
+          <div class="health-actions">
+            <button id="reconnect-now-btn" class="health-btn primary" type="button" disabled>Reconnect Now</button>
+            <button id="restart-audio-btn" class="health-btn" type="button" disabled>Restart Audio</button>
+            <button id="copy-diagnostics-btn" class="health-btn" type="button">Copy Status</button>
+            <button id="check-updates-btn" class="health-btn" type="button">Check Updates</button>
+          </div>
+        </section>
+
+        <div id="connection-recovery-banner" class="connection-recovery-banner" role="status" aria-live="assertive" hidden>
+          <span class="recovery-spinner" aria-hidden="true"></span>
+          <div>
+            <strong>Reconnecting to Gemini...</strong>
+            <span id="connection-recovery-detail">Your subtitles are preserved. Live audio is paused instead of being queued.</span>
+          </div>
+        </div>
+
+        <div id="network-disconnect-warning" class="network-disconnect-warning" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>Remote microphone disconnected. Waiting for reconnect...</span>
+        </div>
+
         <section class="control-panel glass-card" aria-label="Translation Settings">
-          <h2>Configuration</h2>
-          
-          <div class="config-grid">
-            <!-- Column 1: Connection & Audio Source -->
-            <div class="config-col">
-              <!-- API Key Input -->
-              <div class="input-group">
-                <label for="api-key-input">Gemini API Key</label>
-                <div class="password-wrapper">
-                  <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key" />
-                  <button type="button" id="toggle-api-key" class="icon-btn" aria-label="Toggle API Key visibility">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
+          <details class="panel-details setup-details" id="setup-details" open>
+            <summary class="panel-summary">Setup</summary>
+            <div class="config-grid">
+              <div class="config-col">
+                <div class="input-group" id="api-key-group" data-configured="false">
+                  <label for="api-key-input">Gemini API Key</label>
+                  <div class="password-wrapper">
+                    <input type="password" id="api-key-input" placeholder="Enter your Gemini API Key" autocomplete="off" />
+                    <button type="button" id="toggle-api-key" class="icon-btn" aria-label="Toggle API Key visibility">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </div>
+                  <small id="api-key-status" class="input-hint">Checking local configuration...</small>
                 </div>
-                <small id="api-key-status" class="input-hint">Checking local configuration...</small>
-              </div>
 
-              <!-- Audio Source Selection -->
-              <div class="input-group">
-                <label for="audio-source-select">Audio Source</label>
-                <select id="audio-source-select">
-                  <option value="mic" selected>Microphone</option>
-                  <option value="system">System Audio (Played on PC)</option>
-                  <option value="network">Network Audio (Stream from another PC)</option>
-                </select>
-              </div>
-
-              <!-- Microphone Device Selection -->
-              <div class="input-group" id="mic-device-group">
-                <label for="mic-device-select">Microphone Input Device</label>
-                <select id="mic-device-select">
-                  <option value="default">Default System Microphone</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Column 2: Target Languages -->
-            <div class="config-col">
-              <!-- Target Language 1 -->
-              <div class="input-group">
-                <label for="target-language-select-1">Translate To (Language 1)</label>
-                <select id="target-language-select-1">
-                  <option value="en" selected>English (English)</option>
-                  <option value="ru">Russian (Русский)</option>
-                  <option value="ro">Romanian (Română)</option>
-                  <option value="es">Spanish (Español)</option>
-                  <option value="fr">French (Français)</option>
-                  <option value="ja">Japanese (日本語)</option>
-                  <option value="de">German (Deutsch)</option>
-                  <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
-                  <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
-                  <option value="pt">Portuguese (Português)</option>
-                  <option value="it">Italian (Italiano)</option>
-                  <option value="ko">Korean (한국어)</option>
-                  <option value="pl">Polish (Polski)</option>
-                  <option value="hi">Hindi (हिन्दी)</option>
-                  <option value="ar">Arabic (العربية)</option>
-                  <option value="tr">Turkish (Türkçe)</option>
-                  <option value="vi">Vietnamese (Tiếng Việt)</option>
-                </select>
-              </div>
-              <div class="input-group checkbox-group" style="margin-top: -0.25rem; margin-bottom: 0.5rem;">
-                <label class="switch-container">
-                  <input type="checkbox" id="play-voice-1" checked />
-                  <span class="switch-slider"></span>
-                  <span class="switch-label">Play Voice 1 Output</span>
-                </label>
-              </div>
-
-              <!-- Target Language 2 -->
-              <div class="input-group">
-                <label for="target-language-select-2">Translate To (Language 2)</label>
-                <select id="target-language-select-2">
-                  <option value="none" selected>None (Disabled)</option>
-                  <option value="en">English (English)</option>
-                  <option value="ru">Russian (Русский)</option>
-                  <option value="ro">Romanian (Română)</option>
-                  <option value="es">Spanish (Español)</option>
-                  <option value="fr">French (Français)</option>
-                  <option value="ja">Japanese (日本語)</option>
-                  <option value="de">German (Deutsch)</option>
-                  <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
-                  <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
-                  <option value="pt">Portuguese (Português)</option>
-                  <option value="it">Italian (Italiano)</option>
-                  <option value="ko">Korean (한국어)</option>
-                  <option value="pl">Polish (Polski)</option>
-                  <option value="hi">Hindi (हिन्दी)</option>
-                  <option value="ar">Arabic (العربية)</option>
-                  <option value="tr">Turkish (Türkçe)</option>
-                  <option value="vi">Vietnamese (Tiếng Việt)</option>
-                </select>
-              </div>
-              <div class="input-group checkbox-group" style="margin-top: -0.25rem; margin-bottom: 0.5rem;">
-                <label class="switch-container">
-                  <input type="checkbox" id="play-voice-2" checked />
-                  <span class="switch-slider"></span>
-                  <span class="switch-label">Play Voice 2 Output</span>
-                </label>
-              </div>
-
-            </div>
-
-            <!-- Column 3: Instructions & Echo -->
-            <div class="config-col">
-              <!-- Translation System Instructions & Hints -->
-              <div class="input-group" style="flex: 1; display: flex; flex-direction: column;">
-                <label for="system-instruction-input">System Instructions & Hints</label>
-                <textarea id="system-instruction-input" style="width: 100%; flex: 1; box-sizing: border-box; padding: 0.75rem; background: var(--bg-color); border: 1px solid var(--panel-border); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.85rem; resize: none;" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language. Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.</textarea>
-              </div>
-
-              <div class="input-group">
-                <label for="subtitle-pacing-select">Subtitle Pace</label>
-                <select id="subtitle-pacing-select">
-                  <option value="smooth" selected>Smooth (200 ms buffer)</option>
-                  <option value="live">Live (Legacy / Lowest Delay)</option>
-                </select>
-                <small class="helper-text">Smooth groups short phrases and accelerates gradually when needed.</small>
-              </div>
-
-              <!-- Options Toggles -->
-              <div class="input-group checkbox-group" style="margin-top: 0.5rem;">
-                <label class="switch-container">
-                  <input type="checkbox" id="echo-toggle" />
-                  <span class="switch-slider"></span>
-                  <span class="switch-label">Echo Target Language</span>
-                </label>
-              </div>
-
-              <div class="input-group checkbox-group song-filter-control">
-                <label class="switch-container">
-                  <input type="checkbox" id="ignore-songs-toggle" />
-                  <span class="switch-slider"></span>
-                  <span class="switch-label">Automatically Ignore Songs</span>
-                </label>
-                <small id="song-filter-status" class="helper-text song-filter-status" data-state="off" role="status" aria-live="polite">Off — songs may be translated.</small>
-              </div>
-            </div>
-
-            <!-- Column 4: Action Buttons -->
-            <div class="config-col actions-col">
-              <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.15rem;">Controls</label>
-              <div class="action-wrapper" style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1; justify-content: space-between;">
-                <button id="start-btn" class="primary-btn">
-                  <span class="btn-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                      <line x1="12" y1="19" x2="12" y2="23"></line>
-                      <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                  </span>
-                  <span class="btn-text">Start Translation</span>
-                </button>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                  <button id="subtitles-btn" class="secondary-btn" type="button" style="padding: 0.75rem 0.5rem; font-size: 0.85rem;">
-                    <span class="btn-text">Monitor</span>
-                  </button>
-                  <button id="streamer-btn" class="secondary-btn" type="button" style="padding: 0.75rem 0.5rem; font-size: 0.85rem;">
-                    <span class="btn-text">Streamer</span>
-                  </button>
+                <div class="input-group">
+                  <label for="audio-source-select">Audio Source</label>
+                  <select id="audio-source-select">
+                    <option value="mic" selected>Microphone</option>
+                    <option value="system">System Audio (Played on PC)</option>
+                    <option value="network">Remote microphone (another computer or phone)</option>
+                  </select>
                 </div>
-                <button id="btn-clear-projector" class="secondary-btn" type="button" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.75rem 0.5rem; font-size: 0.85rem;">
-                  <span class="btn-text">Clear Projector Screen</span>
-                </button>
-                <button id="reset-settings-btn" class="secondary-btn" type="button" style="padding: 0.65rem 0.5rem; font-size: 0.8rem;">
+
+                <div class="input-group" id="mic-device-group">
+                  <label for="mic-device-select">Microphone Input Device</label>
+                  <select id="mic-device-select">
+                    <option value="default">Default System Microphone</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="config-col">
+                <div class="input-group">
+                  <label for="target-language-select-1">Translate To (Language 1)</label>
+                  <select id="target-language-select-1">
+                    <option value="en" selected>English (English)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="ro">Romanian (Română)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+                    <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="pl">Polish (Polski)</option>
+                    <option value="hi">Hindi (हिन्दी)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="tr">Turkish (Türkçe)</option>
+                    <option value="vi">Vietnamese (Tiếng Việt)</option>
+                  </select>
+                </div>
+                <div class="input-group checkbox-group">
+                  <label class="switch-container">
+                    <input type="checkbox" id="play-voice-1" checked />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label">Send translated audio (Language 1)</span>
+                  </label>
+                </div>
+
+                <div class="input-group">
+                  <label for="target-language-select-2">Translate To (Language 2)</label>
+                  <select id="target-language-select-2">
+                    <option value="none" selected>None (Disabled)</option>
+                    <option value="en">English (English)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="ro">Romanian (Română)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="ja">Japanese (日本語)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="zh-Hans">Chinese - Simplified (简体中文)</option>
+                    <option value="zh-Hant">Chinese - Traditional (繁體中文)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="ko">Korean (한국어)</option>
+                    <option value="pl">Polish (Polski)</option>
+                    <option value="hi">Hindi (हिन्दी)</option>
+                    <option value="ar">Arabic (العربية)</option>
+                    <option value="tr">Turkish (Türkçe)</option>
+                    <option value="vi">Vietnamese (Tiếng Việt)</option>
+                  </select>
+                </div>
+                <div class="input-group checkbox-group">
+                  <label class="switch-container">
+                    <input type="checkbox" id="play-voice-2" checked />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label">Send translated audio (Language 2)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="config-col">
+                <div class="input-group instruction-group">
+                  <label for="system-instruction-input">System Instructions &amp; Hints</label>
+                  <textarea id="system-instruction-input" class="instruction-input" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language. Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.</textarea>
+                </div>
+
+                <div class="input-group">
+                  <label for="subtitle-pacing-select">Subtitle Pace</label>
+                  <select id="subtitle-pacing-select">
+                    <option value="smooth" selected>Smooth (200 ms buffer)</option>
+                    <option value="live">Live (Legacy / Lowest Delay)</option>
+                  </select>
+                  <small class="helper-text">Smooth groups short phrases and accelerates gradually when needed. This setting is sent to every projector, phone, and OBS overlay.</small>
+                </div>
+
+                <div class="input-group checkbox-group">
+                  <label class="switch-container">
+                    <input type="checkbox" id="echo-toggle" />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label">Repeat words already in the target language</span>
+                  </label>
+                  <small class="helper-text">Leave off unless the speaker is mixing the source and target languages and you want those target-language words spoken back.</small>
+                </div>
+
+                <div class="input-group checkbox-group song-filter-control">
+                  <label class="switch-container">
+                    <input type="checkbox" id="ignore-songs-toggle" />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label">Automatically Ignore Songs</span>
+                  </label>
+                  <small id="song-filter-status" class="helper-text song-filter-status" data-state="off" role="status" aria-live="polite">Off — songs may be translated.</small>
+                </div>
+
+                <button id="reset-settings-btn" class="secondary-btn reset-settings-btn" type="button">
                   <span class="btn-text">Reset Settings to Defaults</span>
                 </button>
               </div>
             </div>
+          </details>
+
+          <div class="destinations-row">
+            <button id="subtitles-btn" class="secondary-btn" type="button">
+              <span class="btn-text">Open projector</span>
+            </button>
+            <button id="streamer-btn" class="secondary-btn" type="button">
+              <span class="btn-text">Remote microphone</span>
+            </button>
+            <button id="btn-clear-projector" class="secondary-btn danger-btn" type="button">
+              <span class="btn-text">Clear screens</span>
+            </button>
           </div>
 
-          <!-- Collapsible QR Code details section -->
-          <details class="qr-details" open>
+          <details class="qr-details" id="share-details">
             <summary class="qr-summary">
-              Projector, OBS & External Microphone Sharing
+              Share projector, OBS overlay, and remote microphone
             </summary>
             <div class="qr-grid-layout">
-              <!-- Projector Screen Sharing Tip -->
               <div class="network-info-box">
-                <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">Projector Screen URL:</p>
-                <p>Scan to show subtitles on another computer/projector connected to the same network:</p>
-                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                  <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                    <canvas id="projector-qr-canvas" aria-label="QR code for the projector subtitles page" style="width: 88px; height: 88px; display: block;"></canvas>
+                <p class="share-card-title">Projector URL</p>
+                <p>Scan or open this page on another computer, projector, or phone on the same network:</p>
+                <p class="share-url" id="projector-url-tip">https://[your-laptop-ip]:5173/subtitles.html</p>
+                <div class="share-qr-block">
+                  <div class="share-qr-frame">
+                    <canvas id="projector-qr-canvas" aria-label="QR code for the projector subtitles page"></canvas>
                   </div>
                   <div class="share-link-actions">
                     <button id="copy-projector-url" class="share-link-btn" type="button">Copy URL</button>
@@ -244,14 +289,13 @@
                 </div>
               </div>
 
-              <!-- Network Audio Sender Sharing Tip -->
               <div class="network-info-box" id="network-audio-info-box">
-                <p style="font-weight: 600; color: var(--accent-amber); margin-bottom: 0.25rem;">Network Audio Sender URL:</p>
-                <p>Scan to stream audio from another PC or phone to this dashboard:</p>
-                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                  <div style="background: white; padding: 6px; border-radius: 8px; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                    <canvas id="streamer-qr-canvas" aria-label="QR code for the external microphone page" style="width: 88px; height: 88px; display: block;"></canvas>
+                <p class="share-card-title share-card-title-amber">Remote microphone URL</p>
+                <p>Scan to stream a microphone from another computer or phone to this dashboard:</p>
+                <p class="share-url" id="streamer-url-tip">https://[your-laptop-ip]:5173/audio-sender.html</p>
+                <div class="share-qr-block">
+                  <div class="share-qr-frame">
+                    <canvas id="streamer-qr-canvas" aria-label="QR code for the remote microphone page"></canvas>
                   </div>
                   <div class="share-link-actions">
                     <button id="copy-streamer-url" class="share-link-btn" type="button">Copy URL</button>
@@ -260,11 +304,10 @@
                 </div>
               </div>
 
-              <!-- OBS Browser Source Sharing Tip -->
               <div class="network-info-box" id="obs-overlay-info-box">
-                <p style="font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.25rem;">OBS Overlay URL:</p>
-                <p>Paste this certificate-free URL into an OBS Browser Source. The transparent page stays blank until translated words arrive:</p>
-                <div class="input-group" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">
+                <p class="share-card-title share-card-title-cyan">OBS Overlay URL</p>
+                <p>Paste this certificate-free URL into an OBS Browser Source. Changing OBS Language here updates the overlay immediately.</p>
+                <div class="input-group obs-language-group">
                   <label for="obs-language-select">OBS Language</label>
                   <select id="obs-language-select">
                     <option value="both" selected>Both Languages</option>
@@ -273,7 +316,7 @@
                   </select>
                   <small class="helper-text">Choosing one language also places its subtitles in the upper half of the OBS canvas.</small>
                 </div>
-                <p style="margin-top: 0.4rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 500; word-break: break-all; margin-bottom: 0.75rem;" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true&amp;lang=both</p>
+                <p class="share-url" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true&amp;lang=both</p>
                 <div class="share-link-actions">
                   <button id="copy-obs-url" class="share-link-btn" type="button">Copy URL</button>
                   <button id="open-obs-url" class="share-link-btn" type="button">Open Page</button>
@@ -283,111 +326,29 @@
           </details>
         </section>
 
-        <!-- Bottom Section: Visualizers & Logs -->
         <section class="workspace" aria-label="Translation Workspace">
-
-          <div class="health-panel glass-card" aria-labelledby="health-title">
-            <div class="health-header">
-              <div>
-                <span class="health-eyebrow">Operator Center</span>
-                <h2 id="health-title">Connection Health</h2>
-              </div>
-              <div class="health-actions">
-                <button id="check-updates-btn" class="health-btn" type="button">Check Updates</button>
-                <button id="copy-diagnostics-btn" class="health-btn" type="button">Copy Status</button>
-                <button id="restart-audio-btn" class="health-btn" type="button" disabled>Restart Audio</button>
-                <button id="reconnect-now-btn" class="health-btn primary" type="button" disabled>Reconnect Now</button>
-              </div>
-            </div>
-
-            <div class="health-grid">
-              <div class="health-item" id="health-local" data-state="connecting">
-                <span class="health-dot" aria-hidden="true"></span>
-                <div>
-                  <strong>Local Relay</strong>
-                  <span class="health-detail">Connecting...</span>
-                </div>
-              </div>
-              <div class="health-item" id="health-gemini-1" data-state="idle">
-                <span class="health-dot" aria-hidden="true"></span>
-                <div>
-                  <strong>Gemini 1</strong>
-                  <span class="health-detail">Not started</span>
-                </div>
-              </div>
-              <div class="health-item" id="health-gemini-2" data-state="idle" hidden>
-                <span class="health-dot" aria-hidden="true"></span>
-                <div>
-                  <strong>Gemini 2</strong>
-                  <span class="health-detail">Not enabled</span>
-                </div>
-              </div>
-              <div class="health-item" id="health-audio" data-state="idle">
-                <span class="health-dot" aria-hidden="true"></span>
-                <div>
-                  <strong>Audio Input</strong>
-                  <span class="health-detail">Not started</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="diagnostic-banner" id="diagnostic-banner" data-state="idle" role="status" aria-live="polite">
-              <span class="diagnostic-icon" aria-hidden="true">i</span>
-              <span id="diagnostic-message">Ready. Start translation when your audio source is prepared.</span>
-            </div>
-          </div>
-
-          <div id="connection-recovery-banner" class="connection-recovery-banner" role="status" aria-live="assertive" hidden>
-            <span class="recovery-spinner" aria-hidden="true"></span>
-            <div>
-              <strong>Reconnecting to Gemini...</strong>
-              <span id="connection-recovery-detail">Your subtitles are preserved. Live audio is paused instead of being queued.</span>
-            </div>
-          </div>
-          
-          <!-- Disconnect Warning Banner -->
-          <div id="network-disconnect-warning" role="alert" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; align-items: center; gap: 0.75rem; font-weight: 500; font-size: 0.9rem;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-            <span>⚠️ Remote audio stream disconnected. Waiting for reconnect...</span>
-          </div>
-
-          <!-- Visualizers Box -->
           <div class="visualizer-row glass-card">
             <div class="visualizer-container">
-              <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <h3 style="margin: 0;">Input Mic</h3>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <button id="mute-mic-btn" type="button" class="icon-btn-text" aria-pressed="false" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-secondary); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: var(--transition-smooth);" title="Temporarily pause microphone audio without disconnecting">
-                    <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                      <line x1="12" y1="19" x2="12" y2="23"></line>
-                    </svg>
-                    <span id="mute-mic-label">Mute Mic</span>
-                  </button>
-                  <span class="vol-db" id="mic-db">0%</span>
-                </div>
+              <div class="visualizer-header">
+                <h3>Input</h3>
+                <span class="vol-db" id="mic-db">0%</span>
               </div>
               <div class="visualizer-box">
                 <canvas id="mic-canvas"></canvas>
               </div>
             </div>
-            
+
             <div class="visualizer-container">
-              <div class="visualizer-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <h3 style="margin: 0;">Translation Audio</h3>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <label class="switch-container" style="margin-right: 0.5rem;" title="Play audio on this computer's speakers">
+              <div class="visualizer-header">
+                <h3>Translation Audio</h3>
+                <div class="output-controls">
+                  <label class="switch-container" title="Play translated audio on this computer's speakers">
                     <input type="checkbox" id="local-playback-toggle" />
                     <span class="switch-slider"></span>
-                    <span class="switch-label" style="font-size: 0.75rem;">Local Speaker</span>
+                    <span class="switch-label compact-label">Play on this Mac</span>
                   </label>
-                  <span style="font-size: 0.75rem; color: var(--text-secondary);">Vol:</span>
-                  <input type="range" id="host-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px; accent-color: var(--accent-cyan); cursor: pointer;" title="Local Playback Volume">
+                  <span class="vol-label">Vol</span>
+                  <input type="range" id="host-volume-slider" min="0" max="1" step="0.05" value="1" title="Local Playback Volume">
                   <span class="vol-db" id="output-db">0%</span>
                 </div>
               </div>
@@ -397,11 +358,10 @@
             </div>
           </div>
 
-          <!-- Transcript Header Controls Bar -->
-          <div class="transcript-controls-bar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.75rem; padding: 0 0.25rem;">
-            <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Live Transcripts</span>
-            <div class="font-size-picker" style="display: flex; align-items: center; gap: 0.35rem;">
-              <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 0.25rem;">Text Size:</span>
+          <div class="transcript-controls-bar">
+            <span class="transcript-heading">Live Transcripts</span>
+            <div class="font-size-picker">
+              <span class="font-size-label">Text Size</span>
               <button class="font-size-btn" data-size="sm" aria-pressed="false" title="Small Text">S</button>
               <button class="font-size-btn active" data-size="md" aria-pressed="true" title="Medium Text">M</button>
               <button class="font-size-btn" data-size="lg" aria-pressed="false" title="Large Text">L</button>
@@ -409,9 +369,7 @@
             </div>
           </div>
 
-          <!-- Transcripts columns -->
           <div class="transcript-grid font-md" id="transcript-grid">
-            <!-- Left Side: Source Language -->
             <div class="transcript-col glass-card">
               <div class="col-header">
                 <div class="col-title-area">
@@ -428,7 +386,6 @@
               </div>
             </div>
 
-            <!-- Center: Translation 1 -->
             <div class="transcript-col glass-card">
               <div class="col-header">
                 <div class="col-title-area">
@@ -445,8 +402,7 @@
               </div>
             </div>
 
-            <!-- Right Side: Translation 2 -->
-            <div class="transcript-col glass-card" id="col-lang-2" style="display: none;">
+            <div class="transcript-col glass-card" id="col-lang-2" hidden>
               <div class="col-header">
                 <div class="col-title-area">
                   <span class="circle-indicator output-pulse-2"></span>
@@ -463,26 +419,23 @@
             </div>
           </div>
 
-          <!-- Debug Log Box -->
-          <div class="debug-panel glass-card" style="margin-top: 1.5rem;">
-            <div class="col-header">
-              <h3>System Status Logs</h3>
+          <details class="debug-panel glass-card" id="diagnostics-details">
+            <summary class="panel-summary">System Status Logs</summary>
+            <div class="col-header debug-header">
               <button id="clear-debug-log" class="text-btn">Clear Logs</button>
             </div>
-            <div class="debug-scroll" id="debug-log-list" style="max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.4; color: #a7f3d0; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
-              <div class="debug-line" style="color: #71808a;">[System] UI initialized. Ready to connect.</div>
+            <div class="debug-scroll" id="debug-log-list">
+              <div class="debug-line debug-line-muted">[System] UI initialized. Ready to connect.</div>
             </div>
-          </div>
+          </details>
         </section>
       </main>
 
-      <!-- Global Footer -->
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.4</p>
+        <p>Powered by Google Gemini Live API | v1.3.5</p>
       </footer>
     </div>
 
-    <!-- App Logic Module -->
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

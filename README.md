@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.4`.
+The current application version is `v1.3.5`.
 
 ## Screenshots
 
@@ -19,9 +19,10 @@ The current application version is `v1.3.4`.
 - Microphone, system-audio, or remote network-audio input at 16 kHz PCM.
 - One or two concurrent Gemini translation sessions.
 - Low-latency translated speech playback at 24 kHz.
-- Independent Voice 1 and Voice 2 output controls.
-- A safety-oriented **Local Speaker** control that defaults to off.
-- **Echo Target Language** defaults to off.
+- Independent **Send translated audio** switches for Language 1 and Language 2.
+- A safety-oriented **Play on this Mac** control that defaults to off.
+- **Repeat words already in the target language** defaults to off.
+- The Gemini API key is saved on this computer and never shown again after that.
 - Remembered operator settings with a **Reset Settings to Defaults** button.
 - Selectable **Smooth** subtitle pacing with a 200 ms buffer, plus the original **Live** pacing mode.
 - An optional live **Automatically Ignore Songs** filter that keeps Gemini connected while pausing song audio.
@@ -61,7 +62,7 @@ npm ci
 npm run start:app
 ```
 
-Open `https://localhost:5173/` on the host Mac. Enter the Gemini API key once; later launches load it automatically.
+Open `https://localhost:5173/` on the host Mac. Enter the Gemini API key once. Later launches use the saved key without displaying it. Translation talks to Gemini through the local app, so the key never appears in the dashboard connection URL.
 
 For source development with hot reload:
 
@@ -119,19 +120,19 @@ The Gemini API key is stored in the current user's private application configura
 ~/Library/Application Support/LiveTranslation/config.json
 ```
 
-The file is created with user-only permissions. API-key configuration is available only from the host computer.
+The file is created with user-only permissions. API-key configuration is available only from the host computer. After it is saved, the dashboard shows that a key is present and never fills the key back into the page.
 
-Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target languages, OBS language, voice-output switches, system instructions, subtitle pacing, automatic song filtering, Echo Target Language, Local Speaker, local volume, and transcript font size.
+Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target languages, OBS language, voice-output switches, system instructions, subtitle pacing, automatic song filtering, target-language repeat, Play on this Mac, local volume, and transcript font size. Language, pacing, and OBS layout changes are sent to every projector, phone, and OBS overlay on the local relay.
 
 Important defaults include:
 
-- Local Speaker: off.
-- Echo Target Language: off.
+- Play on this Mac: off.
+- Repeat words already in the target language: off.
 - Audio source: system default microphone.
 - Language 1: English.
 - Language 2: disabled.
 - Voice 1 and Voice 2 output: on.
-- Local volume: 100%, but silent while Local Speaker is off.
+- Local volume: 100%, but silent while Play on this Mac is off.
 - Subtitle Pace: Smooth with a 200 ms start buffer.
 - Automatically Ignore Songs: off.
 - Transcript size: medium.
@@ -156,7 +157,7 @@ The projector controls are a fixed overlay and hide three seconds after the last
 ## Remote microphone
 
 1. Select **Network Audio (Stream from another PC)** as the dashboard audio source.
-2. Copy or scan the **Network Audio Sender URL**.
+2. Copy or scan the **Remote microphone URL**.
 3. Open it on the remote computer or phone and accept the certificate warning.
 4. Grant microphone access and select **Start Streaming**.
 5. Start translation on the host dashboard.
@@ -166,7 +167,7 @@ The dashboard warns the operator if the remote sender disconnects and clears the
 ## OBS live-stream overlay
 
 1. In OBS, add a **Browser** source.
-2. Choose **Both Languages**, **Language 1 Only**, or **Language 2 Only** in the dashboard's **OBS Language** selector.
+2. Choose **Both Languages**, **Language 1 Only**, or **Language 2 Only** in the dashboard's **OBS Language** selector. That choice is also sent live to an already-open overlay.
 3. Copy the dedicated **OBS Overlay URL**. A one-language URL resembles `http://192.168.1.67:5174/?obs=true&lang=1`.
 4. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
 5. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.

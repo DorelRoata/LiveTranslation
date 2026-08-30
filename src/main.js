@@ -8,12 +8,11 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
+import { applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
 
 // --- Constants ---
-const HOST = "generativelanguage.googleapis.com";
-const API_VERSION = "v1alpha";
-const PATH = `ws/google.ai.generativelanguage.${API_VERSION}.GenerativeService.BidiGenerateContent`;
 const MODEL = "models/gemini-3.5-live-translate-preview";
+const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
@@ -57,8 +56,9 @@ let reconnectTimeout = null;
 let reconnectAttempt = 0;
 let setupTimeout = null;
 let sessionGeneration = 0;
-let sessionApiKey = '';
+let startToken = 0;
 let sessionConfig = null;
+let apiKeyConfigured = false;
 const socketSetupReady = { 1: false, 2: false };
 let subtitleWindow = null;
 let localSubtitlesWS = null;
@@ -80,8 +80,8 @@ let isSongSuppressed = false;
 const songAudioWindow = new RollingAudioWindow();
 
 const subtitleState = {
-  lang1: { accumulatedText: "" },
-  lang2: { accumulatedText: "" }
+  lang1: emptyLaneState(),
+  lang2: emptyLaneState()
 };
 
 // Audio Visualizer buffers (last 512 samples)
@@ -214,6 +214,8 @@ function applyOperatorSettings(settings) {
     : DEFAULT_OPERATOR_SETTINGS.ignoreSongs;
   setTranscriptFontSize(settings.transcriptFontSize);
   micDeviceGroup.style.display = audioSourceSelect.value === 'mic' ? 'block' : 'none';
+  applyDashboardLanguageLayout();
+  syncLocalSubtitlesSetup();
 }
 
 function getOperatorSettings() {
@@ -280,6 +282,25 @@ window.addEventListener('beforeunload', event => {
 });
 
 // --- API Key Runtime Configuration ---
+function setApiKeyConfigured(configured) {
+  apiKeyConfigured = Boolean(configured);
+  const apiKeyGroup = document.getElementById('api-key-group');
+  if (apiKeyGroup) apiKeyGroup.dataset.configured = apiKeyConfigured ? 'true' : 'false';
+  apiKeyInput.value = '';
+  apiKeyInput.placeholder = apiKeyConfigured
+    ? 'Enter a new key only to replace the saved one'
+    : 'Enter your Gemini API Key';
+}
+
+function refreshStartEnabled() {
+  if (isRunning || isStarting) {
+    startBtn.disabled = false;
+    return;
+  }
+  const hasReplacementKey = Boolean(apiKeyInput.value.trim());
+  startBtn.disabled = !mediaSupported || (!apiKeyConfigured && !hasReplacementKey);
+}
+
 async function loadStoredApiKey() {
   try {
     const response = await fetch('/api/config/api-key', { cache: 'no-store' });
@@ -288,29 +309,27 @@ async function loadStoredApiKey() {
 
     const legacyKey = localStorage.getItem('gemini_api_key')?.trim();
     if (!data.configured && legacyKey) {
-      data.apiKey = legacyKey;
       if (legacyKey.length >= 20 && legacyKey.length <= 500) {
         try {
           await saveApiKey(legacyKey);
           data.configured = true;
         } catch (error) {
-          data.warning = 'The old browser key could not be migrated. Review it and save again by starting translation.';
+          data.warning = 'The old browser key could not be migrated. Enter a new key to replace it.';
         }
       } else {
         data.warning = 'The old browser key appears incomplete. Enter a valid Gemini API key.';
       }
-      localStorage.removeItem('gemini_api_key');
     }
-    if (data.configured) localStorage.removeItem('gemini_api_key');
+    localStorage.removeItem('gemini_api_key');
 
-    apiKeyInput.value = data.apiKey || '';
+    setApiKeyConfigured(data.configured);
     apiKeyStatus.textContent = data.warning || (data.configured
-      ? 'Saved in this computer\'s private LiveTranslation settings.'
-      : 'Enter once. The key will be saved outside the repository on this computer.');
+      ? 'Saved on this Mac. The key stays on this computer and is never shown again.'
+      : 'Enter once. The key is saved on this computer and hidden after that.');
     apiKeyStatus.classList.toggle('error', Boolean(data.warning));
     if (data.warning) setDiagnostic(data.warning, 'warning');
     apiKeyInput.disabled = false;
-    startBtn.disabled = !mediaSupported;
+    refreshStartEnabled();
   } catch (error) {
     apiKeyInput.disabled = true;
     startBtn.disabled = true;
@@ -328,7 +347,8 @@ async function saveApiKey(apiKey) {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to save the API key.');
-  apiKeyStatus.textContent = 'Saved in this computer\'s private LiveTranslation settings.';
+  setApiKeyConfigured(true);
+  apiKeyStatus.textContent = 'Saved on this Mac. The key stays on this computer and is never shown again.';
   apiKeyStatus.classList.remove('error');
 }
 
@@ -336,17 +356,26 @@ apiKeyInput.disabled = true;
 startBtn.disabled = true;
 
 apiKeyInput.addEventListener('input', () => {
-  apiKeyStatus.textContent = 'The key will be saved when translation starts.';
+  apiKeyStatus.textContent = apiKeyConfigured
+    ? 'The new key will replace the saved one when translation starts.'
+    : 'The key will be saved on this computer when translation starts.';
   apiKeyStatus.classList.remove('error');
+  refreshStartEnabled();
 });
 
 loadStoredApiKey();
 
-systemInstructionInput.addEventListener('input', saveOperatorSettings);
-targetLanguageSelect1.addEventListener('change', saveOperatorSettings);
-targetLanguageSelect2.addEventListener('change', saveOperatorSettings);
-obsLanguageSelect.addEventListener('change', () => {
+function persistAndSyncSetup() {
   saveOperatorSettings();
+  applyDashboardLanguageLayout();
+  syncLocalSubtitlesSetup();
+}
+
+systemInstructionInput.addEventListener('input', saveOperatorSettings);
+targetLanguageSelect1.addEventListener('change', persistAndSyncSetup);
+targetLanguageSelect2.addEventListener('change', persistAndSyncSetup);
+obsLanguageSelect.addEventListener('change', () => {
+  persistAndSyncSetup();
   refreshObsSharingUrl();
 });
 playVoiceCheckbox1.addEventListener('change', saveOperatorSettings);
@@ -354,7 +383,7 @@ playVoiceCheckbox2.addEventListener('change', saveOperatorSettings);
 echoToggle.addEventListener('change', saveOperatorSettings);
 localPlaybackToggle.addEventListener('change', saveOperatorSettings);
 hostVolumeSlider.addEventListener('input', saveOperatorSettings);
-subtitlePacingSelect.addEventListener('change', saveOperatorSettings);
+subtitlePacingSelect.addEventListener('change', persistAndSyncSetup);
 ignoreSongsToggle.addEventListener('change', () => {
   saveOperatorSettings();
   syncSongDetectorPreference();
@@ -369,7 +398,7 @@ resetSettingsBtn.addEventListener('click', () => {
   applyOperatorSettings(DEFAULT_OPERATOR_SETTINGS);
   saveOperatorSettings();
   syncSongDetectorPreference();
-  setDiagnostic('Operator settings restored to defaults. Local Speaker, Echo Target Language, and automatic song filtering are off.', 'good');
+  setDiagnostic('Operator settings restored to defaults. Play on this Mac, target-language repeat, and automatic song filtering are off.', 'good');
 });
 
 // Toggle API Key Visibility
@@ -405,7 +434,7 @@ audioSourceSelect.addEventListener("change", async () => {
   }
   
   if (audioSourceSelect.value === "network") {
-    const qrDetails = document.querySelector(".qr-details");
+    const qrDetails = document.getElementById('share-details') || document.querySelector(".qr-details");
     if (qrDetails) qrDetails.open = true;
   } else if (networkDisconnectWarning) {
     networkDisconnectWarning.style.display = 'none';
@@ -486,7 +515,7 @@ clearOutputBtn2.addEventListener("click", () => {
 
 const clearProjectorBtn = document.getElementById("btn-clear-projector");
 clearProjectorBtn?.addEventListener("click", () => {
-  // Clear local host UI
+  if (!window.confirm('Clear the projector, OBS overlay, and transcript screens?')) return;
   inputList.innerHTML = "";
   inputPlaceholder.style.display = "block";
   outputList1.innerHTML = "";
@@ -559,6 +588,33 @@ function setSessionSettingsDisabled(disabled) {
   resetSettingsBtn.disabled = disabled;
 }
 
+function setLiveMode(live) {
+  document.body.classList.toggle('is-live', live);
+  const setupDetails = document.getElementById('setup-details');
+  if (setupDetails) setupDetails.open = !live;
+}
+
+function applyDashboardLanguageLayout() {
+  const lang1 = sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value;
+  const lang2 = sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value;
+  const isDual = lang2 !== 'none';
+  const colLang2 = document.getElementById('col-lang-2');
+  const header1 = document.getElementById('header-lang-1');
+  const header2 = document.getElementById('header-lang-2');
+  if (colLang2) colLang2.hidden = !isDual;
+  if (header1) {
+    header1.textContent = isDual
+      ? getLanguageName(lang1, 'Language 1')
+      : getLanguageName(lang1, 'Translation');
+  }
+  if (header2) header2.textContent = getLanguageName(lang2, 'Language 2');
+  if (!isRunning && healthItems.gemini2) {
+    healthItems.gemini2.hidden = !isDual;
+    if (!isDual) setHealthItem('gemini2', 'idle', 'Not enabled');
+    else if (healthSnapshot.gemini2.state === 'idle') setHealthItem('gemini2', 'idle', 'Not started');
+  }
+}
+
 async function copyDiagnostics() {
   const labels = {
     local: 'Local Relay',
@@ -571,7 +627,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.4 diagnostics',
+    'Live Translate v1.3.5 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1176,7 +1232,10 @@ async function startAudioCapture() {
   };
   
   captureSource.connect(scriptProcessor);
-  scriptProcessor.connect(audioContextInput.destination);
+  const silentGain = captureContext.createGain();
+  silentGain.gain.value = 0;
+  scriptProcessor.connect(silentGain);
+  silentGain.connect(captureContext.destination);
 
   for (const track of micStream.getAudioTracks()) {
     track.addEventListener('ended', () => {
@@ -1229,7 +1288,7 @@ function startSessionTimer() {
     const mins = String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2, '0');
     const secs = String(elapsedSeconds % 60).padStart(2, '0');
     if (sessionTimerEl) {
-      sessionTimerEl.textContent = `⏱️ ${hrs}:${mins}:${secs}`;
+      sessionTimerEl.textContent = `${hrs}:${mins}:${secs}`;
     }
   }, 1000);
 }
@@ -1252,7 +1311,7 @@ function incrementWordCount(text) {
 
 function updateWordCounterUI() {
   if (wordCounterEl) {
-    wordCounterEl.textContent = `📝 ${totalWordsCount.toLocaleString()} words`;
+    wordCounterEl.textContent = `${totalWordsCount.toLocaleString()} words`;
   }
 }
 
@@ -1263,14 +1322,14 @@ if (muteMicBtn) {
     if (isMicMuted) {
       muteMicBtn.classList.add("is-muted");
       muteMicBtn.setAttribute('aria-pressed', 'true');
-      if (muteMicLabel) muteMicLabel.textContent = "Mic Muted";
+      if (muteMicLabel) muteMicLabel.textContent = "Input paused";
       micDb.textContent = "Muted";
       micIndicator.classList.remove("active");
       logDebug("Microphone paused (muted). Gemini session remains connected.", "warning");
     } else {
       muteMicBtn.classList.remove("is-muted");
       muteMicBtn.setAttribute('aria-pressed', 'false');
-      if (muteMicLabel) muteMicLabel.textContent = "Mute Mic";
+      if (muteMicLabel) muteMicLabel.textContent = "Pause input";
       micDb.textContent = "0%";
       logDebug("Microphone unmuted. Resuming live audio capture.", "info");
     }
@@ -1397,7 +1456,7 @@ function openSubtitleWindow() {
     return;
   }
   
-  subtitleWindow = window.open(`/subtitles.html?v=${Date.now()}`, "GeminiLiveSubtitles", "width=900,height=600,menubar=no,toolbar=no,location=no,status=no");
+  subtitleWindow = window.open(`/subtitles.html?v=${Date.now()}`, "GeminiLiveSubtitles", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no");
   
   if (!subtitleWindow) {
     alert("Popup blocker is active. Please allow popups for this site to open the subtitle window.");
@@ -1405,34 +1464,14 @@ function openSubtitleWindow() {
 }
 
 function updateSubtitleLane(lane, text, isFinal = false) {
-  const state = subtitleState[lane];
-  
-  const trimmedText = text.trim();
-  if (isFinal) {
-    if (trimmedText) {
-      const needsSpace = state.accumulatedText.length > 0 && 
-                         !/[\s。？！.?!;；]/.test(state.accumulatedText[state.accumulatedText.length - 1]) && 
-                         !/^[。？！.?!;；\s]/.test(trimmedText);
-      state.accumulatedText = state.accumulatedText + (needsSpace ? " " : "") + trimmedText;
-    }
-    
-    // Limit history length to prevent excessive growth (keep last 800 chars)
-    if (state.accumulatedText.length > 800) {
-      state.accumulatedText = state.accumulatedText.substring(state.accumulatedText.length - 800);
-      const spaceIdx = state.accumulatedText.indexOf(" ");
-      if (spaceIdx !== -1) {
-        state.accumulatedText = state.accumulatedText.substring(spaceIdx + 1);
-      }
-    }
-  }
-  
-  // Send update to local subtitles broadcast server
+  subtitleState[lane] = applyLaneUpdate(subtitleState[lane], text, isFinal);
+
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({
       type: 'update',
-      lane: lane,
-      text: text,
-      isFinal: isFinal
+      lane,
+      text,
+      isFinal
     }));
   }
 }
@@ -1440,8 +1479,8 @@ function updateSubtitleLane(lane, text, isFinal = false) {
 // --- WebSocket Handlers ---
 async function startSession() {
   if (isStarting || isRunning) return;
-  const apiKey = apiKeyInput.value.trim();
-  if (!apiKey) {
+  const replacementKey = apiKeyInput.value.trim();
+  if (!apiKeyConfigured && !replacementKey) {
     alert("Please enter a valid Gemini API Key.");
     return;
   }
@@ -1455,12 +1494,14 @@ async function startSession() {
   };
   sessionConfig = pendingSessionConfig;
 
+  const thisStart = ++startToken;
   isStarting = true;
+  setLiveMode(true);
   setSessionSettingsDisabled(true);
   audioSourceSelect.disabled = true;
   micDeviceSelect.disabled = true;
-  startBtn.disabled = true;
-  startBtn.querySelector(".btn-text").textContent = "Starting...";
+  startBtn.disabled = false;
+  startBtn.querySelector(".btn-text").textContent = "Cancel Start";
 
   // Start capture before network work so system-audio selection retains user activation.
   const captureResult = startAudioCapture().then(
@@ -1469,50 +1510,38 @@ async function startSession() {
   );
 
   try {
-    await saveApiKey(apiKey);
-    sessionApiKey = apiKey;
+    if (replacementKey) await saveApiKey(replacementKey);
   } catch (error) {
     stopAudioCapture();
+    if (thisStart !== startToken) return;
     isStarting = false;
     sessionConfig = null;
+    setLiveMode(false);
     setSessionSettingsDisabled(false);
     audioSourceSelect.disabled = false;
     micDeviceSelect.disabled = false;
-    startBtn.disabled = false;
+    refreshStartEnabled();
     startBtn.querySelector(".btn-text").textContent = "Start Translation";
     apiKeyStatus.textContent = error.message;
     apiKeyStatus.classList.add('error');
     alert(error.message);
     return;
   }
-  
-  const { targetLanguage1, targetLanguage2 } = pendingSessionConfig;
-  
-  const isDual = targetLanguage2 !== "none";
-  
-  // Clear and sync local subtitles WS
+
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
     syncLocalSubtitlesSetup();
   }
-  
-  // Show or hide Language 2 main column
-  const colLang2 = document.getElementById("col-lang-2");
-  if (isDual) {
-    colLang2.style.display = "flex";
-    document.getElementById("header-lang-1").textContent = `Translation 1 (${targetLanguage1.toUpperCase()})`;
-    document.getElementById("header-lang-2").textContent = `Translation 2 (${targetLanguage2.toUpperCase()})`;
-  } else {
-    colLang2.style.display = "none";
-    document.getElementById("header-lang-1").textContent = `Translation (${targetLanguage1.toUpperCase()})`;
-  }
-  
+  applyDashboardLanguageLayout();
+
   const capture = await captureResult;
+  if (thisStart !== startToken) return;
   if (!capture.ok) {
     const err = capture.error;
     stopAudioCapture();
     isStarting = false;
     sessionConfig = null;
+    setLiveMode(false);
     setSessionSettingsDisabled(false);
     audioSourceSelect.disabled = false;
     micDeviceSelect.disabled = false;
@@ -1521,7 +1550,7 @@ async function startSession() {
       logDebug(`Failed to capture audio: ${err.message}`, "error");
       alert("Failed to capture audio: " + err.message);
     }
-    startBtn.disabled = false;
+    refreshStartEnabled();
     startBtn.querySelector(".btn-text").textContent = "Start Translation";
     return;
   }
@@ -1535,7 +1564,7 @@ async function startSession() {
   reconnectNowBtn.disabled = false;
   startBtn.disabled = false;
   startBtn.classList.add("recording");
-  startBtn.querySelector(".btn-text").textContent = "Cancel Start";
+  startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
   updateConnectionStatus("connecting", "Connecting...");
   logDebug(`Connecting to Gemini Live API...`, "info");
   connectGeminiSockets();
@@ -1569,9 +1598,9 @@ function connectGeminiSockets() {
   closeGeminiSockets();
   sessionGeneration++;
   const generation = sessionGeneration;
-  const apiKey = sessionApiKey;
   const { targetLanguage1, targetLanguage2, echoTargetLanguage, systemInstructionText } = sessionConfig;
-  const url = `wss://${HOST}/${PATH}?key=${apiKey}`;
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${wsProtocol}//${window.location.host}${GEMINI_LIVE_WS_PATH}`;
   setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
 
   socket1 = new WebSocket(url);
@@ -1790,10 +1819,11 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
 }
 
 function disconnectSession(clearSubtitles = true) {
+  startToken++;
   isRunning = false;
   isStarting = false;
-  sessionApiKey = '';
   sessionConfig = null;
+  setLiveMode(false);
   setSessionSettingsDisabled(false);
   audioSourceSelect.disabled = false;
   micDeviceSelect.disabled = false;
@@ -1807,9 +1837,9 @@ function disconnectSession(clearSubtitles = true) {
   hideRecoveryBanner();
   reconnectNowBtn.disabled = true;
   restartAudioBtn.disabled = true;
-  startBtn.disabled = false;
   startBtn.classList.remove("recording");
   startBtn.querySelector(".btn-text").textContent = "Start Translation";
+  refreshStartEnabled();
   
   updateConnectionStatus("disconnected", "Disconnected");
   
@@ -1822,9 +1852,8 @@ function disconnectSession(clearSubtitles = true) {
   currentStreamingBubble2 = null;
   
   if (clearSubtitles) {
-    ['lang1', 'lang2'].forEach(lane => {
-      subtitleState[lane].accumulatedText = "";
-    });
+    subtitleState.lang1 = emptyLaneState();
+    subtitleState.lang2 = emptyLaneState();
     if (isSocketOpen(localSubtitlesWS)) {
       localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
     }
@@ -1832,7 +1861,7 @@ function disconnectSession(clearSubtitles = true) {
   closeGeminiSockets();
   setHealthItem('gemini1', 'idle', 'Not started');
   setHealthItem('gemini2', 'idle', 'Not enabled');
-  healthItems.gemini2.hidden = true;
+  applyDashboardLanguageLayout();
   setDiagnostic('Translation stopped. Settings and saved API key are ready for the next session.', 'idle');
 }
 
@@ -1843,9 +1872,9 @@ function updateConnectionStatus(statusClass, statusText) {
 
 // Start Button Handler
 startBtn.addEventListener("click", () => {
-  if (isRunning) {
+  if (isRunning || isStarting) {
     disconnectSession();
-  } else if (!isStarting) {
+  } else {
     startSession();
   }
 });
@@ -2000,18 +2029,17 @@ function handleIncomingNetworkAudio(base64Data) {
 }
 
 function syncLocalSubtitlesSetup() {
-  if (isSocketOpen(localSubtitlesWS)) {
-    const targetLanguage1 = sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value;
-    const targetLanguage2 = sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value;
-    const subtitlePacing = sessionConfig?.subtitlePacing ?? subtitlePacingSelect.value;
-    localSubtitlesWS.send(JSON.stringify({
-      type: 'setup',
-      targetLanguage1,
-      targetLanguage2,
-      subtitlePacing,
-      isDual: targetLanguage2 !== "none"
-    }));
-  }
+  if (!isSocketOpen(localSubtitlesWS)) return;
+  const setup = buildSystemSetup({
+    targetLanguage1: sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value,
+    targetLanguage2: sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value,
+    subtitlePacing: sessionConfig?.subtitlePacing ?? subtitlePacingSelect.value,
+    obsLanguage: obsLanguageSelect.value
+  });
+  localSubtitlesWS.send(JSON.stringify({
+    type: 'setup',
+    ...setup
+  }));
 }
 
 // Initialize local WebSocket connection on page load

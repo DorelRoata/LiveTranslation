@@ -67,8 +67,8 @@ Reinstall only when:
 5. If a human interpreter shares the room mix, route only the original speaker's microphone to the separate input selected by Live Translate.
 6. Review the system instructions and terminology hints.
 7. Decide whether Voice 1 and Voice 2 should be distributed.
-8. Leave **Local Speaker** off unless host playback is intentional.
-9. Leave **Echo Target Language** off unless the source-language behavior requires it.
+8. Leave **Play on this Mac** off unless host playback is intentional.
+9. Leave **Repeat words already in the target language** off unless the source-language behavior requires it.
 10. Choose the OBS language and open the projector and/or OBS destination.
 11. Speak a short test sentence from each microphone.
 12. Verify that only the intended microphone reaches Live Translate and that every destination shows the selected translation language.
@@ -84,7 +84,7 @@ The API key is stored on the host at:
 ~/Library/Application Support/LiveTranslation/config.json
 ```
 
-It is stored outside the repository with user-only permissions, survives application updates, and is not included in Vite bundles. The configuration API rejects non-loopback clients.
+It is stored outside the repository with user-only permissions, survives application updates, and is not included in Vite bundles. After it is saved, the dashboard does not display the key. Translation connections from the browser use a local proxy on this computer instead of putting the key in a WebSocket URL. The configuration API rejects non-loopback clients and never returns the key.
 
 ### Operator settings
 
@@ -95,8 +95,8 @@ The following values are saved immediately in browser storage:
 - Language 1 and Language 2.
 - Voice 1 and Voice 2 output switches.
 - System instructions and translation hints.
-- Echo Target Language.
-- Local Speaker.
+- Repeat words already in the target language.
+- Play on this Mac.
 - Local playback volume.
 - Subtitle pacing mode.
 - Automatically Ignore Songs.
@@ -116,8 +116,8 @@ Browser storage belongs to the exact origin and browser profile. For predictable
 | Language 2 | Disabled |
 | Voice 1 output | On |
 | Voice 2 output | On |
-| Echo Target Language | Off |
-| Local Speaker | Off |
+| Repeat words already in the target language | Off |
+| Play on this Mac | Off |
 | Local volume | 100% |
 | Subtitle Pace | Smooth (200 ms buffer) |
 | Automatically Ignore Songs | Off |
@@ -126,11 +126,11 @@ Browser storage belongs to the exact origin and browser profile. For predictable
 
 Reset does not delete the Gemini API key.
 
-## 7. Local Speaker and distributed audio
+## 7. Play on this Mac and distributed audio
 
-Voice 1 and Voice 2 determine whether the relevant translated audio is active and distributed to subtitle clients. **Local Speaker** controls only playback through the host computer's speakers.
+**Send translated audio** for Language 1 and Language 2 determines whether that translated audio is distributed to projector and phone clients. **Play on this Mac** controls only playback through the host computer's speakers.
 
-Keep Local Speaker off when host playback could feed back into the microphone or leak into a broadcast mix. Turning it off does not stop translated audio packets from reaching supported remote/projector clients.
+Keep Play on this Mac off when host playback could feed back into the microphone or leak into a broadcast mix. Turning it off does not stop translated audio packets from reaching supported remote/projector clients.
 
 ## 8. Projector and phone setup
 
@@ -147,7 +147,7 @@ Subtitle state is retained by the local relay. A newly opened or reconnected vie
 
 ## 9. Remote microphone setup
 
-Use the HTTPS Network Audio Sender URL displayed by the dashboard.
+Use the HTTPS Remote microphone URL displayed by the dashboard.
 
 1. Select Network Audio on the host.
 2. Open the sender URL remotely and accept the certificate warning.
@@ -160,7 +160,7 @@ If the sender disconnects, the host displays a warning. Live audio is not retain
 
 ## 10. OBS setup
 
-Choose the OBS language on the dashboard, then use the generated HTTP OBS Overlay URL, not the HTTPS projector URL:
+Choose the OBS language on the dashboard, then use the generated HTTP OBS Overlay URL, not the HTTPS projector URL. Changing OBS Language on the dashboard updates an already-open overlay through the local relay:
 
 ```text
 http://HOST-IP:5174/?obs=true&lang=1
@@ -204,11 +204,11 @@ When enabled:
 
 The filter deliberately fails open. If the model cannot load or inference stops, the dashboard reports **Detector unavailable** and continues translation instead of silently losing speech.
 
-Detection is probabilistic. The thresholds are designed to avoid pausing a speaker over light background music, but loud music under speech, chanting, or unusual vocal sounds can still produce false results. Watch the dashboard status and use the switch as the live override. The normal **Mute Mic** control remains the manual backstop.
+Detection is probabilistic. The thresholds are designed to avoid pausing a speaker over light background music, but loud music under speech, chanting, or unusual vocal sounds can still produce false results. Watch the dashboard status and use the switch as the live override. The normal **Pause input** control remains the manual backstop.
 
 ## 12. Subtitle pacing
 
-The dashboard's saved **Subtitle Pace** selector controls every projector, phone, and OBS subtitle client through the local relay.
+The dashboard's saved **Subtitle Pace** selector, target languages, and **OBS Language** control are sent through the local relay so every projector, phone, and OBS overlay stays in sync.
 
 ### Smooth (default)
 

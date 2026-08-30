@@ -187,7 +187,10 @@ async function startStreaming() {
     };
 
     source.connect(scriptProcessor);
-    scriptProcessor.connect(audioContext.destination);
+    const silentGain = audioContext.createGain();
+    silentGain.gain.value = 0;
+    scriptProcessor.connect(silentGain);
+    silentGain.connect(audioContext.destination);
 
     mediaStream.getAudioTracks().forEach(track => {
       track.addEventListener('ended', stopStreaming, { once: true });

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { attachLocalRelay, handleRuntimeApi } from './server-support.js';
+import { attachGeminiProxy, attachLocalRelay, handleRuntimeApi } from './server-support.js';
 
 function localSubtitlesPlugin() {
   return {
@@ -11,6 +11,7 @@ function localSubtitlesPlugin() {
         next();
       });
       attachLocalRelay(server.httpServer);
+      attachGeminiProxy(server.httpServer);
     }
   };
 }

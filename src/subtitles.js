@@ -1,5 +1,6 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
+import { emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
@@ -32,12 +33,15 @@ window.onerror = function (msg, url, line) {
 };
 
 let subtitleState = {
-  lang1: { accumulatedText: "" },
-  lang2: { accumulatedText: "" },
+  lang1: emptyLaneState(),
+  lang2: emptyLaneState(),
   targetLanguage1: "",
   targetLanguage2: "",
+  targetLanguageName1: "",
+  targetLanguageName2: "",
   subtitlePacing: "smooth",
-  isDual: false
+  isDual: false,
+  obsLanguage: "both"
 };
 
 // Client-side display state to store immutable locked lines
@@ -85,7 +89,10 @@ const qrCanvasProjector = document.getElementById('qr-canvas-projector');
 const qrUrlText = document.getElementById('qr-url-text');
 
 // UI state configurations
-let viewMode = 'both'; // 'both', 'lang1', 'lang2'
+const urlParams = new URLSearchParams(window.location.search);
+const obsMode = urlParams.get('obs') === 'true';
+let viewMode = obsLanguageToViewMode(urlParams.get('lang')); // 'both', 'lang1', 'lang2'
+if (obsMode) document.body.classList.add('obs-mode');
 let audioEnabled = false;
 let visibleLineCount = 3;
 let subtitleTextSize = 'md';
@@ -141,20 +148,6 @@ let nextStartTime2 = 0;
 let subtitleSocket = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
-
-// Language code to full names mappings for buttons
-const LANG_NAMES = {
-  'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German',
-  'it': 'Italian', 'ro': 'Romanian', 'ja': 'Japanese', 'ru': 'Russian',
-  'zh-Hans': 'Chinese (Simp)', 'zh-Hant': 'Chinese (Trad)', 'pt': 'Portuguese',
-  'ko': 'Korean', 'pl': 'Polish', 'hi': 'Hindi', 'ar': 'Arabic',
-  'tr': 'Turkish', 'vi': 'Vietnamese'
-};
-
-function getLanguageName(code, fallback) {
-  if (!code) return fallback;
-  return LANG_NAMES[code.toLowerCase()] || code.toUpperCase();
-}
 
 // Auto-hide app chrome after inactivity on both pointer and touch devices.
 let controlsTimeout;
@@ -619,9 +612,10 @@ function rafLoop(timestamp) {
 requestAnimationFrame(rafLoop);
 
 function renderSubtitleLane(lane) {
-  const state = subtitleState[lane];
-  
-  if (!state.accumulatedText || state.accumulatedText === "-" || state.accumulatedText === "") {
+  const state = subtitleState[lane] || emptyLaneState();
+  const displayText = laneDisplayText(state);
+
+  if (!displayText || displayText === "-") {
     displayState[lane] = {
       lines: [],
       activeLine: "",
@@ -632,7 +626,7 @@ function renderSubtitleLane(lane) {
     rebuildSubtitleDOM(lane);
   } else {
     const oldText = displayState[lane].lastText;
-    const newText = state.accumulatedText;
+    const newText = displayText;
     displayState[lane].lastText = newText;
     
     // If this is an initial sync (page refresh / first connect), populate the
@@ -664,14 +658,19 @@ function renderInterimSubtitle(lane, text) {
   renderSubtitleLane(lane);
 }
 
+function applyHostLayout(state) {
+  if (!obsMode || !state?.obsLanguage) return;
+  viewMode = obsLanguageToViewMode(state.obsLanguage);
+}
+
 function updateUIElements() {
   // 1. Language buttons text
-  btnViewLang1.textContent = getLanguageName(subtitleState.targetLanguage1, 'Language 1');
+  btnViewLang1.textContent = subtitleState.targetLanguageName1 || getLanguageName(subtitleState.targetLanguage1, 'Language 1');
   
   const isDualAvailable = subtitleState.isDual && subtitleState.targetLanguage2 !== 'none';
   if (isDualAvailable) {
     btnViewLang2.style.display = 'inline-block';
-    btnViewLang2.textContent = getLanguageName(subtitleState.targetLanguage2, 'Language 2');
+    btnViewLang2.textContent = subtitleState.targetLanguageName2 || getLanguageName(subtitleState.targetLanguage2, 'Language 2');
     btnViewBoth.style.display = 'inline-block';
   } else {
     btnViewLang2.style.display = 'none';
@@ -794,9 +793,15 @@ function connect() {
       const data = JSON.parse(event.data);
       
       if (data.type === 'sync') {
-        subtitleState = data.state;
+        subtitleState = {
+          lang1: emptyLaneState(),
+          lang2: emptyLaneState(),
+          ...data.state,
+          lang1: { ...emptyLaneState(), ...data.state?.lang1 },
+          lang2: { ...emptyLaneState(), ...data.state?.lang2 }
+        };
         pacingMode = normalizePacingMode(subtitleState.subtitlePacing);
-        
+        applyHostLayout(subtitleState);
         updateUIElements();
         renderSubtitleLane("lang1");
         renderSubtitleLane("lang2");
@@ -805,12 +810,8 @@ function connect() {
       } else if (data.type === 'audio') {
         playPCMChunk(data.audioData, data.channelId);
       } else if (data.type === 'clear') {
-        if (subtitleState && subtitleState.lang1) {
-          subtitleState.lang1.accumulatedText = "";
-        }
-        if (subtitleState && subtitleState.lang2) {
-          subtitleState.lang2.accumulatedText = "";
-        }
+        subtitleState.lang1 = emptyLaneState();
+        subtitleState.lang2 = emptyLaneState();
         displayState.lang1 = { lines: [], activeLine: "", lastText: "" };
         displayState.lang2 = { lines: [], activeLine: "", lastText: "" };
         wordQueue.lang1 = [];
@@ -909,13 +910,5 @@ window.addEventListener('keydown', (event) => {
     closeQrOverlay();
   }
 });
-
-// --- OBS Broadcast Mode ---
-// OBS URLs hide the viewer chrome and may lock the overlay to one language lane.
-const urlParams = new URLSearchParams(window.location.search);
-viewMode = obsLanguageToViewMode(urlParams.get('lang'));
-if (urlParams.get('obs') === 'true') {
-  document.body.classList.add('obs-mode');
-}
 
 connect();

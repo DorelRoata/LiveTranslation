@@ -5,7 +5,7 @@ import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getCertificate } from '@vitejs/plugin-basic-ssl';
-import { attachLocalRelay, getConfigDir, getNetworkIP, handleRuntimeApi } from './server-support.js';
+import { attachGeminiProxy, attachLocalRelay, getConfigDir, getNetworkIP, handleRuntimeApi, isObsAllowedPath } from './server-support.js';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(rootDir, 'dist');
@@ -92,11 +92,7 @@ const obsServer = http.createServer(async (req, res) => {
     }
     const url = new URL(req.url, 'http://localhost');
     const requestedPath = url.pathname === '/' ? 'subtitles.html' : decodeURIComponent(url.pathname.slice(1));
-    const allowed = requestedPath === 'subtitles.html' ||
-      requestedPath === 'favicon.svg' ||
-      requestedPath === 'icons.svg' ||
-      requestedPath.startsWith('assets/');
-    if (!allowed) {
+    if (!isObsAllowedPath(requestedPath, distDir)) {
       res.writeHead(404).end('Not found');
       return;
     }
@@ -108,6 +104,7 @@ const obsServer = http.createServer(async (req, res) => {
 
 const relay = attachLocalRelay(server);
 attachLocalRelay(obsServer, relay);
+attachGeminiProxy(server);
 
 function handleServerError(label, listenPort) {
   return error => {
