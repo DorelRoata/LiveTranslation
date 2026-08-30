@@ -9,7 +9,7 @@ import {
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
 import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
-import { buildGeminiAudioMessage, buildGeminiSetupMessage } from './gemini-live.js';
+import { buildGeminiAudioMessage, buildGeminiSetupMessage, normalizeSourceLanguage } from './gemini-live.js';
 import {
   downsampleToRate,
   floatToPcm16,
@@ -32,6 +32,7 @@ const DEFAULT_SYSTEM_INSTRUCTION = `${LEGACY_DEFAULT_SYSTEM_INSTRUCTION} Transla
 const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   audioSource: 'mic',
   microphoneDevice: 'default',
+  sourceLanguage: 'ro',
   targetLanguage1: 'en',
   targetLanguage2: 'none',
   obsLanguage: 'both',
@@ -56,6 +57,7 @@ let scriptProcessor = null;
 let captureKeepAlive = null;
 let audioCaptureGeneration = 0;
 const geminiPcmAccumulator = new PcmAccumulator(GEMINI_FRAME_SAMPLES);
+let lastHeardInputLanguage = '';
 
 let nextStartTime1 = 0;
 let nextStartTime2 = 0;
@@ -115,7 +117,9 @@ const subtitlePacingSelect = document.getElementById('subtitle-pacing-select');
 const ignoreSongsToggle = document.getElementById('ignore-songs-toggle');
 const songFilterStatus = document.getElementById('song-filter-status');
 
+const sourceLanguageSelect = document.getElementById("source-language-select");
 const targetLanguageSelect1 = document.getElementById("target-language-select-1");
+const detectedSpeechHeader = document.getElementById("header-detected-speech");
 const playVoiceCheckbox1 = document.getElementById("play-voice-1");
 const targetLanguageSelect2 = document.getElementById("target-language-select-2");
 const playVoiceCheckbox2 = document.getElementById("play-voice-2");
@@ -205,6 +209,7 @@ function setTranscriptFontSize(size) {
 
 function applyOperatorSettings(settings) {
   setSelectValue(audioSourceSelect, settings.audioSource, DEFAULT_OPERATOR_SETTINGS.audioSource);
+  setSelectValue(sourceLanguageSelect, settings.sourceLanguage, DEFAULT_OPERATOR_SETTINGS.sourceLanguage);
   setSelectValue(targetLanguageSelect1, settings.targetLanguage1, DEFAULT_OPERATOR_SETTINGS.targetLanguage1);
   setSelectValue(targetLanguageSelect2, settings.targetLanguage2, DEFAULT_OPERATOR_SETTINGS.targetLanguage2);
   setSelectValue(obsLanguageSelect, settings.obsLanguage, DEFAULT_OPERATOR_SETTINGS.obsLanguage);
@@ -239,6 +244,7 @@ function getOperatorSettings() {
   return {
     audioSource: audioSourceSelect.value,
     microphoneDevice: preferredMicDeviceId,
+    sourceLanguage: sourceLanguageSelect.value,
     targetLanguage1: targetLanguageSelect1.value,
     targetLanguage2: targetLanguageSelect2.value,
     obsLanguage: obsLanguageSelect.value,
@@ -429,6 +435,7 @@ function persistAndSyncSetup() {
 }
 
 systemInstructionInput.addEventListener('input', saveOperatorSettings);
+sourceLanguageSelect.addEventListener('change', persistAndSyncSetup);
 targetLanguageSelect1.addEventListener('change', persistAndSyncSetup);
 targetLanguageSelect2.addEventListener('change', persistAndSyncSetup);
 obsLanguageSelect.addEventListener('change', persistAndSyncSetup);
@@ -667,6 +674,7 @@ function setSessionSettingsDisabled(disabled) {
   if (replaceApiKeyBtn) replaceApiKeyBtn.disabled = disabled;
   if (saveApiKeyBtn) saveApiKeyBtn.disabled = disabled;
   if (cancelReplaceApiKeyBtn) cancelReplaceApiKeyBtn.disabled = disabled;
+  sourceLanguageSelect.disabled = disabled;
   targetLanguageSelect1.disabled = disabled;
   targetLanguageSelect2.disabled = disabled;
   echoToggle.disabled = disabled;
@@ -714,10 +722,12 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.15 diagnostics',
+    'Live Translate v1.3.16 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
+    `Spoken language: ${sourceLanguageSelect.value}`,
+    `Last heard language: ${lastHeardInputLanguage || 'none'}`,
     `OBS language: ${obsLanguageSelect.selectedOptions[0]?.textContent || 'Both Languages'}`,
     `Automatic song filter: ${ignoreSongsToggle.checked ? songFilterStatus.textContent : 'Off'}`,
     ...statusLines,
@@ -1597,6 +1607,7 @@ async function startSession() {
   }
 
   const pendingSessionConfig = {
+    sourceLanguage: sourceLanguageSelect.value,
     targetLanguage1: targetLanguageSelect1.value,
     targetLanguage2: targetLanguageSelect2.value,
     echoTargetLanguage: echoToggle.checked,
@@ -1709,7 +1720,7 @@ function connectGeminiSockets() {
   closeGeminiSockets();
   sessionGeneration++;
   const generation = sessionGeneration;
-  const { targetLanguage1, targetLanguage2, echoTargetLanguage } = sessionConfig;
+  const { sourceLanguage, targetLanguage1, targetLanguage2, echoTargetLanguage } = sessionConfig;
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${wsProtocol}//${window.location.host}${GEMINI_LIVE_WS_PATH}`;
   setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
@@ -1717,12 +1728,12 @@ function connectGeminiSockets() {
 
   socket1 = new WebSocket(url);
   setHealthItem('gemini1', 'connecting', 'Opening connection');
-  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, generation);
+  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, sourceLanguage, generation);
   if (targetLanguage2 !== "none") {
     healthItems.gemini2.hidden = false;
     socket2 = new WebSocket(url);
     setHealthItem('gemini2', 'connecting', 'Opening connection');
-    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, generation);
+    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, sourceLanguage, generation);
   } else {
     healthItems.gemini2.hidden = true;
     setHealthItem('gemini2', 'idle', 'Not enabled');
@@ -1790,14 +1801,34 @@ function stopForGeminiError(message) {
   alert(`Gemini could not start this session: ${message}`);
 }
 
-function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, generation) {
+function noteHeardLanguage(languageCode) {
+  if (!languageCode) return;
+  const heard = String(languageCode);
+  const heardName = getLanguageName(heard, heard);
+  if (detectedSpeechHeader) detectedSpeechHeader.textContent = `Detected Speech (${heardName})`;
+  if (heard === lastHeardInputLanguage) return;
+  lastHeardInputLanguage = heard;
+  const expected = normalizeSourceLanguage(sessionConfig?.sourceLanguage);
+  const expectedBase = expected.split('-')[0].toLowerCase();
+  const heardBase = heard.split('-')[0].toLowerCase();
+  const mismatch = Boolean(expected) && expectedBase !== heardBase;
+  logDebug(
+    mismatch
+      ? `Gemini heard ${heardName} (${heard}), not ${getLanguageName(expected, expected)}. Check Spoken language.`
+      : `Gemini heard ${heardName} (${heard}).`,
+    mismatch ? 'warning' : 'ws-recv'
+  );
+}
+
+function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLanguage, generation) {
   ws.onopen = () => {
     if (!isCurrentSocket(ws, channelId, generation)) return;
     logDebug(`WebSocket ${channelId} opened successfully.`, "info");
     setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
 
-    const setupMsg = buildGeminiSetupMessage({ targetLanguage, echoTargetLanguage });
-    logDebug(`WebSocket ${channelId}: Sending Live Translate setup for ${targetLanguage} (no written instructions)...`, "ws-sent");
+    const setupMsg = buildGeminiSetupMessage({ targetLanguage, echoTargetLanguage, sourceLanguage });
+    const sourceHint = normalizeSourceLanguage(sourceLanguage) || 'auto-detect';
+    logDebug(`WebSocket ${channelId}: Sending Live Translate setup ${sourceHint} → ${targetLanguage} (no written instructions)...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
   };
   
@@ -1876,9 +1907,12 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, generati
       }
       
       // Handle Transcripts
-      const inputTx = data.inputTranscription || (data.serverContent && data.serverContent.inputTranscription);
-      if (channelId === 1 && inputTx?.text) {
-        addInputTranscript(inputTx.text, Boolean(inputTx.final));
+      const inputTx = data.inputTranscription
+        || data.serverContent?.inputTranscription
+        || data.serverContent?.interimInputTranscription;
+      if (channelId === 1 && inputTx) {
+        if (inputTx.languageCode) noteHeardLanguage(inputTx.languageCode);
+        if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final));
       }
       
       const outputTx = data.outputTranscription || (data.serverContent && data.serverContent.outputTranscription);
@@ -1964,6 +1998,8 @@ function disconnectSession(clearSubtitles = true) {
   closeGeminiSockets();
   setHealthItem('gemini1', 'idle', 'Not started');
   setHealthItem('gemini2', 'idle', 'Not enabled');
+  lastHeardInputLanguage = '';
+  if (detectedSpeechHeader) detectedSpeechHeader.textContent = 'Detected Speech';
   applyDashboardLanguageLayout();
   setDiagnostic('Translation stopped. Settings and saved API key are ready for the next session.', 'idle');
 }

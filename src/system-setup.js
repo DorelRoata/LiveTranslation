@@ -18,7 +18,11 @@ export const LANGUAGE_NAMES = Object.freeze({
   hi: 'Hindi',
   ar: 'Arabic',
   tr: 'Turkish',
-  vi: 'Vietnamese'
+  vi: 'Vietnamese',
+  uk: 'Ukrainian',
+  hu: 'Hungarian',
+  bg: 'Bulgarian',
+  sr: 'Serbian'
 });
 
 export function getLanguageName(code, fallback = '') {

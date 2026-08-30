@@ -160,6 +160,27 @@
                     <option value="default">Default System Microphone</option>
                   </select>
                 </div>
+
+                <div class="input-group">
+                  <label for="source-language-select">Spoken language</label>
+                  <select id="source-language-select">
+                    <option value="ro" selected>Romanian (Română)</option>
+                    <option value="auto">Auto-detect</option>
+                    <option value="en">English (English)</option>
+                    <option value="ru">Russian (Русский)</option>
+                    <option value="es">Spanish (Español)</option>
+                    <option value="fr">French (Français)</option>
+                    <option value="it">Italian (Italiano)</option>
+                    <option value="de">German (Deutsch)</option>
+                    <option value="pt">Portuguese (Português)</option>
+                    <option value="pl">Polish (Polski)</option>
+                    <option value="uk">Ukrainian (Українська)</option>
+                    <option value="hu">Hungarian (Magyar)</option>
+                    <option value="bg">Bulgarian (Български)</option>
+                    <option value="sr">Serbian (Srpski)</option>
+                  </select>
+                  <small class="helper-text">This is the language being spoken into the microphone. Auto-detect often mistakes Romanian for Italian, Spanish, or Portuguese.</small>
+                </div>
               </div>
 
               <div class="config-col">
@@ -383,7 +404,7 @@
               <div class="col-header">
                 <div class="col-title-area">
                   <span class="circle-indicator input-pulse"></span>
-                  <h3>Detected Speech</h3>
+                  <h3 id="header-detected-speech">Detected Speech</h3>
                 </div>
                 <button id="clear-input-log" class="text-btn">Clear</button>
               </div>
@@ -441,7 +462,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.15</p>
+        <p>Powered by Google Gemini Live API | v1.3.16</p>
       </footer>
     </div>
 
