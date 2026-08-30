@@ -92,6 +92,10 @@ const outBuffer = new Float32Array(512);
 const apiKeyInput = document.getElementById("api-key-input");
 const toggleApiKeyBtn = document.getElementById("toggle-api-key");
 const apiKeyStatus = document.getElementById("api-key-status");
+const apiKeyGroup = document.getElementById('api-key-group');
+const replaceApiKeyBtn = document.getElementById('replace-api-key-btn');
+const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+const cancelReplaceApiKeyBtn = document.getElementById('cancel-replace-api-key-btn');
 const audioSourceSelect = document.getElementById("audio-source-select");
 const micDeviceGroup = document.getElementById("mic-device-group");
 const micDeviceSelect = document.getElementById("mic-device-select");
@@ -282,13 +286,19 @@ window.addEventListener('beforeunload', event => {
 });
 
 // --- API Key Runtime Configuration ---
-function setApiKeyConfigured(configured) {
+function isReplacingApiKey() {
+  return apiKeyGroup?.dataset.replacing === 'true';
+}
+
+function setApiKeyConfigured(configured, replacing = false) {
   apiKeyConfigured = Boolean(configured);
-  const apiKeyGroup = document.getElementById('api-key-group');
-  if (apiKeyGroup) apiKeyGroup.dataset.configured = apiKeyConfigured ? 'true' : 'false';
-  apiKeyInput.value = '';
-  apiKeyInput.placeholder = apiKeyConfigured
-    ? 'Enter a new key only to replace the saved one'
+  if (apiKeyGroup) {
+    apiKeyGroup.dataset.configured = apiKeyConfigured ? 'true' : 'false';
+    apiKeyGroup.dataset.replacing = replacing ? 'true' : 'false';
+  }
+  if (!replacing) apiKeyInput.value = '';
+  apiKeyInput.placeholder = replacing
+    ? 'Enter the new Gemini API Key'
     : 'Enter your Gemini API Key';
 }
 
@@ -297,8 +307,8 @@ function refreshStartEnabled() {
     startBtn.disabled = false;
     return;
   }
-  const hasReplacementKey = Boolean(apiKeyInput.value.trim());
-  startBtn.disabled = !mediaSupported || (!apiKeyConfigured && !hasReplacementKey);
+  const needsFirstKey = !apiKeyConfigured && !apiKeyInput.value.trim();
+  startBtn.disabled = !mediaSupported || needsFirstKey;
 }
 
 async function loadStoredApiKey() {
@@ -324,8 +334,8 @@ async function loadStoredApiKey() {
 
     setApiKeyConfigured(data.configured);
     apiKeyStatus.textContent = data.warning || (data.configured
-      ? 'Saved on this Mac. The key stays on this computer and is never shown again.'
-      : 'Enter once. The key is saved on this computer and hidden after that.');
+      ? 'The saved key is used automatically and is not shown.'
+      : 'Enter once. After it is saved, this field is hidden.');
     apiKeyStatus.classList.toggle('error', Boolean(data.warning));
     if (data.warning) setDiagnostic(data.warning, 'warning');
     apiKeyInput.disabled = false;
@@ -348,7 +358,7 @@ async function saveApiKey(apiKey) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to save the API key.');
   setApiKeyConfigured(true);
-  apiKeyStatus.textContent = 'Saved on this Mac. The key stays on this computer and is never shown again.';
+  apiKeyStatus.textContent = 'The saved key is used automatically and is not shown.';
   apiKeyStatus.classList.remove('error');
 }
 
@@ -356,11 +366,46 @@ apiKeyInput.disabled = true;
 startBtn.disabled = true;
 
 apiKeyInput.addEventListener('input', () => {
-  apiKeyStatus.textContent = apiKeyConfigured
-    ? 'The new key will replace the saved one when translation starts.'
+  apiKeyStatus.textContent = isReplacingApiKey()
+    ? 'The new key is saved only if you click Save key.'
     : 'The key will be saved on this computer when translation starts.';
   apiKeyStatus.classList.remove('error');
   refreshStartEnabled();
+});
+
+replaceApiKeyBtn?.addEventListener('click', () => {
+  if (!window.confirm('Replace the saved Gemini API key? The current key stays in place until you click Save key.')) return;
+  setApiKeyConfigured(true, true);
+  apiKeyInput.disabled = false;
+  apiKeyInput.focus();
+  apiKeyStatus.textContent = 'Enter the new key, then click Save key. Start Translation will not overwrite the saved key.';
+  apiKeyStatus.classList.remove('error');
+});
+
+cancelReplaceApiKeyBtn?.addEventListener('click', () => {
+  setApiKeyConfigured(true);
+  apiKeyStatus.textContent = 'The saved key is used automatically and is not shown.';
+  apiKeyStatus.classList.remove('error');
+  refreshStartEnabled();
+});
+
+saveApiKeyBtn?.addEventListener('click', async () => {
+  const nextKey = apiKeyInput.value.trim();
+  if (!nextKey) {
+    apiKeyStatus.textContent = 'Enter a valid Gemini API key before saving.';
+    apiKeyStatus.classList.add('error');
+    return;
+  }
+  try {
+    saveApiKeyBtn.disabled = true;
+    await saveApiKey(nextKey);
+    refreshStartEnabled();
+  } catch (error) {
+    apiKeyStatus.textContent = error.message;
+    apiKeyStatus.classList.add('error');
+  } finally {
+    saveApiKeyBtn.disabled = false;
+  }
 });
 
 loadStoredApiKey();
@@ -577,6 +622,9 @@ function hideRecoveryBanner() {
 
 function setSessionSettingsDisabled(disabled) {
   apiKeyInput.disabled = disabled;
+  if (replaceApiKeyBtn) replaceApiKeyBtn.disabled = disabled;
+  if (saveApiKeyBtn) saveApiKeyBtn.disabled = disabled;
+  if (cancelReplaceApiKeyBtn) cancelReplaceApiKeyBtn.disabled = disabled;
   targetLanguageSelect1.disabled = disabled;
   targetLanguageSelect2.disabled = disabled;
   echoToggle.disabled = disabled;
@@ -624,7 +672,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.7 diagnostics',
+    'Live Translate v1.3.8 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1476,8 +1524,8 @@ function updateSubtitleLane(lane, text, isFinal = false) {
 // --- WebSocket Handlers ---
 async function startSession() {
   if (isStarting || isRunning) return;
-  const replacementKey = apiKeyInput.value.trim();
-  if (!apiKeyConfigured && !replacementKey) {
+  const firstTimeKey = apiKeyConfigured ? '' : apiKeyInput.value.trim();
+  if (!apiKeyConfigured && !firstTimeKey) {
     alert("Please enter a valid Gemini API Key.");
     return;
   }
@@ -1507,7 +1555,7 @@ async function startSession() {
   );
 
   try {
-    if (replacementKey) await saveApiKey(replacementKey);
+    if (firstTimeKey) await saveApiKey(firstTimeKey);
   } catch (error) {
     stopAudioCapture();
     if (thisStart !== startToken) return;

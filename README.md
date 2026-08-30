@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.7`.
+The current application version is `v1.3.8`.
 
 ## Screenshots
 
@@ -120,7 +120,7 @@ The Gemini API key is stored in the current user's private application configura
 ~/Library/Application Support/LiveTranslation/config.json
 ```
 
-The file is created with user-only permissions. API-key configuration is available only from the host computer. After it is saved, the dashboard shows that a key is present and never fills the key back into the page.
+The file is created with user-only permissions. API-key configuration is available only from the host computer. After it is saved, the dashboard hides the key field. Replacing it requires an explicit Replace key action, then Save key.
 
 Operator preferences are stored in browser storage for the dashboard origin. They are saved as soon as they change and restored on the next dashboard load. This includes the audio source and microphone, target languages, OBS language, voice-output switches, system instructions, subtitle pacing, automatic song filtering, target-language repeat, Play on this Mac, local volume, and transcript font size. Language, pacing, and OBS layout changes are sent to every projector, phone, and OBS overlay on the local relay.
 

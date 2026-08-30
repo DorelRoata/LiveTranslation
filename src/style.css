@@ -57,6 +57,47 @@ body {
   color: #f87171;
 }
 
+.api-key-saved-note,
+.api-key-actions,
+#replace-api-key-btn,
+#save-api-key-btn,
+#cancel-replace-api-key-btn {
+  display: none;
+}
+
+.api-key-saved-note {
+  margin: 0;
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.api-key-actions {
+  align-items: center;
+  gap: 0.65rem;
+}
+
+#api-key-group[data-configured="true"][data-replacing="false"] .password-wrapper {
+  display: none;
+}
+
+#api-key-group[data-configured="true"][data-replacing="false"] .api-key-saved-note,
+#api-key-group[data-configured="true"][data-replacing="false"] .api-key-actions,
+#api-key-group[data-configured="true"][data-replacing="false"] #replace-api-key-btn {
+  display: flex;
+}
+
+#api-key-group[data-configured="false"] .password-wrapper,
+#api-key-group[data-replacing="true"] .password-wrapper {
+  display: flex;
+}
+
+#api-key-group[data-replacing="true"] .api-key-actions,
+#api-key-group[data-replacing="true"] #save-api-key-btn,
+#api-key-group[data-replacing="true"] #cancel-replace-api-key-btn {
+  display: flex;
+}
+
 .wake-lock-note {
   margin: 0.8rem 0 0;
   color: var(--text-muted);
