@@ -227,8 +227,9 @@
 
               <div class="config-col">
                 <div class="input-group instruction-group">
-                  <label for="system-instruction-input">System Instructions &amp; Hints</label>
-                  <textarea id="system-instruction-input" class="instruction-input" placeholder="Add custom translation guidelines here...">You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language. Translate continuously in short, complete phrases with a natural cadence. Do not repeat or revise text already emitted, and avoid long pauses before responding.</textarea>
+                  <label for="system-instruction-input">Operator notes</label>
+                  <textarea id="system-instruction-input" class="instruction-input" placeholder="Optional notes for this computer only..."></textarea>
+                  <small class="helper-text">Google Live Translate is audio-only and does not use written instructions. Sending them made translation stop after the first phrase. These notes stay on this computer and are not sent to Gemini.</small>
                 </div>
 
                 <div class="input-group">
@@ -440,7 +441,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.14</p>
+        <p>Powered by Google Gemini Live API | v1.3.15</p>
       </footer>
     </div>
 

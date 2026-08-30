@@ -67,7 +67,7 @@ Reinstall only when:
 3. Confirm the correct audio source and microphone.
 4. Confirm the target languages.
 5. If a human interpreter shares the room mix, route only the original speaker's microphone to the separate input selected by Live Translate.
-6. Review the system instructions and terminology hints.
+6. Google Live Translate does not use written instructions. Skip operator notes; they stay on this computer only.
 7. Decide whether Voice 1 and Voice 2 should be distributed.
 8. Leave **Play on this Mac** off unless host playback is intentional.
 9. Leave **Repeat words already in the target language** off unless the source-language behavior requires it.

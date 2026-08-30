@@ -49,6 +49,8 @@ test('OBS overlay cannot traverse into the dashboard', () => {
 test('Gemini proxy stays on this computer and hides the key from the dashboard URL', () => {
   const url = buildGeminiUpstreamUrl('secret-key');
   assert.match(url, /^wss:\/\/generativelanguage\.googleapis\.com\//);
+  assert.match(url, /v1beta/);
+  assert.equal(url.includes('v1alpha'), false);
   assert.match(url, /key=secret-key/);
 
   assert.equal(isLocalClient('127.0.0.1'), true);

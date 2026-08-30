@@ -11,7 +11,7 @@ const MAX_REQUEST_BYTES = 8 * 1024;
 const MAX_WS_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const MAX_BUFFERED_BYTES = 256 * 1024;
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
-const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
+const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const execFileAsync = promisify(execFile);
 
 async function runGit(args) {

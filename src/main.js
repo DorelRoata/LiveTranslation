@@ -9,16 +9,18 @@ import {
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
 import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
+import { buildGeminiAudioMessage, buildGeminiSetupMessage } from './gemini-live.js';
 import {
   downsampleToRate,
   floatToPcm16,
+  GEMINI_FRAME_SAMPLES,
   nextPlaybackTime,
+  PcmAccumulator,
   peakAmplitude,
   TARGET_CAPTURE_RATE
 } from './pcm-audio.js';
 
 // --- Constants ---
-const MODEL = "models/gemini-3.5-live-translate-preview";
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
@@ -53,6 +55,7 @@ let micStream = null;
 let scriptProcessor = null;
 let captureKeepAlive = null;
 let audioCaptureGeneration = 0;
+const geminiPcmAccumulator = new PcmAccumulator(GEMINI_FRAME_SAMPLES);
 
 let nextStartTime1 = 0;
 let nextStartTime2 = 0;
@@ -595,6 +598,36 @@ function base64ArrayBuffer(arrayBuffer) {
   return btoa(binary);
 }
 
+function pcm16ToBase64(pcm16) {
+  return base64ArrayBuffer(pcm16.buffer.slice(pcm16.byteOffset, pcm16.byteOffset + pcm16.byteLength));
+}
+
+function sendGeminiPcmFrames(float32, logLabel = 'audio') {
+  const frames = geminiPcmAccumulator.push(float32);
+  if (!frames.length) return;
+
+  const socket1Ready = canSendAudio(socket1, true, 1);
+  const socket2Ready = canSendAudio(socket2, true, 2);
+  if (!socket1Ready && !socket2Ready) {
+    if (isRunning && socketSetupReady[1] && chunksSent > 0 && chunksSent % 50 === 0) {
+      logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
+      setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
+    }
+    return;
+  }
+
+  for (const frame of frames) {
+    const msgStr = JSON.stringify(buildGeminiAudioMessage(pcm16ToBase64(floatToPcm16(frame))));
+    if (socket1Ready) socket1.send(msgStr);
+    if (socket2Ready) socket2.send(msgStr);
+    chunksSent++;
+    updateChunkStats();
+    if (chunksSent === 1 || chunksSent % 25 === 0) {
+      logDebug(`Sent ${chunksSent} ${logLabel} chunks to Google.`, 'ws-sent');
+    }
+  }
+}
+
 function isSocketOpen(ws, requireSetup = false, channelId = 0) {
   return Boolean(
     ws &&
@@ -681,7 +714,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.14 diagnostics',
+    'Live Translate v1.3.15 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1209,6 +1242,7 @@ async function startAudioCapture() {
     captureSource = captureContext.createMediaStreamSource(captureStream);
     captureProcessor = captureContext.createScriptProcessor(2048, 1, 1);
     chunksSent = 0;
+    geminiPcmAccumulator.reset();
   } catch (error) {
     captureProcessor?.disconnect();
     captureSource?.disconnect();
@@ -1242,6 +1276,7 @@ async function startAudioCapture() {
     }
 
     if (isMicMuted) {
+      geminiPcmAccumulator.reset();
       micDb.textContent = "Muted";
       micIndicator.classList.remove("active");
       return;
@@ -1255,35 +1290,12 @@ async function startAudioCapture() {
       micIndicator.classList.remove("active");
     }
 
-    const socket1Ready = canSendAudio(socket1, true, 1);
-    const socket2Ready = canSendAudio(socket2, true, 2);
-    if (!socket1Ready && !socket2Ready) {
-      if (isRunning && socketSetupReady[1] && chunksSent > 0 && chunksSent % 50 === 0) {
-        logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
-        setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
-      }
+    if (isSongSuppressed) {
+      geminiPcmAccumulator.reset();
       return;
     }
-    if (isSongSuppressed) return;
 
-    const pcm16 = floatToPcm16(float32);
-    const msgStr = JSON.stringify({
-      realtimeInput: {
-        mediaChunks: [
-          {
-            mimeType: "audio/pcm;rate=16000",
-            data: base64ArrayBuffer(pcm16.buffer)
-          }
-        ]
-      }
-    });
-    if (socket1Ready) socket1.send(msgStr);
-    if (socket2Ready) socket2.send(msgStr);
-    chunksSent++;
-    updateChunkStats();
-    if (chunksSent === 1 || chunksSent % 25 === 0) {
-      logDebug(`Sent ${chunksSent} audio chunks to Google.`, "ws-sent");
-    }
+    sendGeminiPcmFrames(float32);
   };
   
   captureSource.connect(scriptProcessor);
@@ -1332,6 +1344,7 @@ function stopAudioCapture() {
     audioContextInput.close();
     audioContextInput = null;
   }
+  geminiPcmAccumulator.reset();
   
   micIndicator.classList.remove("active");
   micDb.textContent = "0%";
@@ -1696,19 +1709,20 @@ function connectGeminiSockets() {
   closeGeminiSockets();
   sessionGeneration++;
   const generation = sessionGeneration;
-  const { targetLanguage1, targetLanguage2, echoTargetLanguage, systemInstructionText } = sessionConfig;
+  const { targetLanguage1, targetLanguage2, echoTargetLanguage } = sessionConfig;
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const url = `${wsProtocol}//${window.location.host}${GEMINI_LIVE_WS_PATH}`;
   setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
+  geminiPcmAccumulator.reset();
 
   socket1 = new WebSocket(url);
   setHealthItem('gemini1', 'connecting', 'Opening connection');
-  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, systemInstructionText, generation);
+  setupSocket(socket1, 1, targetLanguage1, echoTargetLanguage, generation);
   if (targetLanguage2 !== "none") {
     healthItems.gemini2.hidden = false;
     socket2 = new WebSocket(url);
     setHealthItem('gemini2', 'connecting', 'Opening connection');
-    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, systemInstructionText, generation);
+    setupSocket(socket2, 2, targetLanguage2, echoTargetLanguage, generation);
   } else {
     healthItems.gemini2.hidden = true;
     setHealthItem('gemini2', 'idle', 'Not enabled');
@@ -1776,35 +1790,14 @@ function stopForGeminiError(message) {
   alert(`Gemini could not start this session: ${message}`);
 }
 
-function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemInstructionText, generation) {
+function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, generation) {
   ws.onopen = () => {
     if (!isCurrentSocket(ws, channelId, generation)) return;
     logDebug(`WebSocket ${channelId} opened successfully.`, "info");
     setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
-    
-    // Send Setup Message
-    const setupMsg = {
-      setup: {
-        model: MODEL,
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          translationConfig: {
-            targetLanguageCode: targetLanguage,
-            echoTargetLanguage: echoTargetLanguage
-          }
-        },
-        inputAudioTranscription: {},
-        outputAudioTranscription: {}
-      }
-    };
 
-    if (systemInstructionText) {
-      setupMsg.setup.systemInstruction = {
-        parts: [{ text: systemInstructionText }]
-      };
-    }
-    
-    logDebug(`WebSocket ${channelId}: Sending setup for ${targetLanguage}...`, "ws-sent");
+    const setupMsg = buildGeminiSetupMessage({ targetLanguage, echoTargetLanguage });
+    logDebug(`WebSocket ${channelId}: Sending Live Translate setup for ${targetLanguage} (no written instructions)...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
   };
   
@@ -1859,7 +1852,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, systemIn
           currentStreamingBubble1 = null;
           currentStreamingBubble2 = null;
           if (channelId === 1) finalizeInputTranscript();
-          return;
         }
         if (sc.turnComplete) {
           logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
@@ -2082,56 +2074,41 @@ function handleIncomingNetworkAudio(base64Data) {
   const isTranslating = socketSetupReady[1] || socketSetupReady[2];
   if (!isNetworkSource || !isTranslating) return;
 
+  const incomingSamples = decodeBase64Pcm16(base64Data);
+
   if (ignoreSongsToggle.checked && songClassifier && !songDetectionFailed) {
     try {
-      analyzeAudioForSongs(decodeBase64Pcm16(base64Data));
+      analyzeAudioForSongs(incomingSamples);
     } catch (error) {
       failOpenSongDetection(error);
     }
   }
 
+  const maxVal = peakAmplitude(incomingSamples);
+  const step = Math.max(1, Math.floor(incomingSamples.length / micBuffer.length));
+  for (let i = 0; i < micBuffer.length; i++) {
+    const idx = Math.min(incomingSamples.length - 1, i * step);
+    micBuffer[i] = micBuffer[i] * 0.3 + incomingSamples[idx] * 0.7;
+  }
+
   if (isMicMuted) {
+    geminiPcmAccumulator.reset();
     micDb.textContent = "Muted";
     micIndicator.classList.remove("active");
     return;
-  }
-
-  if (isSongSuppressed) return;
-
-  const msgStr = JSON.stringify({
-    realtimeInput: {
-      mediaChunks: [{ mimeType: "audio/pcm;rate=16000", data: base64Data }]
-    }
-  });
-  if (canSendAudio(socket1, true, 1)) socket1.send(msgStr);
-  if (canSendAudio(socket2, true, 2)) socket2.send(msgStr);
-  chunksSent++;
-  updateChunkStats();
-  if (chunksSent === 1 || chunksSent % 25 === 0) {
-    logDebug(`Sent ${chunksSent} network audio chunks to Google.`, "ws-sent");
-  }
-
-  const incomingSamples = decodeBase64Pcm16(base64Data);
-  const int16Array = floatToPcm16(incomingSamples);
-  
-  const float32 = new Float32Array(int16Array.length);
-  let maxVal = 0;
-  for (let i = 0; i < int16Array.length; i++) {
-    const s = int16Array[i] / 32768.0;
-    float32[i] = s;
-    if (Math.abs(s) > maxVal) maxVal = Math.abs(s);
-  }
-
-  const step = Math.max(1, Math.floor(float32.length / micBuffer.length));
-  for (let i = 0; i < micBuffer.length; i++) {
-    const idx = Math.min(float32.length - 1, i * step);
-    micBuffer[i] = micBuffer[i] * 0.3 + float32[idx] * 0.7;
   }
 
   const pct = Math.round(maxVal * 100);
   micDb.textContent = `${pct}%`;
   if (pct > 5) micIndicator.classList.add("active");
   else micIndicator.classList.remove("active");
+
+  if (isSongSuppressed) {
+    geminiPcmAccumulator.reset();
+    return;
+  }
+
+  sendGeminiPcmFrames(incomingSamples, 'network audio');
 }
 
 function syncLocalSubtitlesSetup() {
