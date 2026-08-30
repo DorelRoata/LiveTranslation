@@ -9,6 +9,13 @@ import {
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
 import { applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
+import {
+  downsampleToRate,
+  floatToPcm16,
+  nextPlaybackTime,
+  peakAmplitude,
+  TARGET_CAPTURE_RATE
+} from './pcm-audio.js';
 
 // --- Constants ---
 const MODEL = "models/gemini-3.5-live-translate-preview";
@@ -44,6 +51,7 @@ let audioContextInput = null;
 let audioContextOutput = null;
 let micStream = null;
 let scriptProcessor = null;
+let captureKeepAlive = null;
 let audioCaptureGeneration = 0;
 
 let nextStartTime1 = 0;
@@ -672,7 +680,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.9 diagnostics',
+    'Live Translate v1.3.10 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -853,7 +861,7 @@ function initVisualizer(canvas, dataBuffer, color) {
 }
 
 // Start visualizer loops
-initVisualizer(micCanvas, micBuffer, "#df6178");
+initVisualizer(micCanvas, micBuffer, "#4dbb83");
 initVisualizer(outputCanvas, outBuffer, "#5bc0a4");
 
 // --- Audio Playback Pipeline (Gemini Output) ---
@@ -920,28 +928,26 @@ function playPCMChunk(base64Data, channelId) {
   if (!isPlayChecked) {
     return;
   }
-  
-  // 3. Create AudioBuffer
+
+  const isLocalMuted = localPlaybackToggle ? !localPlaybackToggle.checked : false;
+  const hostVolume = isLocalMuted ? 0 : parseFloat(hostVolumeSlider?.value ?? 1);
+  if (isLocalMuted || hostVolume <= 0) {
+    return;
+  }
+
   const audioBuffer = audioContextOutput.createBuffer(1, float32.length, 24000);
   audioBuffer.copyToChannel(float32, 0);
-  
-  // 4. Schedule source playing
+
   const sourceNode = audioContextOutput.createBufferSource();
   sourceNode.buffer = audioBuffer;
-  
-  const isLocalMuted = localPlaybackToggle ? !localPlaybackToggle.checked : false;
-
-  const hostVolume = isLocalMuted ? 0 : parseFloat(hostVolumeSlider?.value ?? 1);
   const gainNode = audioContextOutput.createGain();
   gainNode.gain.value = hostVolume;
   sourceNode.connect(gainNode);
   gainNode.connect(audioContextOutput.destination);
   
   const now = audioContextOutput.currentTime;
-  let nextStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
-  if (nextStart < now) {
-    nextStart = now;
-  }
+  const queuedStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
+  const nextStart = nextPlaybackTime(now, queuedStart);
   
   sourceNode.start(nextStart);
   
@@ -1160,11 +1166,14 @@ async function startAudioCapture() {
         audio: { systemAudio: "include" }
       });
 
-      logDebug("getDisplayMedia stream obtained. Discarding video tracks...", "info");
-      captureStream.getVideoTracks().forEach(track => track.stop());
-      if (captureStream.getAudioTracks().length === 0) {
+      logDebug("getDisplayMedia stream obtained. Isolating the audio track...", "info");
+      const systemAudioTracks = captureStream.getAudioTracks();
+      if (systemAudioTracks.length === 0) {
+        captureStream.getTracks().forEach(track => track.stop());
         throw new Error("No system audio track shared. When prompted, make sure to check 'Share system audio' or 'Share tab audio' in the sharing dialog.");
       }
+      captureStream.getVideoTracks().forEach(track => track.stop());
+      captureStream = new MediaStream(systemAudioTracks);
       logDebug("System audio loopback track captured successfully.", "info");
     } else {
       logDebug("Requesting getUserMedia for microphone access...", "info");
@@ -1190,7 +1199,7 @@ async function startAudioCapture() {
       throw cancelledError;
     }
     captureSource = captureContext.createMediaStreamSource(captureStream);
-    captureProcessor = captureContext.createScriptProcessor(2048, 1, 1);
+    captureProcessor = captureContext.createScriptProcessor(1024, 1, 1);
     chunksSent = 0;
   } catch (error) {
     captureProcessor?.disconnect();
@@ -1208,37 +1217,28 @@ async function startAudioCapture() {
   scriptProcessor = captureProcessor;
   setHealthItem('audio', 'good', sourceVal === 'system' ? 'System audio active' : 'Microphone active');
 
-  scriptProcessor.onaudioprocess = (e) => {
-    const socket1Ready = canSendAudio(socket1, true, 1);
-    const socket2Ready = canSendAudio(socket2, true, 2);
-    if (!socket1Ready && !socket2Ready) return;
+  const captureSampleRate = captureContext.sampleRate || TARGET_CAPTURE_RATE;
+  if (Math.abs(captureSampleRate - TARGET_CAPTURE_RATE) >= 1) {
+    logDebug(`Audio context is ${Math.round(captureSampleRate)} Hz; resampling to 16 kHz so Gemini stays in real time.`, 'warning');
+  }
 
-    const float32 = e.inputBuffer.getChannelData(0);
+  scriptProcessor.onaudioprocess = (e) => {
+    const float32 = downsampleToRate(e.inputBuffer.getChannelData(0), captureSampleRate);
     analyzeAudioForSongs(float32);
-    
-    if (isMicMuted) {
-      micDb.textContent = "Muted";
-      micIndicator.classList.remove("active");
-      return;
-    }
-    
-    let maxVal = 0;
-    const pcm16 = new Int16Array(float32.length);
-    
-    for (let i = 0; i < float32.length; i++) {
-      const s = Math.max(-1.0, Math.min(1.0, float32[i]));
-      pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      if (Math.abs(s) > maxVal) {
-        maxVal = Math.abs(s);
-      }
-    }
-    
+
+    const maxVal = peakAmplitude(float32);
     const step = Math.max(1, Math.floor(float32.length / micBuffer.length));
     for (let i = 0; i < micBuffer.length; i++) {
       const idx = Math.min(float32.length - 1, i * step);
       micBuffer[i] = micBuffer[i] * 0.3 + float32[idx] * 0.7;
     }
-    
+
+    if (isMicMuted) {
+      micDb.textContent = "Muted";
+      micIndicator.classList.remove("active");
+      return;
+    }
+
     const pct = Math.round(maxVal * 100);
     micDb.textContent = `${pct}%`;
     if (pct > 5) {
@@ -1247,9 +1247,12 @@ async function startAudioCapture() {
       micIndicator.classList.remove("active");
     }
 
+    const socket1Ready = canSendAudio(socket1, true, 1);
+    const socket2Ready = canSendAudio(socket2, true, 2);
+    if (!socket1Ready && !socket2Ready) return;
     if (isSongSuppressed) return;
-    
-    // Send PCM chunk
+
+    const pcm16 = floatToPcm16(float32);
     const base64Data = base64ArrayBuffer(pcm16.buffer);
     const mediaMsg = {
       realtimeInput: {
@@ -1277,10 +1280,13 @@ async function startAudioCapture() {
   };
   
   captureSource.connect(scriptProcessor);
-  const silentGain = captureContext.createGain();
-  silentGain.gain.value = 0;
-  scriptProcessor.connect(silentGain);
-  silentGain.connect(captureContext.destination);
+  const captureSink = captureContext.createMediaStreamDestination();
+  scriptProcessor.connect(captureSink);
+  captureKeepAlive = new Audio();
+  captureKeepAlive.muted = true;
+  captureKeepAlive.srcObject = captureSink.stream;
+  const keepAlivePlay = captureKeepAlive.play();
+  if (keepAlivePlay && typeof keepAlivePlay.catch === 'function') keepAlivePlay.catch(() => {});
 
   for (const track of micStream.getAudioTracks()) {
     track.addEventListener('ended', () => {
@@ -1300,6 +1306,13 @@ function stopAudioCapture() {
   }
   
   // Unconditionally destroy local mic resources to prevent stream overlap and Gemini errors
+  if (captureKeepAlive) {
+    try {
+      captureKeepAlive.pause();
+      captureKeepAlive.srcObject = null;
+    } catch (error) {}
+    captureKeepAlive = null;
+  }
   if (scriptProcessor) {
     scriptProcessor.disconnect();
     scriptProcessor = null;

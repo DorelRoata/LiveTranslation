@@ -1400,9 +1400,9 @@ body.is-live .transcript-scroll {
 
 /* Indicators when capturing or playing */
 .input-pulse.active {
-  background-color: var(--accent-rose);
-  box-shadow: 0 0 8px var(--accent-rose);
-  animation: pulse-red 1s infinite;
+  background-color: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
+  animation: pulse-green 1s infinite;
 }
 
 .output-pulse-1, .output-pulse-2 {

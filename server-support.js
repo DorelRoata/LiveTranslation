@@ -313,7 +313,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     ...buildSystemSetup(),
     audioSenderStreaming: false
   };
-  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES, perMessageDeflate: false });
   const attachedServers = new Set();
 
   function send(client, message, lossy = false) {
@@ -447,7 +447,7 @@ function forwardSocket(from, to) {
 export function attachGeminiProxy(httpServer) {
   if (!httpServer || httpServer.__liveTranslateGeminiProxy) return;
   httpServer.__liveTranslateGeminiProxy = true;
-  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES, perMessageDeflate: false });
 
   httpServer.on('upgrade', (request, socket, head) => {
     const { pathname } = new URL(request.url, 'https://localhost');
@@ -513,7 +513,7 @@ async function connectGeminiUpstream(client, request, session, pending, sendUpst
     return;
   }
 
-  const upstream = new WebSocket(buildGeminiUpstreamUrl(apiKey));
+  const upstream = new WebSocket(buildGeminiUpstreamUrl(apiKey), { perMessageDeflate: false });
   session.upstream = upstream;
 
   upstream.on('open', () => {

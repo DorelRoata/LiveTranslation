@@ -1,5 +1,6 @@
 import './style.css';
 import { createScreenWakeLock } from './wake-lock.js';
+import { downsampleToRate, floatToPcm16, peakAmplitude, TARGET_CAPTURE_RATE } from './pcm-audio.js';
 
 const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
 const micDeviceSelect = document.getElementById("mic-device-select");
@@ -20,6 +21,7 @@ let audioContext = null;
 let mediaStream = null;
 let scriptProcessor = null;
 let source = null;
+let captureKeepAlive = null;
 
 const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
   if (!supported) {
@@ -107,21 +109,6 @@ async function populateMicDevices() {
   }
 }
 
-// Float32 to 16-bit PCM Base64
-function floatTo16BitPCMBase64(input) {
-  const output = new Int16Array(input.length);
-  for (let i = 0; i < input.length; i++) {
-    const s = Math.max(-1, Math.min(1, input[i]));
-    output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
-  const uint8 = new Uint8Array(output.buffer);
-  let binary = '';
-  for (let i = 0; i < uint8.byteLength; i++) {
-    binary += String.fromCharCode(uint8[i]);
-  }
-  return btoa(binary);
-}
-
 // Start Capture
 async function startStreaming() {
   if (isStarting || isStreaming) return;
@@ -157,40 +144,43 @@ async function startStreaming() {
     pendingContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
     if (pendingContext.state === 'suspended') await pendingContext.resume();
     pendingSource = pendingContext.createMediaStreamSource(pendingStream);
-    pendingProcessor = pendingContext.createScriptProcessor(2048, 1, 1);
+    pendingProcessor = pendingContext.createScriptProcessor(1024, 1, 1);
 
     mediaStream = pendingStream;
     audioContext = pendingContext;
     source = pendingSource;
     scriptProcessor = pendingProcessor;
     isStreaming = true;
-    
+    const captureSampleRate = pendingContext.sampleRate || TARGET_CAPTURE_RATE;
+
     scriptProcessor.onaudioprocess = (e) => {
       if (!isStreaming || !ws || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > MAX_BUFFERED_AUDIO_BYTES) return;
-      
-      const inputData = e.inputBuffer.getChannelData(0);
-      const base64Audio = floatTo16BitPCMBase64(inputData);
-      
+
+      const inputData = downsampleToRate(e.inputBuffer.getChannelData(0), captureSampleRate);
+      const pcm16 = floatToPcm16(inputData);
+      const uint8 = new Uint8Array(pcm16.buffer);
+      let binary = '';
+      for (let i = 0; i < uint8.byteLength; i++) binary += String.fromCharCode(uint8[i]);
+      const base64Audio = btoa(binary);
+
       ws.send(JSON.stringify({
         type: 'input-audio',
         audioData: base64Audio
       }));
-      
-      // Update visualizer
-      let maxVal = 0;
-      for (let i = 0; i < inputData.length; i++) {
-        if (Math.abs(inputData[i]) > maxVal) maxVal = Math.abs(inputData[i]);
-      }
-      const pct = Math.round(maxVal * 100);
+
+      const pct = Math.round(peakAmplitude(inputData) * 100);
       micBar.style.height = `${pct}%`;
       micDb.textContent = `${pct}%`;
     };
 
     source.connect(scriptProcessor);
-    const silentGain = audioContext.createGain();
-    silentGain.gain.value = 0;
-    scriptProcessor.connect(silentGain);
-    silentGain.connect(audioContext.destination);
+    const captureSink = audioContext.createMediaStreamDestination();
+    scriptProcessor.connect(captureSink);
+    captureKeepAlive = new Audio();
+    captureKeepAlive.muted = true;
+    captureKeepAlive.srcObject = captureSink.stream;
+    const keepAlivePlay = captureKeepAlive.play();
+    if (keepAlivePlay && typeof keepAlivePlay.catch === 'function') keepAlivePlay.catch(() => {});
 
     mediaStream.getAudioTracks().forEach(track => {
       track.addEventListener('ended', stopStreaming, { once: true });
@@ -230,6 +220,13 @@ function stopStreaming() {
   wakeLock.setEnabled(false);
   sendStreamingStatus();
   
+  if (captureKeepAlive) {
+    try {
+      captureKeepAlive.pause();
+      captureKeepAlive.srcObject = null;
+    } catch (error) {}
+    captureKeepAlive = null;
+  }
   if (scriptProcessor) {
     scriptProcessor.disconnect();
     scriptProcessor = null;

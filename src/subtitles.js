@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
 import { emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
+import { nextPlaybackTime } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
@@ -743,10 +744,8 @@ function playPCMChunk(base64Data, channelId) {
     sourceNode.connect(audioContext.destination);
 
     const now = audioContext.currentTime;
-    let nextStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
-    if (nextStart < now) {
-      nextStart = now;
-    }
+    const queuedStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
+    const nextStart = nextPlaybackTime(now, queuedStart);
 
     sourceNode.start(nextStart);
 
