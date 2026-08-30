@@ -1,6 +1,51 @@
 export const TARGET_CAPTURE_RATE = 16000;
 export const TARGET_PLAYBACK_RATE = 24000;
 export const MAX_PLAYBACK_AHEAD_SEC = 0.35;
+export const GEMINI_FRAME_SAMPLES = 1600;
+
+export class PcmAccumulator {
+  constructor(targetSamples = GEMINI_FRAME_SAMPLES) {
+    this.targetSamples = targetSamples;
+    this.pending = [];
+    this.pendingLength = 0;
+  }
+
+  push(samples) {
+    if (!samples?.length) return [];
+    this.pending.push(samples);
+    this.pendingLength += samples.length;
+    const frames = [];
+    while (this.pendingLength >= this.targetSamples) {
+      frames.push(this.#take(this.targetSamples));
+    }
+    return frames;
+  }
+
+  reset() {
+    this.pending = [];
+    this.pendingLength = 0;
+  }
+
+  #take(count) {
+    const out = new Float32Array(count);
+    let filled = 0;
+    while (filled < count && this.pending.length) {
+      const next = this.pending[0];
+      const need = count - filled;
+      if (next.length <= need) {
+        out.set(next, filled);
+        filled += next.length;
+        this.pending.shift();
+      } else {
+        out.set(next.subarray(0, need), filled);
+        this.pending[0] = next.subarray(need);
+        filled += need;
+      }
+    }
+    this.pendingLength -= filled;
+    return filled === count ? out : out.subarray(0, filled);
+  }
+}
 
 export function downsampleToRate(float32, inputRate, outputRate = TARGET_CAPTURE_RATE) {
   if (!float32?.length) return float32 || new Float32Array(0);

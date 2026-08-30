@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   downsampleToRate,
   floatToPcm16,
+  GEMINI_FRAME_SAMPLES,
   nextPlaybackTime,
+  PcmAccumulator,
   peakAmplitude
 } from '../src/pcm-audio.js';
 
@@ -37,4 +39,15 @@ test('drops an oversized playback queue instead of letting delay grow', () => {
 
 test('reports peak amplitude for the input meter', () => {
   assert.ok(Math.abs(peakAmplitude(new Float32Array([0.1, -0.4, 0.2])) - 0.4) < 1e-6);
+});
+
+test('accumulates short capture buffers into 100 ms Gemini frames', () => {
+  const accumulator = new PcmAccumulator(GEMINI_FRAME_SAMPLES);
+  const first = accumulator.push(new Float32Array(700));
+  assert.equal(first.length, 0);
+  const second = accumulator.push(new Float32Array(700));
+  assert.equal(second.length, 0);
+  const third = accumulator.push(new Float32Array(700));
+  assert.equal(third.length, 1);
+  assert.equal(third[0].length, 1600);
 });

@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  addedWordCount,
   applyLaneUpdate,
   appendFinalSubtitle,
   buildSystemSetup,
   getLanguageName,
-  laneDisplayText
+  laneDisplayText,
+  mergeIncomingTranscript
 } from '../src/system-setup.js';
 
 test('maps language codes to operator-facing names', () => {
@@ -50,6 +52,12 @@ test('interim subtitle updates replace the working phrase instead of concatenati
   assert.equal(lane.accumulatedText, '');
   assert.equal(lane.interimText, 'Hello there');
   assert.equal(laneDisplayText(lane), 'Hello there');
+});
+
+test('counts only newly added words when Gemini repeats a growing snapshot', () => {
+  assert.equal(mergeIncomingTranscript('Hello', 'Hello there'), 'Hello there');
+  assert.equal(addedWordCount('Hello', 'Hello there'), 1);
+  assert.equal(addedWordCount('Hello there', 'Hello there'), 0);
 });
 
 test('final subtitle updates append once and clear the interim phrase', () => {

@@ -75,6 +75,25 @@ export function emptyLaneState() {
   return { accumulatedText: '', interimText: '' };
 }
 
+export function countWords(text) {
+  return typeof text === 'string' ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+}
+
+export function mergeIncomingTranscript(previous, incoming) {
+  const prev = typeof previous === 'string' ? previous.trim() : '';
+  const next = typeof incoming === 'string' ? incoming.trim() : '';
+  if (!next) return prev;
+  if (!prev) return next;
+  if (next.startsWith(prev)) return next;
+  if (prev.startsWith(next)) return prev;
+  const needsSpace = !/[\s。？！.?!;；]$/.test(prev) && !/^[。？！.?!;；]/.test(next);
+  return `${prev}${needsSpace ? ' ' : ''}${next}`;
+}
+
+export function addedWordCount(previous, next) {
+  return Math.max(0, countWords(next) - countWords(previous));
+}
+
 export function buildSystemSetup(input = {}) {
   const targetLanguage1 = typeof input.targetLanguage1 === 'string' ? input.targetLanguage1 : '';
   const rawLanguage2 = typeof input.targetLanguage2 === 'string' ? input.targetLanguage2 : 'none';
