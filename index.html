@@ -306,7 +306,7 @@
 
               <div class="network-info-box" id="obs-overlay-info-box">
                 <p class="share-card-title share-card-title-cyan">OBS Overlay URL</p>
-                <p>Paste this certificate-free URL into an OBS Browser Source. Changing OBS Language here updates the overlay immediately.</p>
+                <p>Paste this certificate-free URL into OBS once. Leave the Browser Source address unchanged after that. OBS Language below updates the same overlay live.</p>
                 <div class="input-group obs-language-group">
                   <label for="obs-language-select">OBS Language</label>
                   <select id="obs-language-select">
@@ -314,9 +314,9 @@
                     <option value="lang1">Language 1 Only</option>
                     <option value="lang2">Language 2 Only</option>
                   </select>
-                  <small class="helper-text">Choosing one language also places its subtitles in the upper half of the OBS canvas.</small>
+                  <small class="helper-text">This does not change the OBS URL. One language uses the upper half of the canvas.</small>
                 </div>
-                <p class="share-url" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true&amp;lang=both</p>
+                <p class="share-url" id="obs-url-tip">http://[your-laptop-ip]:5174/?obs=true</p>
                 <div class="share-link-actions">
                   <button id="copy-obs-url" class="share-link-btn" type="button">Copy URL</button>
                   <button id="open-obs-url" class="share-link-btn" type="button">Open Page</button>
@@ -432,7 +432,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.5</p>
+        <p>Powered by Google Gemini Live API | v1.3.6</p>
       </footer>
     </div>
 

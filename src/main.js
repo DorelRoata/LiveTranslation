@@ -374,10 +374,7 @@ function persistAndSyncSetup() {
 systemInstructionInput.addEventListener('input', saveOperatorSettings);
 targetLanguageSelect1.addEventListener('change', persistAndSyncSetup);
 targetLanguageSelect2.addEventListener('change', persistAndSyncSetup);
-obsLanguageSelect.addEventListener('change', () => {
-  persistAndSyncSetup();
-  refreshObsSharingUrl();
-});
+obsLanguageSelect.addEventListener('change', persistAndSyncSetup);
 playVoiceCheckbox1.addEventListener('change', saveOperatorSettings);
 playVoiceCheckbox2.addEventListener('change', saveOperatorSettings);
 echoToggle.addEventListener('change', saveOperatorSettings);
@@ -627,7 +624,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.5 diagnostics',
+    'Live Translate v1.3.6 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -2154,7 +2151,7 @@ async function initProjectorSharingQR() {
     : subtitlesUrl;
   const obsTip = document.getElementById('obs-url-tip');
   refreshObsSharingUrl = () => {
-    const obsUrl = buildObsUrl(obsBaseUrl, obsLanguageSelect.value);
+    const obsUrl = buildObsUrl(obsBaseUrl);
     if (obsTip) obsTip.textContent = obsUrl;
     bindShareActions('copy-obs-url', 'open-obs-url', obsUrl);
   };

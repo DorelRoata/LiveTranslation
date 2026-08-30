@@ -160,11 +160,13 @@ If the sender disconnects, the host displays a warning. Live audio is not retain
 
 ## 10. OBS setup
 
-Choose the OBS language on the dashboard, then use the generated HTTP OBS Overlay URL, not the HTTPS projector URL. Changing OBS Language on the dashboard updates an already-open overlay through the local relay:
+Paste the HTTP OBS Overlay URL into OBS once, not the HTTPS projector URL. That address stays the same:
 
 ```text
-http://HOST-IP:5174/?obs=true&lang=1
+http://HOST-IP:5174/?obs=true
 ```
+
+Change **OBS Language** on the dashboard whenever you need Both, Language 1, or Language 2. The already-open overlay updates through the local relay. You do not need a new Browser Source URL for each language.
 
 Recommended Browser Source settings:
 
@@ -174,7 +176,7 @@ Recommended Browser Source settings:
 - **Control audio via OBS** off for text only.
 - **Control audio via OBS** on only when translated speech should enter OBS.
 
-Use `lang=1` for Language 1 only, `lang=2` for Language 2 only, or `lang=both` for both lanes. A single lane is positioned in the upper half of the canvas. The OBS page is intentionally transparent, hides all controls, and remains blank until translation text arrives.
+A single lane is positioned in the upper half of the canvas. The OBS page is intentionally transparent, hides all controls, and remains blank until translation text arrives. Older URLs that include `lang=1`, `lang=2`, or `lang=both` still load; after the dashboard connects, its OBS Language selector is the live source of truth.
 
 ### OBS diagnostic sequence
 

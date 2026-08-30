@@ -14,16 +14,9 @@ export function obsLanguageToViewMode(value) {
   return normalizeObsLanguage(value);
 }
 
-export function buildObsUrl(baseUrl, language) {
+export function buildObsUrl(baseUrl) {
   const url = new URL(baseUrl);
-  const normalizedLanguage = normalizeObsLanguage(language);
-  const languageQuery = normalizedLanguage === 'lang1'
-    ? '1'
-    : normalizedLanguage === 'lang2'
-      ? '2'
-      : 'both';
-
   url.searchParams.set('obs', 'true');
-  url.searchParams.set('lang', languageQuery);
+  url.searchParams.delete('lang');
   return url.toString();
 }

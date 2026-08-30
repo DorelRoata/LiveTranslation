@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Multimodal Live WebSocket API (`v1alpha`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.5`.
+The current application version is `v1.3.6`.
 
 ## Screenshots
 
@@ -39,7 +39,7 @@ The current application version is `v1.3.5`.
 | Local dashboard | HTTPS `5173` | `https://localhost:5173/` |
 | Projector/phone subtitles | HTTPS `5173` | `https://192.168.1.67:5173/subtitles.html` |
 | Remote microphone | HTTPS `5173` | `https://192.168.1.67:5173/audio-sender.html` |
-| OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true&lang=1` |
+| OBS Browser Source | HTTP `5174` | `http://192.168.1.67:5174/?obs=true` |
 
 Use `localhost` only on the Mac that is running Live Translate. Other computers must use the network address displayed by the dashboard.
 
@@ -167,14 +167,15 @@ The dashboard warns the operator if the remote sender disconnects and clears the
 ## OBS live-stream overlay
 
 1. In OBS, add a **Browser** source.
-2. Choose **Both Languages**, **Language 1 Only**, or **Language 2 Only** in the dashboard's **OBS Language** selector. That choice is also sent live to an already-open overlay.
-3. Copy the dedicated **OBS Overlay URL**. A one-language URL resembles `http://192.168.1.67:5174/?obs=true&lang=1`.
-4. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
-5. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.
+2. Copy the dedicated **OBS Overlay URL**. It stays `http://HOST-IP:5174/?obs=true` even when you change languages.
+3. Paste it once into an OBS Browser Source. You do not need to edit that address again unless the host computer's IP changes.
+4. Choose **Both Languages**, **Language 1 Only**, or **Language 2 Only** in the dashboard's **OBS Language** selector. The already-open overlay follows that choice live.
+5. Set the Browser Source width and height to `1920 × 1080`, or match the OBS canvas.
+6. Keep **Control audio via OBS** disabled for text-only output. Enable it only when translated speech should enter the OBS mix.
 
 OBS mode hides controls and the connection indicator and makes the page background transparent. A completely blank overlay is expected before translated words arrive.
 
-The `lang` query is `both`, `1`, or `2`. When one language is selected, it uses the upper half of the canvas. If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true&lang=...` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties.
+When one language is selected, it uses the upper half of the canvas. If the projector displays words but OBS does not, verify the `http://...:5174/?obs=true` address, confirm the source eye is enabled and above the video source, and use **Refresh cache of current page** in the Browser Source properties. An older Browser Source that still has `&lang=1` or `&lang=2` in the URL continues to work; language now follows the dashboard either way.
 
 ## Mixed-language microphone routing
 

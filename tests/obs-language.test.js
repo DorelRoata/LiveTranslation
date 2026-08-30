@@ -13,20 +13,20 @@ test('normalizes OBS language choices and safe defaults', () => {
   assert.equal(obsLanguageToViewMode('2'), 'lang2');
 });
 
-test('builds an OBS URL for both languages', () => {
+test('builds a stable OBS URL that does not change with language', () => {
   assert.equal(
-    buildObsUrl('http://192.168.1.67:5174/', 'both'),
-    'http://192.168.1.67:5174/?obs=true&lang=both'
+    buildObsUrl('http://192.168.1.67:5174/'),
+    'http://192.168.1.67:5174/?obs=true'
+  );
+  assert.equal(
+    buildObsUrl('http://192.168.1.67:5174/?obs=true&lang=1'),
+    'http://192.168.1.67:5174/?obs=true'
   );
 });
 
-test('builds single-language OBS URLs without discarding existing parameters', () => {
+test('keeps unrelated OBS URL parameters and still omits language', () => {
   assert.equal(
-    buildObsUrl('http://localhost:5174/?source=browser', 'lang1'),
-    'http://localhost:5174/?source=browser&obs=true&lang=1'
-  );
-  assert.equal(
-    buildObsUrl('http://localhost:5174/', 'lang2'),
-    'http://localhost:5174/?obs=true&lang=2'
+    buildObsUrl('http://localhost:5174/?source=browser'),
+    'http://localhost:5174/?source=browser&obs=true'
   );
 });
