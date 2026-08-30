@@ -680,7 +680,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.10 diagnostics',
+    'Live Translate v1.3.11 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1249,7 +1249,13 @@ async function startAudioCapture() {
 
     const socket1Ready = canSendAudio(socket1, true, 1);
     const socket2Ready = canSendAudio(socket2, true, 2);
-    if (!socket1Ready && !socket2Ready) return;
+    if (!socket1Ready && !socket2Ready) {
+      if (isRunning && socketSetupReady[1] && chunksSent > 0 && chunksSent % 50 === 0) {
+        logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
+        setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
+      }
+      return;
+    }
     if (isSongSuppressed) return;
 
     const pcm16 = floatToPcm16(float32);

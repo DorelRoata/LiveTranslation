@@ -427,14 +427,29 @@ function safeCloseSocket(socket, code, reason) {
   }
 }
 
+function toTextPayload(data) {
+  if (typeof data === 'string') return data;
+  if (Buffer.isBuffer(data)) return data.toString('utf8');
+  if (data instanceof ArrayBuffer) return Buffer.from(data).toString('utf8');
+  if (ArrayBuffer.isView(data)) {
+    return Buffer.from(data.buffer, data.byteOffset, data.byteLength).toString('utf8');
+  }
+  return String(data);
+}
+
+function sendOrDrop(socket, data, isBinary) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  if (socket.bufferedAmount > MAX_BUFFERED_BYTES) return;
+  if (isBinary) {
+    socket.send(data, { binary: true });
+    return;
+  }
+  socket.send(toTextPayload(data), { binary: false });
+}
+
 function forwardSocket(from, to) {
   from.on('message', (data, isBinary) => {
-    if (to.readyState !== WebSocket.OPEN) return;
-    if (to.bufferedAmount > MAX_BUFFERED_BYTES) {
-      to.terminate();
-      return;
-    }
-    to.send(data, { binary: isBinary });
+    sendOrDrop(to, data, isBinary);
   });
   from.on('close', (code, reason) => {
     safeCloseSocket(to, code, reason);
@@ -469,17 +484,7 @@ export function attachGeminiProxy(httpServer) {
     const session = { upstream: null, ready: false };
 
     const sendUpstream = (data, isBinary) => {
-      const upstream = session.upstream;
-      if (!upstream || upstream.readyState !== WebSocket.OPEN) return;
-      if (upstream.bufferedAmount > MAX_BUFFERED_BYTES) {
-        upstream.terminate();
-        return;
-      }
-      if (isBinary) {
-        upstream.send(data, { binary: true });
-        return;
-      }
-      upstream.send(typeof data === 'string' ? data : data.toString(), { binary: false });
+      sendOrDrop(session.upstream, data, false);
     };
 
     client.on('message', (data, isBinary) => {
@@ -487,7 +492,7 @@ export function attachGeminiProxy(httpServer) {
         sendUpstream(data, isBinary);
         return;
       }
-      if (pending.length < 32) pending.push([data, isBinary]);
+      if (pending.length < 8) pending.push([data, isBinary]);
     });
     client.on('close', () => safeCloseSocket(session.upstream, 1000, ''));
     client.on('error', () => safeCloseSocket(session.upstream, 1011, 'Client error'));
