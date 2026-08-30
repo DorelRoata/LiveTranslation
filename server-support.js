@@ -456,32 +456,8 @@ function sendAlways(socket, data, isBinary) {
   socket.send(toTextPayload(data), { binary: false });
 }
 
-function inspectGeminiLanguage(data, last = inspectGeminiLanguage.last || (inspectGeminiLanguage.last = { in: '', out: '', setup: false })) {
-  try {
-    const msg = JSON.parse(toTextPayload(data));
-    if (msg.setup && !last.setup) {
-      last.setup = true;
-      const source = msg.setup.inputAudioTranscription?.languageCodes || [];
-      const target = msg.setup.generationConfig?.translationConfig?.targetLanguageCode || '';
-      console.log(`[live-translate] Gemini setup source=${source.join(',') || 'auto'} target=${target || 'none'}`);
-    }
-    const sc = msg.serverContent || {};
-    const inTx = msg.inputTranscription || sc.inputTranscription || sc.interimInputTranscription;
-    const outTx = msg.outputTranscription || sc.outputTranscription;
-    if (inTx?.languageCode && inTx.languageCode !== last.in) {
-      last.in = inTx.languageCode;
-      console.log(`[live-translate] Gemini heard ${inTx.languageCode}`);
-    }
-    if (outTx?.languageCode && outTx.languageCode !== last.out) {
-      last.out = outTx.languageCode;
-      console.log(`[live-translate] Gemini translated to ${outTx.languageCode}`);
-    }
-  } catch (error) {}
-}
-
 function forwardSocket(from, to) {
   from.on('message', (data, isBinary) => {
-    inspectGeminiLanguage(data);
     sendAlways(to, data, isBinary);
   });
   from.on('close', (code, reason) => {
@@ -513,7 +489,6 @@ export function attachGeminiProxy(httpServer) {
   });
 
   wss.on('connection', (client, request) => {
-    inspectGeminiLanguage.last = { in: '', out: '', setup: false };
     const pending = [];
     const session = { upstream: null, ready: false };
 
@@ -522,12 +497,11 @@ export function attachGeminiProxy(httpServer) {
     };
 
     client.on('message', (data, isBinary) => {
-      inspectGeminiLanguage(data);
       if (session.ready) {
         sendUpstream(data, isBinary);
         return;
       }
-      if (pending.length < 8) pending.push([data, isBinary]);
+      if (pending.length < 32) pending.push([data, isBinary]);
     });
     client.on('close', () => safeCloseSocket(session.upstream, 1000, ''));
     client.on('error', () => safeCloseSocket(session.upstream, 1011, 'Client error'));

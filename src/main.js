@@ -22,7 +22,7 @@ import {
 
 // --- Constants ---
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
-const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
+const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
@@ -32,7 +32,7 @@ const DEFAULT_SYSTEM_INSTRUCTION = `${LEGACY_DEFAULT_SYSTEM_INSTRUCTION} Transla
 const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   audioSource: 'mic',
   microphoneDevice: 'default',
-  sourceLanguage: 'ro',
+  sourceLanguage: 'auto',
   targetLanguage1: 'en',
   targetLanguage2: 'none',
   obsLanguage: 'both',
@@ -283,6 +283,9 @@ function loadOperatorSettings() {
     if (!savedSettings.transcriptFontSize && legacyFontSize) savedSettings.transcriptFontSize = legacyFontSize;
     if (savedSettings.systemInstruction === LEGACY_DEFAULT_SYSTEM_INSTRUCTION) {
       savedSettings.systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
+    }
+    if (savedSettings.sourceLanguage === 'ro') {
+      savedSettings.sourceLanguage = 'auto';
     }
   } catch (error) {
     console.warn('Unable to load operator settings:', error);
@@ -722,7 +725,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.16 diagnostics',
+    'Live Translate v1.3.17 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
