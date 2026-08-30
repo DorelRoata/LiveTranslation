@@ -722,7 +722,7 @@ async function copyDiagnostics() {
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
   const report = [
-    'Live Translate v1.3.18 diagnostics',
+    'Live Translate v1.3.19 diagnostics',
     `Time: ${new Date().toISOString()}`,
     `Browser online: ${navigator.onLine}`,
     `Audio source: ${audioSourceSelect.value}`,
@@ -1890,11 +1890,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         const sc = data.serverContent;
         
         if (sc.interrupted) {
-          logDebug(`WebSocket ${channelId} received interruption.`, "audio");
-          stopAllPlayback();
-          currentStreamingBubble1 = null;
-          currentStreamingBubble2 = null;
-          if (channelId === 1) finalizeInputTranscript();
+          logDebug(`WebSocket ${channelId} received an activity signal; keeping translated audio playing.`, "audio");
         }
         if (sc.turnComplete) {
           logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");

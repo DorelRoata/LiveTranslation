@@ -42,7 +42,11 @@ export function buildGeminiSetupMessage({
         }
       },
       inputAudioTranscription: inputTranscriptionConfig(sourceLanguage),
-      outputAudioTranscription: {}
+      outputAudioTranscription: {},
+      realtimeInputConfig: {
+        automaticActivityDetection: { disabled: false },
+        activityHandling: 'NO_INTERRUPTION'
+      }
     }
   };
 }
