@@ -532,7 +532,7 @@ audioSourceSelect.addEventListener("change", async () => {
   } else {
     micDeviceGroup.style.display = "none";
   }
-  
+
   if (audioSourceSelect.value === "network") {
     const qrDetails = document.getElementById('share-details') || document.querySelector(".qr-details");
     if (qrDetails) qrDetails.open = true;
@@ -559,13 +559,13 @@ async function populateMicDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     micDeviceSelect.innerHTML = "";
-    
+
     // Add default option
     const defaultOpt = document.createElement("option");
     defaultOpt.value = "default";
     defaultOpt.textContent = "Default System Microphone";
     micDeviceSelect.appendChild(defaultOpt);
-    
+
     devices.forEach(device => {
       if (device.kind === 'audioinput') {
         const option = document.createElement("option");
@@ -622,11 +622,11 @@ clearProjectorBtn?.addEventListener("click", () => {
   outputPlaceholder1.style.display = "block";
   outputList2.innerHTML = "";
   outputPlaceholder2.style.display = "block";
-  
+
   // Clear local subtitle state
   subtitleState.lang1.accumulatedText = "";
   subtitleState.lang2.accumulatedText = "";
-  
+
   // Broadcast clear command
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
@@ -865,7 +865,7 @@ function logDebug(message, type = "info") {
   line.className = `debug-line ${type}`;
   let color = "#d6d2ca";
   let prefix = "[System]";
-  
+
   if (type === "error") {
     color = "#f87171";
     prefix = "[Error]";
@@ -879,12 +879,12 @@ function logDebug(message, type = "info") {
     color = "#fbbf24";
     prefix = "[Audio]";
   }
-  
+
   line.style.color = color;
   line.textContent = `${prefix} ${new Date().toLocaleTimeString()} - ${message}`;
   debugLogList.appendChild(line);
   debugLogList.scrollTop = debugLogList.scrollHeight;
-  
+
   while (debugLogList.children.length > 100) {
     debugLogList.removeChild(debugLogList.firstChild);
   }
@@ -899,24 +899,24 @@ clearDebugBtn.addEventListener("click", () => {
 // --- Visualizer Rendering ---
 function initVisualizer(canvas, dataBuffer, color) {
   const ctx = canvas.getContext("2d");
-  
+
   const resizeCanvas = () => {
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
   };
-  
+
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
   function draw() {
     requestAnimationFrame(draw);
-    
+
     const width = canvas.width / window.devicePixelRatio;
     const height = canvas.height / window.devicePixelRatio;
-    
+
     ctx.clearRect(0, 0, width, height);
-    
+
     ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -927,31 +927,31 @@ function initVisualizer(canvas, dataBuffer, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    
+
     const sliceWidth = width / dataBuffer.length;
     let x = 0;
-    
+
     for (let i = 0; i < dataBuffer.length; i++) {
       const v = dataBuffer[i] * 2;
       const y = (v + 1) * (height / 2);
-      
+
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
-      
+
       x += sliceWidth;
     }
-    
+
     ctx.lineTo(width, height / 2);
     ctx.stroke();
-    
+
     for (let i = 0; i < dataBuffer.length; i++) {
       dataBuffer[i] *= 0.92;
     }
   }
-  
+
   draw();
 }
 
@@ -976,9 +976,9 @@ function initOutputAudio() {
 function playPCMChunk(base64Data, channelId) {
   if (isSongSuppressed) return;
   initOutputAudio();
-  
+
   const isPlayChecked = channelId === 1 ? playVoiceCheckbox1.checked : playVoiceCheckbox2.checked;
-  
+
   // Stream to subtitles screen if enabled on main page
   if (isPlayChecked && canSendAudio(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({
@@ -987,19 +987,20 @@ function playPCMChunk(base64Data, channelId) {
       audioData: base64Data
     }));
   }
-  
+
   // 1. Convert base64 back to raw binary data
   const binaryString = atob(base64Data);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
+  const chunkSize = 8192;
   for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
   }
-  
+
   // 2. Decode raw little-endian 16-bit PCM bytes to Float32
   const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(len / 2));
   const float32 = new Float32Array(pcm16.length);
-  
+
   let maxVal = 0;
   for (let i = 0; i < pcm16.length; i++) {
     float32[i] = pcm16[i] / 32768.0;
@@ -1007,18 +1008,18 @@ function playPCMChunk(base64Data, channelId) {
       maxVal = Math.abs(float32[i]);
     }
   }
-  
+
   // Feed output visualizer buffer (mix channels if both playing)
   const step = Math.max(1, Math.floor(float32.length / outBuffer.length));
   for (let i = 0; i < outBuffer.length; i++) {
     const idx = Math.min(float32.length - 1, i * step);
     outBuffer[i] = outBuffer[i] * 0.3 + float32[idx] * 0.7;
   }
-  
+
   // Update UI volume text
   const pct = Math.round(maxVal * 100);
   outputDb.textContent = `${pct}%`;
-  
+
   // If mute is active for this channel, do not schedule playing
   if (!isPlayChecked) {
     return;
@@ -1039,7 +1040,7 @@ function playPCMChunk(base64Data, channelId) {
   gainNode.gain.value = hostVolume;
   sourceNode.connect(gainNode);
   gainNode.connect(audioContextOutput.destination);
-  
+
   const now = audioContextOutput.currentTime;
   const queuedStart = channelId === 1 ? nextStartTime1 : nextStartTime2;
   const scheduled = schedulePlayback(now, queuedStart, audioBuffer.duration);
@@ -1048,7 +1049,7 @@ function playPCMChunk(base64Data, channelId) {
   if (!scheduled.play) return;
 
   sourceNode.start(scheduled.start);
-  
+
   if (channelId === 1) {
     activeSources1.push(sourceNode);
     outputIndicator1.classList.add("active");
@@ -1239,7 +1240,7 @@ async function startAudioCapture() {
     setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', networkAudioHealthDetail(remoteAudioStreaming));
     return;
   }
-  
+
   if (!navigator.mediaDevices) {
     throw new Error("navigator.mediaDevices is not available. Make sure you are accessing the dashboard through https://localhost:5173/. Browsers block microphone and audio sharing on insecure or local file:// pages.");
   }
@@ -1351,7 +1352,7 @@ async function startAudioCapture() {
 
     sendGeminiPcmFrames(float32);
   };
-  
+
   captureSource.connect(scriptProcessor);
   const captureSink = captureContext.createMediaStreamDestination();
   scriptProcessor.connect(captureSink);
@@ -1377,7 +1378,7 @@ function stopAudioCapture() {
   if (audioSourceSelect.value === "network") {
     logDebug("Stopped listening for network audio stream.", "info");
   }
-  
+
   // Unconditionally destroy local mic resources to prevent stream overlap and Gemini errors
   if (captureKeepAlive) {
     try {
@@ -1399,7 +1400,7 @@ function stopAudioCapture() {
     audioContextInput = null;
   }
   geminiPcmAccumulator.reset();
-  
+
   micIndicator.classList.remove("active");
   micDb.textContent = "0%";
   setHealthItem('audio', 'idle', 'Not started');
@@ -1547,31 +1548,31 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
   const list = channelId === 1 ? outputList1 : outputList2;
   let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
   const scrollContainer = document.getElementById(`output-transcript-scroll-${channelId}`);
-  
+
   placeholder.style.display = "none";
-  
+
   if (!currentBubble) {
     currentBubble = document.createElement("div");
     currentBubble.className = "transcript-bubble";
     list.appendChild(currentBubble);
-    
+
     // Cap output transcript list to max 100 items to prevent memory leaks
     while (list.children.length > 100) {
       list.removeChild(list.firstChild);
     }
-    
+
     if (channelId === 1) {
       currentStreamingBubble1 = currentBubble;
     } else {
       currentStreamingBubble2 = currentBubble;
     }
   }
-  
+
   if (isFinal) {
     currentBubble.textContent = text;
     currentBubble.classList.remove("streaming-text");
     incrementWordCount(text);
-    
+
     const ts = document.createElement("span");
     ts.className = "timestamp";
     ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1585,31 +1586,31 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
     currentBubble.textContent = text + "...";
     currentBubble.classList.add("streaming-text");
   }
-  
+
   scrollContainer.scrollTop = scrollContainer.scrollHeight;
 }
 
 function finalizeOutputTranscript(channelId) {
   let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
   if (currentBubble) {
-    const text = currentBubble.textContent.endsWith("...") ? 
-                 currentBubble.textContent.slice(0, -3) : 
+    const text = currentBubble.textContent.endsWith("...") ?
+                 currentBubble.textContent.slice(0, -3) :
                  currentBubble.textContent;
-    
+
     currentBubble.textContent = text;
     currentBubble.classList.remove("streaming-text");
-    
+
     const ts = document.createElement("span");
     ts.className = "timestamp";
     ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     currentBubble.appendChild(ts);
-    
+
     if (channelId === 1) {
       currentStreamingBubble1 = null;
     } else {
       currentStreamingBubble2 = null;
     }
-    
+
     updateSubtitleLane(`lang${channelId}`, text, true);
   }
 }
@@ -1620,9 +1621,9 @@ function openSubtitleWindow() {
     subtitleWindow.focus();
     return;
   }
-  
+
   subtitleWindow = window.open(`/subtitles.html?v=${Date.now()}`, "GeminiLiveSubtitles", "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no");
-  
+
   if (!subtitleWindow) {
     alert("Popup blocker is active. Please allow popups for this site to open the subtitle window.");
   }
@@ -1887,7 +1888,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
     logDebug(`WebSocket ${channelId}: Sending Live Translate setup ${sourceHint} → ${targetLanguage} (no written instructions)...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
   };
-  
+
   ws.onmessage = async (event) => {
     try {
       let text;
@@ -1921,7 +1922,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         stopForGeminiError(errorMessage);
         return;
       }
-      
+
       if (data.setupComplete) {
         logDebug(`Received: WebSocket ${channelId} setupComplete acknowledgment.`, "ws-recv");
         markSocketReady(channelId, generation);
@@ -1929,10 +1930,10 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
       }
 
       if (isSongSuppressed) return;
-      
+
       if (data.serverContent) {
         const sc = data.serverContent;
-        
+
         if (sc.interrupted) {
           logDebug(`WebSocket ${channelId} received an activity signal; keeping translated audio playing.`, "audio");
         }
@@ -1955,7 +1956,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           });
         }
       }
-      
+
       // Handle Transcripts
       const inputTx = data.inputTranscription
         || data.serverContent?.inputTranscription
@@ -1967,7 +1968,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         }
         if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final));
       }
-      
+
       const outputTx = data.outputTranscription
         || data.serverContent?.outputTranscription
         || data.serverContent?.interimOutputTranscription;
@@ -1981,13 +1982,13 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
       }
-      
+
     } catch (err) {
       console.error(`Error parsing WebSocket ${channelId} message:`, err);
       logDebug(`Error parsing server message on channel ${channelId}: ${err.message}`, "error");
     }
   };
-  
+
   ws.onclose = (event) => {
     if (!isCurrentSocket(ws, channelId, generation)) return;
     console.log(`WebSocket ${channelId} connection closed:`, event);
@@ -2001,7 +2002,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
     }
     scheduleReconnect(`Connection dropped on channel ${channelId}.`, generation);
   };
-  
+
   ws.onerror = (err) => {
     if (!isCurrentSocket(ws, channelId, generation)) return;
     console.error(`WebSocket ${channelId} error:`, err);
@@ -2032,9 +2033,9 @@ function disconnectSession(clearSubtitles = true) {
   startBtn.classList.remove("recording");
   startBtn.querySelector(".btn-text").textContent = "Start Translation";
   refreshStartEnabled();
-  
+
   updateConnectionStatus("disconnected", "Disconnected");
-  
+
   logDebug("Disconnecting session...", "info");
   stopAudioCapture();
   stopAllPlayback();
@@ -2042,7 +2043,7 @@ function disconnectSession(clearSubtitles = true) {
   updateReadySongFilterStatus();
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
-  
+
   if (clearSubtitles) {
     subtitleState.lang1 = emptyLaneState();
     subtitleState.lang2 = emptyLaneState();
@@ -2120,7 +2121,7 @@ function initLocalSubtitlesWS() {
     console.error("Local subtitles WebSocket error:", err);
     ws.close();
   };
-  
+
   ws.onmessage = (event) => {
     if (localSubtitlesWS !== ws) return;
     try {
@@ -2282,7 +2283,7 @@ async function initProjectorSharingQR() {
   const streamerQrCanvas = document.getElementById("streamer-qr-canvas");
   const streamerUrl = `${window.location.protocol}//${networkIP}${port}/audio-sender.html?host=1`;
   if (streamerTip) streamerTip.textContent = streamerUrl;
-  
+
   if (streamerQrCanvas) {
     QRCode.toCanvas(streamerQrCanvas, streamerUrl, {
       width: 116,

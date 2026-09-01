@@ -218,7 +218,8 @@ async function startStreaming() {
       const pcm16 = floatToPcm16(inputData);
       const uint8 = new Uint8Array(pcm16.buffer);
       let binary = '';
-      for (let i = 0; i < uint8.byteLength; i++) binary += String.fromCharCode(uint8[i]);
+      const chunkSize = 8192;
+      for (let i = 0; i < uint8.length; i += chunkSize) binary += String.fromCharCode.apply(null, uint8.subarray(i, i + chunkSize));
       const base64Audio = btoa(binary);
 
       ws.send(JSON.stringify({
