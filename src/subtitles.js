@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
 import { emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
-import { schedulePlayback } from './pcm-audio.js';
+import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
@@ -709,6 +709,8 @@ function updateUIElements() {
 }
 
 // Audio Playback Engine
+const subtitlePcmRemainder = { 1: new Uint8Array(0), 2: new Uint8Array(0) };
+
 function playPCMChunk(base64Data, channelId) {
   if (!audioEnabled || !audioContext) return;
 
@@ -719,26 +721,16 @@ function playPCMChunk(base64Data, channelId) {
   try {
     initAudioContext();
 
-    // 1. Decode base64
-    const binaryString = atob(base64Data);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    const decoded = decodePcm16Base64(base64Data, subtitlePcmRemainder[channelId] || new Uint8Array(0));
+    subtitlePcmRemainder[channelId] = decoded.remainder;
+    const float32 = decoded.float32;
+    if (float32.length === 0) return;
 
-    // 2. Convert raw little-endian 16-bit PCM bytes to Float32
-    const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(len / 2));
-    const float32 = new Float32Array(pcm16.length);
-    for (let i = 0; i < pcm16.length; i++) {
-      float32[i] = pcm16[i] / 32768.0;
-    }
-
-    // 3. Create AudioBuffer
+    // Create AudioBuffer
     const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
     audioBuffer.copyToChannel(float32, 0);
 
-    // 4. Connect source node
+    // Connect source node
     const sourceNode = audioContext.createBufferSource();
     sourceNode.buffer = audioBuffer;
     sourceNode.connect(audioContext.destination);

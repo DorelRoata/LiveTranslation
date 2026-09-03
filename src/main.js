@@ -10,12 +10,15 @@ import {
 import { buildObsUrl } from './obs-language.js';
 import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, normalizeSourceLanguage } from './gemini-live.js';
+import { applyBiblicalGlossary } from './glossary.js';
 import {
+  decodePcm16Base64,
   downsampleToRate,
   floatToPcm16,
   GEMINI_FRAME_SAMPLES,
   PcmAccumulator,
   peakAmplitude,
+  PreRollAudioBuffer,
   QUIET_FRAME_PEAK,
   schedulePlayback,
   TARGET_CAPTURE_RATE
@@ -26,7 +29,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.21';
+const APP_VERSION = '1.3.22';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -59,6 +62,10 @@ let scriptProcessor = null;
 let captureKeepAlive = null;
 let audioCaptureGeneration = 0;
 const geminiPcmAccumulator = new PcmAccumulator(GEMINI_FRAME_SAMPLES);
+const mainPcmRemainder = { 1: new Uint8Array(0), 2: new Uint8Array(0) };
+const preRollBuffer = new PreRollAudioBuffer(1.5, TARGET_CAPTURE_RATE);
+let lastSpeechSentTimestamp = 0;
+let smoothedLatencyMs = 0;
 let lastHeardInputLanguage = '';
 
 let nextStartTime1 = 0;
@@ -139,6 +146,7 @@ const muteMicLabel = document.getElementById("mute-mic-label");
 const sessionTimerEl = document.getElementById("session-timer");
 const wordCounterEl = document.getElementById("word-counter");
 const chunkStatsEl = document.getElementById("chunk-stats");
+const telemetryLatencyEl = document.getElementById("telemetry-latency");
 const transcriptGridEl = document.getElementById("transcript-grid");
 
 const micDb = document.getElementById("mic-db");
@@ -655,6 +663,7 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
   const socket1Ready = canSendAudio(socket1, true, 1);
   const socket2Ready = canSendAudio(socket2, true, 2);
   if (!socket1Ready && !socket2Ready) {
+    preRollBuffer.push(float32);
     if (isRunning && socketSetupReady[1] && chunksSent > 0 && chunksSent % 50 === 0) {
       logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
       setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
@@ -666,7 +675,11 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
     (socket2Ready && socket2.bufferedAmount > 64 * 1024);
 
   for (const frame of frames) {
-    if (geminiBackedUp && peakAmplitude(frame) < QUIET_FRAME_PEAK) continue;
+    const amplitude = peakAmplitude(frame);
+    if (geminiBackedUp && amplitude < QUIET_FRAME_PEAK) continue;
+    if (amplitude > 0.04) {
+      lastSpeechSentTimestamp = Date.now();
+    }
     const msgStr = JSON.stringify(buildGeminiAudioMessage(pcm16ToBase64(floatToPcm16(frame))));
     if (socket1Ready) socket1.send(msgStr);
     if (socket2Ready) socket2.send(msgStr);
@@ -859,6 +872,23 @@ function updateChunkStats() {
   }
 }
 
+function updateTelemetryLatency(ms) {
+  if (!telemetryLatencyEl) return;
+  if (!Number.isFinite(ms) || ms <= 0) {
+    telemetryLatencyEl.textContent = '⚡ -- ms';
+    telemetryLatencyEl.style.color = '';
+    return;
+  }
+  telemetryLatencyEl.textContent = `⚡ ${ms} ms`;
+  if (ms < 800) {
+    telemetryLatencyEl.style.color = '#34d399';
+  } else if (ms < 1500) {
+    telemetryLatencyEl.style.color = '#fbbf24';
+  } else {
+    telemetryLatencyEl.style.color = '#f87171';
+  }
+}
+
 function logDebug(message, type = "info") {
   if (!debugLogList) return;
   const line = document.createElement("div");
@@ -988,24 +1018,24 @@ function playPCMChunk(base64Data, channelId) {
     }));
   }
   
-  // 1. Convert base64 back to raw binary data
-  const binaryString = atob(base64Data);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
-  // 2. Decode raw little-endian 16-bit PCM bytes to Float32
-  const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(len / 2));
-  const float32 = new Float32Array(pcm16.length);
-  
-  let maxVal = 0;
-  for (let i = 0; i < pcm16.length; i++) {
-    float32[i] = pcm16[i] / 32768.0;
-    if (Math.abs(float32[i]) > maxVal) {
-      maxVal = Math.abs(float32[i]);
+  if (lastSpeechSentTimestamp > 0) {
+    const sampleLatency = Date.now() - lastSpeechSentTimestamp;
+    if (sampleLatency > 80 && sampleLatency < 10000) {
+      smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
+      updateTelemetryLatency(smoothedLatencyMs);
     }
+  }
+
+  // 1. Decode base64 16-bit PCM bytes to Float32 with remainder reassembly
+  const decoded = decodePcm16Base64(base64Data, mainPcmRemainder[channelId] || new Uint8Array(0));
+  mainPcmRemainder[channelId] = decoded.remainder;
+  const float32 = decoded.float32;
+  if (float32.length === 0) return;
+
+  let maxVal = 0;
+  for (let i = 0; i < float32.length; i++) {
+    const mag = Math.abs(float32[i]);
+    if (mag > maxVal) maxVal = mag;
   }
   
   // Feed output visualizer buffer (mix channels if both playing)
@@ -1217,17 +1247,7 @@ function analyzeAudioForSongs(samples) {
 }
 
 function decodeBase64Pcm16(base64Data) {
-  const binary = atob(base64Data);
-  const pcm = new Int16Array(Math.floor(binary.length / 2));
-  for (let index = 0; index < pcm.length; index++) {
-    const low = binary.charCodeAt(index * 2);
-    const high = binary.charCodeAt((index * 2) + 1);
-    const value = low | (high << 8);
-    pcm[index] = value >= 0x8000 ? value - 0x10000 : value;
-  }
-  const samples = new Float32Array(pcm.length);
-  for (let index = 0; index < pcm.length; index++) samples[index] = pcm[index] / 0x8000;
-  return samples;
+  return decodePcm16Base64(base64Data).float32;
 }
 
 // --- Audio Capture Pipeline (Mic Input) ---
@@ -1807,6 +1827,12 @@ function markSocketReady(channelId, generation) {
   reconnectNowBtn.disabled = false;
   hideRecoveryBanner();
   setDiagnostic('Translation services are connected and ready.', 'good');
+
+  const preRoll = preRollBuffer.flush();
+  if (preRoll.length > 0) {
+    logDebug(`Flushing ${preRoll.length} samples of pre-roll audio into reconnected session.`, 'info');
+    sendGeminiPcmFrames(preRoll, 'reconnect pre-roll');
+  }
 }
 
 function scheduleReconnect(reason, generation = sessionGeneration) {
@@ -1973,11 +1999,20 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         || data.serverContent?.outputTranscription
         || data.serverContent?.interimOutputTranscription;
       if (outputTx) {
-        const text = outputTx.text;
-        if (text) {
+        const rawText = outputTx.text;
+        if (rawText) {
+          if (lastSpeechSentTimestamp > 0) {
+            const sampleLatency = Date.now() - lastSpeechSentTimestamp;
+            if (sampleLatency > 80 && sampleLatency < 10000) {
+              smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
+              updateTelemetryLatency(smoothedLatencyMs);
+            }
+          }
           if (chunksReceived === 0) {
             logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
           }
+          const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
+          const text = applyBiblicalGlossary(rawText, targetLang || 'en');
           updateOutputTranscript(text, channelId, outputTx.final);
           updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
         }
@@ -2037,6 +2072,12 @@ function disconnectSession(clearSubtitles = true) {
   updateConnectionStatus("disconnected", "Disconnected");
   
   logDebug("Disconnecting session...", "info");
+  updateTelemetryLatency(0);
+  smoothedLatencyMs = 0;
+  lastSpeechSentTimestamp = 0;
+  preRollBuffer.clear();
+  mainPcmRemainder[1] = new Uint8Array(0);
+  mainPcmRemainder[2] = new Uint8Array(0);
   stopAudioCapture();
   stopAllPlayback();
   resetSongDetectionGate();

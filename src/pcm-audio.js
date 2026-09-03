@@ -102,3 +102,66 @@ export function schedulePlayback(now, queuedStart, duration = 0, maxAhead = MAX_
   }
   return { play: true, start, nextQueued: start + Math.max(0, duration) };
 }
+
+export function decodePcm16Base64(base64Data, remainder = new Uint8Array(0)) {
+  const binary = typeof atob === 'function'
+    ? atob(base64Data)
+    : Buffer.from(base64Data, 'base64').toString('binary');
+  const incoming = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    incoming[index] = binary.charCodeAt(index);
+  }
+  const combined = new Uint8Array(remainder.length + incoming.length);
+  combined.set(remainder);
+  combined.set(incoming, remainder.length);
+
+  const evenLength = combined.length & ~1;
+  const nextRemainder = combined.slice(evenLength);
+  const sampleCount = evenLength / 2;
+  const float32 = new Float32Array(sampleCount);
+  for (let index = 0; index < sampleCount; index++) {
+    const low = combined[index * 2];
+    const high = combined[index * 2 + 1];
+    let value = low | (high << 8);
+    if (value >= 0x8000) value -= 0x10000;
+    float32[index] = value / 32768;
+  }
+  return { float32, remainder: nextRemainder };
+}
+
+export class PreRollAudioBuffer {
+  constructor(maxDurationSec = 1.5, sampleRate = TARGET_CAPTURE_RATE) {
+    this.maxSamples = Math.round(maxDurationSec * sampleRate);
+    this.buffer = [];
+    this.totalSamples = 0;
+  }
+
+  push(samples) {
+    if (!samples?.length) return;
+    const copy = samples instanceof Float32Array ? samples.slice() : Float32Array.from(samples);
+    this.buffer.push(copy);
+    this.totalSamples += copy.length;
+
+    while (this.buffer.length > 1 && this.totalSamples > this.maxSamples) {
+      this.totalSamples -= this.buffer[0].length;
+      this.buffer.shift();
+    }
+  }
+
+  flush() {
+    if (this.totalSamples === 0) return new Float32Array(0);
+    const out = new Float32Array(this.totalSamples);
+    let offset = 0;
+    for (const chunk of this.buffer) {
+      out.set(chunk, offset);
+      offset += chunk.length;
+    }
+    this.clear();
+    return out;
+  }
+
+  clear() {
+    this.buffer = [];
+    this.totalSamples = 0;
+  }
+}

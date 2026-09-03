@@ -83,30 +83,38 @@ const server = https.createServer({ key: certificate, cert: certificate }, async
   }
 });
 
-// OBS's embedded browser may silently reject the self-signed HTTPS certificate.
-// This HTTP listener exposes only the overlay and its compiled assets, while the
-// dashboard, API key, and microphone streamer remain protected by HTTPS.
-const obsServer = http.createServer(async (req, res) => {
-  try {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      res.writeHead(405).end('Method not allowed');
-      return;
-    }
-    const url = new URL(req.url, 'http://localhost');
-    const requestedPath = url.pathname === '/' ? 'subtitles.html' : decodeURIComponent(url.pathname.slice(1));
-    if (!isObsAllowedPath(requestedPath, distDir)) {
-      res.writeHead(404).end('Not found');
-      return;
-    }
-    await serveStaticFile(req, res, requestedPath);
-  } catch (error) {
-    sendRequestError(error, res);
-  }
-});
+const enableObs = process.env.DISABLE_OBS !== 'true' && obsPort > 0;
+process.env.LIVE_TRANSLATE_OBS_PORT = enableObs ? String(obsPort) : '';
 
 const relay = attachLocalRelay(server);
-attachLocalRelay(obsServer, relay);
 attachGeminiProxy(server);
+
+if (enableObs) {
+  const obsServer = http.createServer(async (req, res) => {
+    try {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        res.writeHead(405).end('Method not allowed');
+        return;
+      }
+      const url = new URL(req.url, 'http://localhost');
+      const requestedPath = url.pathname === '/' ? 'subtitles.html' : decodeURIComponent(url.pathname.slice(1));
+      if (!isObsAllowedPath(requestedPath, distDir)) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      await serveStaticFile(req, res, requestedPath);
+    } catch (error) {
+      sendRequestError(error, res);
+    }
+  });
+
+  attachLocalRelay(obsServer, relay);
+  obsServer.on('error', handleServerError('OBS overlay server', obsPort));
+  obsServer.listen(obsPort, host, () => {
+    const networkIP = getNetworkIP();
+    console.log(`OBS overlay: http://${networkIP}:${obsPort}/?obs=true`);
+  });
+}
 
 function handleServerError(label, listenPort) {
   return error => {
@@ -120,13 +128,8 @@ function handleServerError(label, listenPort) {
 }
 
 server.on('error', handleServerError('LiveTranslation server', port));
-obsServer.on('error', handleServerError('OBS overlay server', obsPort));
 server.listen(port, host, () => {
   const networkIP = getNetworkIP();
   console.log(`LiveTranslation is running at https://localhost:${port}`);
   if (networkIP !== 'localhost') console.log(`Projector access: https://${networkIP}:${port}/subtitles.html`);
-});
-obsServer.listen(obsPort, host, () => {
-  const networkIP = getNetworkIP();
-  console.log(`OBS overlay: http://${networkIP}:${obsPort}/?obs=true`);
 });

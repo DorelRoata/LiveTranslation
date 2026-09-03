@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.21`.
+The current application version is `v1.3.22`.
 
 ## Screenshots
 
@@ -227,3 +227,5 @@ Microphone and system-audio capture require a secure context, so the dashboard a
 ## Troubleshooting and detailed operations
 
 See [Operator Guide](./docs/OPERATOR_GUIDE.md) for the complete operating workflow, diagnostics, update recovery, OBS checks, saved-setting behavior, and common failure cases.
+
+See [Engineering Notes & Lessons Learned](./docs/ENGINEERING_NOTES.md) for documented architectural decisions, failed API experiments to avoid, and technical constraints.
