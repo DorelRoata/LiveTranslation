@@ -50,11 +50,26 @@ export function appendFinalSubtitle(accumulatedText, text) {
   return trimSubtitleHistory(next);
 }
 
-export function applyLaneUpdate(laneState = {}, text, isFinal) {
-  const next = {
+export function replaceLaneState(laneState = {}) {
+  return {
     accumulatedText: typeof laneState.accumulatedText === 'string' ? laneState.accumulatedText : '',
     interimText: typeof laneState.interimText === 'string' ? laneState.interimText : ''
   };
+}
+
+export function applyRelaySnapshot(subtitleState = {}, snapshot = {}) {
+  const next = { ...subtitleState };
+  if (snapshot.lang1 && typeof snapshot.lang1 === 'object') {
+    next.lang1 = replaceLaneState(snapshot.lang1);
+  }
+  if (snapshot.lang2 && typeof snapshot.lang2 === 'object') {
+    next.lang2 = replaceLaneState(snapshot.lang2);
+  }
+  return next;
+}
+
+export function applyLaneUpdate(laneState = {}, text, isFinal) {
+  const next = replaceLaneState(laneState);
 
   if (isFinal) {
     next.accumulatedText = appendFinalSubtitle(next.accumulatedText, text);

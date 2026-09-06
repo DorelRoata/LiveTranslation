@@ -67,3 +67,27 @@ export function buildGeminiAudioMessage(base64Pcm) {
     }
   };
 }
+
+export function shouldReconnectOnNetworkOnline({
+  isRunning = false,
+  reconnectPending = false,
+  primaryReady = false,
+  secondaryEnabled = false,
+  secondaryReady = false
+} = {}) {
+  if (!isRunning) return false;
+  if (reconnectPending) return true;
+  if (!primaryReady) return true;
+  if (secondaryEnabled && !secondaryReady) return true;
+  return false;
+}
+
+export function canForwardGeminiAudio({
+  primaryReady = false,
+  secondaryEnabled = false,
+  secondaryReady = false
+} = {}) {
+  if (!primaryReady) return false;
+  if (secondaryEnabled && !secondaryReady) return false;
+  return true;
+}

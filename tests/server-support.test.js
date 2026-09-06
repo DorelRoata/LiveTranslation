@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
+import http from 'node:http';
 import path from 'node:path';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
+import { WebSocket } from 'ws';
 import {
+  attachLocalRelay,
   buildGeminiUpstreamUrl,
   geminiProxyAllowed,
   getInstanceInfo,
@@ -10,8 +13,32 @@ import {
   isObsAllowedPath,
   isOperatorClient,
   isPrivateLan,
+  isTranslationSessionActive,
+  MAX_BUFFERED_BYTES,
   publicApiKeyStatus
 } from '../server-support.js';
+
+function onceOpen(socket) {
+  return new Promise((resolve, reject) => {
+    socket.once('open', resolve);
+    socket.once('error', reject);
+  });
+}
+
+function nextJson(socket) {
+  return new Promise((resolve, reject) => {
+    const onMessage = raw => {
+      socket.off('error', onError);
+      resolve(JSON.parse(raw.toString()));
+    };
+    const onError = error => {
+      socket.off('message', onMessage);
+      reject(error);
+    };
+    socket.once('message', onMessage);
+    socket.once('error', onError);
+  });
+}
 
 test('instance info reports version and commit without secrets', async () => {
   const info = await getInstanceInfo();
@@ -19,7 +46,14 @@ test('instance info reports version and commit without secrets', async () => {
   assert.equal(info.application, 'live-translate');
   assert.equal(info.version, packageVersion);
   assert.match(info.commit, /^[0-9a-f]{7,40}$/);
+  assert.equal(info.translationActive, false);
+  assert.equal(isTranslationSessionActive(), false);
   assert.equal('apiKey' in info, false);
+  assert.equal('geminiApiKey' in info, false);
+});
+
+test('WebSocket lag buffer matches the dashboard 2 MB ceiling', () => {
+  assert.equal(MAX_BUFFERED_BYTES, 2 * 1024 * 1024);
 });
 
 test('API key status never includes the secret', () => {
@@ -46,6 +80,52 @@ test('OBS overlay cannot traverse into the dashboard', () => {
   assert.equal(isObsAllowedPath('assets/../index.html', distDir), false);
   assert.equal(isObsAllowedPath('../index.html', distDir), false);
   assert.equal(isObsAllowedPath('audio-sender.html', distDir), false);
+});
+
+test('relay replace restores dashboard subtitle lanes to projector clients', async () => {
+  const server = http.createServer();
+  const relay = attachLocalRelay(server);
+  await new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', error => error ? reject(error) : resolve());
+  });
+  const port = server.address().port;
+  const viewer = new WebSocket(`ws://127.0.0.1:${port}/local-subtitles-ws`);
+  const dashboard = new WebSocket(`ws://127.0.0.1:${port}/local-subtitles-ws`);
+
+  try {
+    const viewerHello = nextJson(viewer);
+    const dashboardHello = nextJson(dashboard);
+    await Promise.all([onceOpen(viewer), onceOpen(dashboard)]);
+    assert.equal((await viewerHello).type, 'sync');
+    await dashboardHello;
+
+    dashboard.send(JSON.stringify({
+      type: 'update',
+      lane: 'lang1',
+      text: 'Hello',
+      isFinal: true
+    }));
+    const afterUpdate = await nextJson(viewer);
+    assert.equal(afterUpdate.state.lang1.accumulatedText, 'Hello');
+
+    const restored = nextJson(viewer);
+    dashboard.send(JSON.stringify({
+      type: 'replace',
+      lang1: { accumulatedText: 'Hello there friends', interimText: 'amen' },
+      lang2: { accumulatedText: 'Bună ziua', interimText: '' }
+    }));
+    const snapshot = await restored;
+    assert.equal(snapshot.type, 'sync');
+    assert.equal(snapshot.state.lang1.accumulatedText, 'Hello there friends');
+    assert.equal(snapshot.state.lang1.interimText, 'amen');
+    assert.equal(snapshot.state.lang2.accumulatedText, 'Bună ziua');
+  } finally {
+    viewer.close();
+    dashboard.close();
+    for (const client of relay.wss.clients) client.terminate();
+    await new Promise(resolve => relay.wss.close(() => resolve()));
+    await new Promise(resolve => server.close(() => resolve()));
+  }
 });
 
 test('Gemini proxy allows this computer and private LAN clients, and hides the key from the dashboard URL', () => {

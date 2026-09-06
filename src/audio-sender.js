@@ -2,7 +2,7 @@ import './style.css';
 import { createScreenWakeLock } from './wake-lock.js';
 import { downsampleToRate, floatToPcm16, peakAmplitude, TARGET_CAPTURE_RATE } from './pcm-audio.js';
 
-const MAX_BUFFERED_AUDIO_BYTES = 256 * 1024;
+const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const HOST_MODE = new URLSearchParams(window.location.search).get('host') === '1';
 const PREFS_KEY = HOST_MODE ? 'live_translate_host_audio_v1' : 'live_translate_sender_v1';
 const micDeviceSelect = document.getElementById("mic-device-select");

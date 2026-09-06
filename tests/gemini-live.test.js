@@ -3,8 +3,10 @@ import test from 'node:test';
 import {
   buildGeminiAudioMessage,
   buildGeminiSetupMessage,
+  canForwardGeminiAudio,
   GEMINI_LIVE_MODEL,
-  inputTranscriptionConfig
+  inputTranscriptionConfig,
+  shouldReconnectOnNetworkOnline
 } from '../src/gemini-live.js';
 
 test('Live Translate setup omits instructions and keeps transcription at setup top-level', () => {
@@ -43,6 +45,71 @@ test('maps short language codes to Live Translate BCP-47 values', () => {
   const portuguese = buildGeminiSetupMessage({ targetLanguage: 'pt', sourceLanguage: 'pt' });
   assert.equal(portuguese.setup.generationConfig.translationConfig.targetLanguageCode, 'pt-BR');
   assert.deepEqual(portuguese.setup.inputAudioTranscription, { languageCodes: ['pt-BR'] });
+});
+
+test('network online does not tear down healthy Gemini sockets', () => {
+  assert.equal(shouldReconnectOnNetworkOnline({
+    isRunning: true,
+    reconnectPending: false,
+    primaryReady: true,
+    secondaryEnabled: true,
+    secondaryReady: true
+  }), false);
+  assert.equal(shouldReconnectOnNetworkOnline({
+    isRunning: true,
+    reconnectPending: false,
+    primaryReady: true,
+    secondaryEnabled: false,
+    secondaryReady: false
+  }), false);
+  assert.equal(shouldReconnectOnNetworkOnline({ isRunning: false, primaryReady: false }), false);
+});
+
+test('network online reconnects only when a Gemini socket is down or already recovering', () => {
+  assert.equal(shouldReconnectOnNetworkOnline({
+    isRunning: true,
+    reconnectPending: true,
+    primaryReady: true,
+    secondaryEnabled: false,
+    secondaryReady: false
+  }), true);
+  assert.equal(shouldReconnectOnNetworkOnline({
+    isRunning: true,
+    reconnectPending: false,
+    primaryReady: false,
+    secondaryEnabled: false,
+    secondaryReady: false
+  }), true);
+  assert.equal(shouldReconnectOnNetworkOnline({
+    isRunning: true,
+    reconnectPending: false,
+    primaryReady: true,
+    secondaryEnabled: true,
+    secondaryReady: false
+  }), true);
+});
+
+test('dual-language audio waits until every enabled Gemini socket is ready', () => {
+  assert.equal(canForwardGeminiAudio({
+    primaryReady: true,
+    secondaryEnabled: true,
+    secondaryReady: false
+  }), false);
+  assert.equal(canForwardGeminiAudio({
+    primaryReady: true,
+    secondaryEnabled: true,
+    secondaryReady: true
+  }), true);
+  assert.equal(canForwardGeminiAudio({
+    primaryReady: true,
+    secondaryEnabled: false,
+    secondaryReady: false
+  }), true);
+  assert.equal(canForwardGeminiAudio({
+    primaryReady: false,
+    secondaryEnabled: false,
+    secondaryReady: false
+  }), false);
 });
 
 test('Live Translate audio uses realtimeInput.audio instead of deprecated mediaChunks', () => {

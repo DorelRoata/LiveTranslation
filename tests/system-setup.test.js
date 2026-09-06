@@ -3,8 +3,10 @@ import test from 'node:test';
 import {
   addedWordCount,
   applyLaneUpdate,
+  applyRelaySnapshot,
   appendFinalSubtitle,
   buildSystemSetup,
+  emptyLaneState,
   getLanguageName,
   laneDisplayText,
   mergeIncomingTranscript
@@ -58,6 +60,23 @@ test('counts only newly added words when Gemini repeats a growing snapshot', () 
   assert.equal(mergeIncomingTranscript('Hello', 'Hello there'), 'Hello there');
   assert.equal(addedWordCount('Hello', 'Hello there'), 1);
   assert.equal(addedWordCount('Hello there', 'Hello there'), 0);
+});
+
+test('relay snapshot replaces projector lanes instead of appending to stale text', () => {
+  const stale = {
+    lang1: applyLaneUpdate(emptyLaneState(), 'Hello', true),
+    lang2: emptyLaneState(),
+    targetLanguage1: 'en'
+  };
+  const restored = applyRelaySnapshot(stale, {
+    lang1: { accumulatedText: 'Hello there friends', interimText: 'amen' },
+    lang2: { accumulatedText: 'Bună ziua', interimText: '' }
+  });
+
+  assert.equal(restored.lang1.accumulatedText, 'Hello there friends');
+  assert.equal(restored.lang1.interimText, 'amen');
+  assert.equal(restored.lang2.accumulatedText, 'Bună ziua');
+  assert.equal(restored.targetLanguage1, 'en');
 });
 
 test('final subtitle updates append once and clear the interim phrase', () => {

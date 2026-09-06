@@ -53,6 +53,7 @@ async function dependencyFingerprint() {
 async function collectFiles(relativePath, files) {
   const normalizedPath = relativePath.split(path.sep).join('/');
   if (normalizedPath === 'public/mediapipe/wasm' || normalizedPath.startsWith(generatedWasmPrefix)) return;
+  if (normalizedPath.split('/').some(part => part.startsWith('.'))) return;
 
   const absolutePath = path.join(projectRoot, relativePath);
   const fileStat = await fs.stat(absolutePath);
@@ -65,6 +66,7 @@ async function collectFiles(relativePath, files) {
   const entries = await fs.readdir(absolutePath, { withFileTypes: true });
   entries.sort((left, right) => left.name.localeCompare(right.name));
   for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
     await collectFiles(path.join(relativePath, entry.name), files);
   }
 }

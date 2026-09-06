@@ -4,13 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
-import { applyLaneUpdate, buildSystemSetup, emptyLaneState } from './src/system-setup.js';
+import { applyLaneUpdate, applyRelaySnapshot, buildSystemSetup, emptyLaneState } from './src/system-setup.js';
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
 const MAX_WS_PAYLOAD_BYTES = 2 * 1024 * 1024;
-const MAX_BUFFERED_BYTES = 256 * 1024;
+export const MAX_BUFFERED_BYTES = 2 * 1024 * 1024;
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
+let geminiProxyClientCount = 0;
 const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const execFileAsync = promisify(execFile);
 
@@ -210,6 +211,10 @@ async function storeApiKey(apiKey) {
   process.env.GEMINI_API_KEY = apiKey;
 }
 
+export function isTranslationSessionActive() {
+  return geminiProxyClientCount > 0;
+}
+
 export async function getInstanceInfo() {
   let commit = '';
   try {
@@ -221,7 +226,8 @@ export async function getInstanceInfo() {
     application: 'live-translate',
     repositoryPath: await fs.realpath(process.cwd()).catch(() => path.resolve(process.cwd())),
     version: packageVersion,
-    commit
+    commit,
+    translationActive: isTranslationSessionActive()
   };
 }
 
@@ -386,9 +392,12 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
         const data = JSON.parse(message.toString());
 
         if (data.type === 'update') {
-          if (!subtitleState[data.lane] || typeof data.text !== 'string') return;
+          if ((data.lane !== 'lang1' && data.lane !== 'lang2') || typeof data.text !== 'string') return;
           subtitleState[data.lane] = applyLaneUpdate(subtitleState[data.lane], data.text, Boolean(data.isFinal));
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }), ws);
+        } else if (data.type === 'replace') {
+          Object.assign(subtitleState, applyRelaySnapshot(subtitleState, data));
+          broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
         } else if (data.type === 'setup') {
           Object.assign(subtitleState, buildSystemSetup(data));
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
@@ -505,6 +514,11 @@ export function attachGeminiProxy(httpServer) {
   });
 
   wss.on('connection', (client, request) => {
+    geminiProxyClientCount += 1;
+    client.once('close', () => {
+      geminiProxyClientCount = Math.max(0, geminiProxyClientCount - 1);
+    });
+
     const pending = [];
     const session = { upstream: null, ready: false };
 

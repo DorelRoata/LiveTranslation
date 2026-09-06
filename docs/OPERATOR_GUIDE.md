@@ -1,6 +1,6 @@
 # Live Translate Operator Guide
 
-This guide covers the normal operating workflow and the recovery steps most likely to be needed during a live event.
+This guide covers the normal operating workflow and the recovery steps most likely to be needed during a live event. Release history and the reasons for each change are in [Changelog](./CHANGELOG.md).
 
 ## 1. Know which computer is the host
 
@@ -43,7 +43,7 @@ The Mac audio window reconnects automatically if you restart the server. Keep th
 
 If the app is already running and up to date, a dialog says that nothing new will be started. **OK** leaves the current dashboard and session untouched. **Open Dashboard** navigates to the existing instance and also reopens the Mac audio page.
 
-If a newer revision is already on disk (for example after `git pull` or `update-live-translate.command`) or the dashboard needs a rebuild, the Dock app restarts automatically, rebuilds if the pulled files changed, and opens the new dashboard. You do not need to run `npm run build` yourself.
+If a newer revision is already on disk (for example after `git pull` or `update-live-translate.command`) or the dashboard needs a rebuild, the Dock app asks before restarting. **Restart and Update** stops the current dashboard, rebuilds if the pulled files changed, and opens the new dashboard. **Keep Running** leaves the current session untouched. If translation is live, Keep Running is the default. You do not need to run `npm run build` yourself.
 
 The dashboard adds a second safety layer while translation is active: the browser must confirm any reload, tab close, or navigation that would destroy the page-held Gemini session. If this warning appears during an event, choose the option that stays on the page.
 
@@ -290,11 +290,11 @@ The browser dashboard also includes System Status Logs and a Copy Diagnostics co
 
 ### Clicking the Dock app resets the dashboard
 
-If the running session is already the current version, a second launch displays an Already Running dialog and leaves it untouched when **OK** is selected. If a newer pulled version is waiting, choose **Restart and Update**. If a navigation still reaches the dashboard during a live session, the browser guard requires another explicit confirmation before the translation can be destroyed.
+If the running session is already the current version, a second launch displays an Already Running dialog and leaves it untouched when **OK** is selected. If a newer pulled version is waiting, the Dock app asks; choose **Keep Running** to protect the live session or **Restart and Update** to apply the new build. If translation is running, Keep Running is the default. If a navigation still reaches the dashboard during a live session, the browser guard requires another explicit confirmation before the translation can be destroyed.
 
 ### Changes are not visible after an update
 
-Double-click `update-live-translate.command` in the repository, or `git pull` and click the Dock icon. A pulled update restarts automatically, rebuilds if needed, and opens the new dashboard. Confirm the footer version after it reopens.
+Double-click `update-live-translate.command` in the repository, or `git pull` and click the Dock icon. If a server is already running, confirm **Restart and Update**, then confirm the footer version after the new dashboard opens.
 
 ### Settings do not appear to persist
 

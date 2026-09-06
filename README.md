@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.22`.
+The current application version is `v1.3.23`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
 
 ## Screenshots
 
@@ -97,7 +97,7 @@ The Dock app:
 
 If Live Translate is already running and the current session is up to date, clicking the Dock icon does not start another server. It displays an **Already Running** dialog. Choose **OK** to leave the session untouched or **Open Dashboard** to navigate to it.
 
-If you have already pulled a newer revision, or the dashboard build is stale, the Dock icon offers **Restart and Update**. That stops the current translation session, rebuilds if needed, and starts the pulled version. You do not need to rebuild by hand.
+If you have already pulled a newer revision, or the dashboard build is stale, the Dock icon offers **Keep Running** or **Restart and Update**. Restarting stops the current dashboard, rebuilds if needed, and starts the pulled version. You do not need to rebuild by hand. If translation is currently running, **Keep Running** is the default so a Dock click cannot kill a live sermon.
 
 While translation is active, the dashboard also asks for confirmation before a browser reload, tab close, or navigation can destroy the live Gemini session. This browser guard is a second layer of protection if someone clicks through the launcher or tries to refresh the page during an event.
 
@@ -113,9 +113,9 @@ To install an update, double-click:
 update-live-translate.command
 ```
 
-That pulls `origin/main`, then opens the Dock app. If Live Translate is already running with an older build, it restarts automatically, rebuilds if needed, and opens the new dashboard. You do not need to rebuild by hand.
+That pulls `origin/main`, then opens the Dock app. If Live Translate is already running with an older build, the Dock icon asks before restarting. Choose **Restart and Update** to rebuild if needed and open the new dashboard, or **Keep Running** to leave the current session untouched.
 
-You can also `git pull` and click the Dock icon. A pulled update is applied without an extra confirmation dialog.
+You can also `git pull` and click the Dock icon. A pulled update still requires that Restart and Update confirmation when a server is already running.
 
 The launcher still offers **Update and Start** on a cold start when GitHub is ahead and the files have not been pulled yet. Interrupted updates use transaction markers and backups so the previous revision can be recovered safely.
 

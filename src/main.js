@@ -9,7 +9,7 @@ import {
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
 import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
-import { buildGeminiAudioMessage, buildGeminiSetupMessage, normalizeSourceLanguage } from './gemini-live.js';
+import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
   decodePcm16Base64,
@@ -29,7 +29,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.22';
+const APP_VERSION = '1.3.23';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -656,23 +656,40 @@ function pcm16ToBase64(pcm16) {
   return base64ArrayBuffer(pcm16.buffer.slice(pcm16.byteOffset, pcm16.byteOffset + pcm16.byteLength));
 }
 
+function secondLanguageEnabled() {
+  return Boolean(sessionConfig && sessionConfig.targetLanguage2 !== 'none');
+}
+
+function translationSocketsReady() {
+  return canForwardGeminiAudio({
+    primaryReady: socketSetupReady[1],
+    secondaryEnabled: secondLanguageEnabled(),
+    secondaryReady: socketSetupReady[2]
+  });
+}
+
 function sendGeminiPcmFrames(float32, logLabel = 'audio') {
   const frames = geminiPcmAccumulator.push(float32);
   if (!frames.length) return;
 
+  const dual = secondLanguageEnabled();
   const socket1Ready = canSendAudio(socket1, true, 1);
-  const socket2Ready = canSendAudio(socket2, true, 2);
-  if (!socket1Ready && !socket2Ready) {
+  const socket2Ready = !dual || canSendAudio(socket2, true, 2);
+  if (!canForwardGeminiAudio({
+    primaryReady: socket1Ready,
+    secondaryEnabled: dual,
+    secondaryReady: socket2Ready
+  })) {
     preRollBuffer.push(float32);
-    if (isRunning && socketSetupReady[1] && chunksSent > 0 && chunksSent % 50 === 0) {
+    if (isRunning && translationSocketsReady() && chunksSent > 0 && chunksSent % 50 === 0) {
       logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
       setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
     }
     return;
   }
 
-  const geminiBackedUp = (socket1Ready && socket1.bufferedAmount > 64 * 1024) ||
-    (socket2Ready && socket2.bufferedAmount > 64 * 1024);
+  const geminiBackedUp = socket1.bufferedAmount > 64 * 1024 ||
+    (dual && socket2.bufferedAmount > 64 * 1024);
 
   for (const frame of frames) {
     const amplitude = peakAmplitude(frame);
@@ -681,8 +698,8 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
       lastSpeechSentTimestamp = Date.now();
     }
     const msgStr = JSON.stringify(buildGeminiAudioMessage(pcm16ToBase64(floatToPcm16(frame))));
-    if (socket1Ready) socket1.send(msgStr);
-    if (socket2Ready) socket2.send(msgStr);
+    socket1.send(msgStr);
+    if (dual) socket2.send(msgStr);
     chunksSent++;
     updateChunkStats();
     if (chunksSent === 1 || chunksSent % 25 === 0) {
@@ -697,6 +714,16 @@ function isSocketOpen(ws, requireSetup = false, channelId = 0) {
     ws.readyState === WebSocket.OPEN &&
     (!requireSetup || socketSetupReady[channelId])
   );
+}
+
+function geminiSessionNeedsReconnect() {
+  return shouldReconnectOnNetworkOnline({
+    isRunning,
+    reconnectPending: Boolean(reconnectTimeout),
+    primaryReady: isSocketOpen(socket1, true, 1),
+    secondaryEnabled: Boolean(sessionConfig && sessionConfig.targetLanguage2 !== 'none'),
+    secondaryReady: isSocketOpen(socket2, true, 2)
+  });
 }
 
 function canSendAudio(ws, requireSetup = false, channelId = 0) {
@@ -2141,7 +2168,7 @@ function initLocalSubtitlesWS() {
     setHealthItem('local', 'good', 'Connected');
     logDebug("Connected to local subtitles broadcast server.", "info");
     syncLocalSubtitlesSetup();
-    if (isRunning && socketSetupReady[1] && (!socket2 || socketSetupReady[2])) {
+    if (isRunning && translationSocketsReady()) {
       setDiagnostic('Local projector relay restored. Translation services are ready.', 'good');
     }
   };
@@ -2189,7 +2216,7 @@ function initLocalSubtitlesWS() {
             : 'Remote microphone reconnected. Translation can continue.', 'good');
         } else if (!remoteAudioStreaming) {
           const isNetworkSource = audioSourceSelect.value === 'network';
-          const isTranslating = socketSetupReady[1] || socketSetupReady[2];
+          const isTranslating = translationSocketsReady();
           if (isNetworkSource && isTranslating) {
             if (networkDisconnectWarning) networkDisconnectWarning.style.display = "flex";
             logDebug("Remote audio stream disconnected!", "error");
@@ -2206,7 +2233,7 @@ function initLocalSubtitlesWS() {
 
 function handleIncomingNetworkAudio(base64Data) {
   const isNetworkSource = audioSourceSelect.value === 'network';
-  const isTranslating = socketSetupReady[1] || socketSetupReady[2];
+  const isTranslating = translationSocketsReady();
   if (!isNetworkSource || !isTranslating) return;
 
   const incomingSamples = decodeBase64Pcm16(base64Data);
@@ -2246,6 +2273,15 @@ function handleIncomingNetworkAudio(base64Data) {
   sendGeminiPcmFrames(incomingSamples, 'network audio');
 }
 
+function syncLocalSubtitleSnapshot() {
+  if (!isSocketOpen(localSubtitlesWS) || !isRunning) return;
+  localSubtitlesWS.send(JSON.stringify({
+    type: 'replace',
+    lang1: subtitleState.lang1,
+    lang2: subtitleState.lang2
+  }));
+}
+
 function syncLocalSubtitlesSetup() {
   if (!isSocketOpen(localSubtitlesWS)) return;
   const setup = buildSystemSetup({
@@ -2258,6 +2294,7 @@ function syncLocalSubtitlesSetup() {
     type: 'setup',
     ...setup
   }));
+  syncLocalSubtitleSnapshot();
 }
 
 // Initialize local WebSocket connection on page load
@@ -2275,14 +2312,18 @@ window.addEventListener('online', () => {
     clearTimeout(localReconnectTimeout);
     initLocalSubtitlesWS();
   }
-  if (isRunning) {
-    clearTimeout(reconnectTimeout);
-    reconnectTimeout = null;
-    reconnectAttempt = 0;
-    showRecoveryBanner('Network restored. Reconnecting now while preserving your subtitles.');
-    setDiagnostic('Network restored. Reconnecting translation services now...', 'warning');
-    connectGeminiSockets();
+  if (!isRunning) return;
+  if (!geminiSessionNeedsReconnect()) {
+    hideRecoveryBanner();
+    setDiagnostic('Network restored. Translation services stayed connected.', 'good');
+    return;
   }
+  clearTimeout(reconnectTimeout);
+  reconnectTimeout = null;
+  reconnectAttempt = 0;
+  showRecoveryBanner('Network restored. Reconnecting now while preserving your subtitles.');
+  setDiagnostic('Network restored. Reconnecting translation services now...', 'warning');
+  connectGeminiSockets();
 });
 
 // Update Projector Sharing URL Tip & QR Code

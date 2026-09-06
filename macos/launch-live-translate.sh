@@ -67,9 +67,12 @@ ask_to_restart_running() {
     /usr/bin/printf 'Restart and Update\n'
     return 0
   fi
-  /usr/bin/osascript - "$1" <<'APPLESCRIPT'
+  /usr/bin/osascript - "$1" "${2:-Restart and Update}" <<'APPLESCRIPT'
 on run argv
-  set result to display dialog (item 1 of argv) with title "Live Translate Update" buttons {"Keep Running", "Restart and Update"} default button "Restart and Update" cancel button "Keep Running" with icon caution
+  set defaultBtn to "Restart and Update"
+  if (count of argv) is greater than 1 then set defaultBtn to item 2 of argv
+  if defaultBtn is not in {"Keep Running", "Restart and Update"} then set defaultBtn to "Restart and Update"
+  set result to display dialog (item 1 of argv) with title "Live Translate Update" buttons {"Keep Running", "Restart and Update"} default button defaultBtn cancel button "Keep Running" with icon caution
   return button returned of result
 end run
 APPLESCRIPT
@@ -345,7 +348,19 @@ if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/de
   fi
   if [ "$RUNNING_REPO" = "$REPO_ROOT" ]; then
     if running_server_is_stale "$INSTANCE_JSON"; then
-      show_notice "A pulled update is ready. Restarting Live Translate..."
+      TRANSLATION_ACTIVE="$(instance_field "$INSTANCE_JSON" translationActive)"
+      if [ "$TRANSLATION_ACTIVE" = "true" ]; then
+        RESTART_MESSAGE="Translation is currently running. Restarting will stop the live Gemini session, rebuild if needed, and open the new dashboard."
+        RESTART_DEFAULT="Keep Running"
+      else
+        RESTART_MESSAGE="A newer Live Translate build is ready. Restarting will stop the current dashboard, rebuild if needed, and open the new version."
+        RESTART_DEFAULT="Restart and Update"
+      fi
+      RESTART_CHOICE="$(ask_to_restart_running "$RESTART_MESSAGE" "$RESTART_DEFAULT")"
+      if [ "$RESTART_CHOICE" != "Restart and Update" ]; then
+        exit 0
+      fi
+      show_notice "Restarting Live Translate..."
       if ! stop_running_server; then
         show_error "Live Translate could not stop the running server. Quit it from Activity Monitor or the terminal, then open the app again."
         exit 1
