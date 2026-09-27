@@ -84,10 +84,9 @@ const secLang2 = document.getElementById('sec-lang2');
 
 // QR DOM Elements
 const btnQrToggle = document.getElementById('btn-qr-toggle');
-const qrOverlay = document.getElementById('qr-overlay');
-const btnQrClose = document.getElementById('btn-qr-close');
+const qrFloat = document.getElementById('qr-float');
 const qrCanvasProjector = document.getElementById('qr-canvas-projector');
-const qrUrlText = document.getElementById('qr-url-text');
+const PROJECTOR_QR_KEY = 'live_translate_projector_qr';
 
 // UI state configurations
 const urlParams = new URLSearchParams(window.location.search);
@@ -840,32 +839,15 @@ function connect() {
   };
 }
 
-// --- QR Code Toggle and Render Code ---
+// --- Corner QR: stays on the projector while subtitles keep running ---
 let subtitlesUrl = `${window.location.protocol}//${window.location.host}/subtitles.html`;
-qrUrlText.textContent = subtitlesUrl;
+let qrFloatEnabled = false;
+let qrRenderedFor = '';
 
-// Fetch network IP to use for QR codes instead of localhost
-async function initProjectorSharingQR() {
-  try {
-    const res = await fetch('/api/network-ip');
-    const data = await res.json();
-    const port = window.location.port ? `:${window.location.port}` : '';
-    subtitlesUrl = `${window.location.protocol}//${data.ip}${port}/subtitles.html`;
-    qrUrlText.textContent = subtitlesUrl;
-  } catch (err) {
-    console.error("Could not fetch network IP for QR code:", err);
-  }
-}
-initProjectorSharingQR();
-
-btnQrToggle.addEventListener('click', () => {
-  qrOverlay.classList.remove('hidden');
-  qrOverlay.setAttribute('aria-hidden', 'false');
-  btnQrClose.focus();
-  
-  // Render QR Code
+function renderProjectorQr() {
+  if (!qrFloatEnabled || qrRenderedFor === subtitlesUrl) return;
   QRCode.toCanvas(qrCanvasProjector, subtitlesUrl, {
-    width: 250,
+    width: 168,
     margin: 1,
     color: {
       dark: '#000000',
@@ -874,29 +856,56 @@ btnQrToggle.addEventListener('click', () => {
     errorCorrectionLevel: 'M'
   }, function (error) {
     if (error) console.error("Projector QR Code error:", error);
+    else qrRenderedFor = subtitlesUrl;
   });
-});
-
-function closeQrOverlay() {
-  qrOverlay.classList.add('hidden');
-  qrOverlay.setAttribute('aria-hidden', 'true');
-  btnQrToggle.focus();
 }
 
-// Close when Close button clicked
-btnQrClose.addEventListener('click', closeQrOverlay);
-
-// Close when clicking anywhere on background overlay
-qrOverlay.addEventListener('click', (event) => {
-  if (event.target === qrOverlay) {
-    closeQrOverlay();
+function setQrFloat(enabled, persist = true) {
+  qrFloatEnabled = Boolean(enabled);
+  qrFloat.classList.toggle('hidden', !qrFloatEnabled);
+  qrFloat.setAttribute('aria-hidden', String(!qrFloatEnabled));
+  btnQrToggle.classList.toggle('active', qrFloatEnabled);
+  btnQrToggle.setAttribute('aria-pressed', String(qrFloatEnabled));
+  btnQrToggle.textContent = qrFloatEnabled ? 'QR On' : 'QR Off';
+  btnQrToggle.title = qrFloatEnabled
+    ? 'Hide the corner QR code.'
+    : 'Show a QR code in the bottom-right so people can open subtitles on their phone.';
+  if (persist) {
+    try {
+      localStorage.setItem(PROJECTOR_QR_KEY, qrFloatEnabled ? '1' : '0');
+    } catch (error) {
+      console.warn('Unable to save projector QR setting:', error);
+    }
   }
-});
+  if (qrFloatEnabled) renderProjectorQr();
+}
 
-window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !qrOverlay.classList.contains('hidden')) {
-    closeQrOverlay();
+try {
+  setQrFloat(localStorage.getItem(PROJECTOR_QR_KEY) === '1', false);
+} catch (error) {
+  console.warn('Unable to load projector QR setting:', error);
+}
+
+async function initProjectorSharingQR() {
+  try {
+    const res = await fetch('/api/network-ip');
+    const data = await res.json();
+    const port = window.location.port ? `:${window.location.port}` : '';
+    const nextUrl = `${window.location.protocol}//${data.ip}${port}/subtitles.html`;
+    if (nextUrl !== subtitlesUrl) {
+      subtitlesUrl = nextUrl;
+      qrRenderedFor = '';
+      renderProjectorQr();
+    }
+  } catch (err) {
+    console.error("Could not fetch network IP for QR code:", err);
   }
+}
+initProjectorSharingQR();
+
+btnQrToggle.addEventListener('click', () => {
+  setQrFloat(!qrFloatEnabled);
+  resetControlsTimer();
 });
 
 connect();

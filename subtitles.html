@@ -202,55 +202,36 @@
       padding: 0.35rem 0.6rem;
     }
 
-    /* QR Overlay Modal Styles */
-    .qr-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      transition: opacity 0.3s ease;
-    }
-    .qr-overlay.hidden {
-      display: none !important;
-    }
-    .qr-card {
-      background: #111827;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 2.5rem;
-      border-radius: 20px;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    /* Corner QR so the congregation can join without covering the subtitles */
+    .qr-float {
+      position: fixed;
+      right: max(1rem, env(safe-area-inset-right));
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      z-index: 90;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.5rem;
-      max-width: 90%;
-    }
-    .qr-card h3 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: #ffffff;
-      font-weight: 700;
-    }
-    .qr-card canvas {
+      gap: 0.3rem;
+      padding: 0.5rem 0.5rem 0.4rem;
       background: #ffffff;
-      padding: 12px;
-      border-radius: 12px;
-      width: 250px;
-      height: 250px;
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
     }
-    .qr-url {
-      font-family: monospace;
-      font-size: 0.9rem;
-      color: #5bc0a4;
-      word-break: break-all;
+    .qr-float.hidden {
+      display: none !important;
+    }
+    .qr-float canvas {
+      display: block;
+      width: 148px;
+      height: 148px;
+    }
+    .qr-float-caption {
       margin: 0;
+      color: #182025;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.1;
     }
 
     /* OBS Broadcast Mode */
@@ -259,7 +240,7 @@
     }
     body.obs-mode .status-dot,
     body.obs-mode .control-bar,
-    body.obs-mode .qr-overlay {
+    body.obs-mode .qr-float {
       display: none !important;
     }
 
@@ -309,12 +290,9 @@
       .text {
         padding: 0 0 max(1rem, env(safe-area-inset-bottom));
       }
-      .qr-card {
-        padding: 1.25rem;
-      }
-      .qr-card canvas {
-        width: min(250px, 70vw);
-        height: min(250px, 70vw);
+      .qr-float canvas {
+        width: 112px;
+        height: 112px;
       }
     }
 
@@ -386,10 +364,10 @@
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group">
       <span class="control-label">Share:</span>
-      <button class="control-btn" id="btn-qr-toggle">Share QR</button>
+      <button class="control-btn" id="btn-qr-toggle" type="button" aria-pressed="false">QR Off</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.3.23</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.3.24</span>
   </div>
 
   <div class="container" id="subtitles-container">
@@ -401,20 +379,10 @@
     </div>
   </div>
 
-  <!-- QR Code Modal Overlay -->
-  <div class="qr-overlay hidden" id="qr-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="qr-title">
-    <div class="qr-card">
-      <h3 id="qr-title">Scan to view subtitles on your phone</h3>
-      <div style="background: white; padding: 12px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-        <canvas id="qr-canvas-projector" style="width: 250px; height: 250px; display: block;"></canvas>
-      </div>
-      <p class="qr-url" id="qr-url-text"></p>
-      <p style="font-size: 0.75rem; color: rgba(255,255,255,0.4); margin: 0; max-width: 280px; line-height: 1.3;">
-        Note: If your browser shows a "Not Private" warning, tap "Advanced" -> "Proceed" to connect.
-      </p>
-      <button class="control-btn active" id="btn-qr-close" style="padding: 0.5rem 2rem; border-radius: 30px; font-size: 0.9rem;">Close</button>
-    </div>
-  </div>
+  <aside class="qr-float hidden" id="qr-float" aria-hidden="true">
+    <canvas id="qr-canvas-projector" width="168" height="168" aria-label="QR code for the phone subtitle link"></canvas>
+    <p class="qr-float-caption">Scan for subtitles</p>
+  </aside>
 
   <script type="module" src="/src/subtitles.js"></script>
 </body>

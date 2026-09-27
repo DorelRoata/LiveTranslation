@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.24 — Projector QR stays in the corner
+
+**Why:** The projector Share QR control opened a full-screen card over the subtitles, so the house could not read captions while someone scanned the link.
+
+**What changed:** Share on the projector is now an on/off switch. When it is on, a small “Scan for subtitles” QR stays in the bottom-right and the captions keep running. The choice is remembered in that browser. The OBS overlay still hides it.
+
 ## v1.3.23 — Protect live sessions and keep dual-language / projectors in sync
 
 Shipped on top of v1.3.22 after a full-app review of v1.3.20. These fixes target failures that can happen during a live sermon: lag dropping audio, a Dock click killing Gemini, Wi-Fi flaps tearing down healthy sockets, language 2 starting late, and projectors skipping phrases after a relay blip.
