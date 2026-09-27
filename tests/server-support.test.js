@@ -8,6 +8,7 @@ import {
   attachLocalRelay,
   buildGeminiUpstreamUrl,
   geminiProxyAllowed,
+  getActivityInfo,
   getInstanceInfo,
   isLocalClient,
   isObsAllowedPath,
@@ -15,7 +16,9 @@ import {
   isPrivateLan,
   isTranslationSessionActive,
   MAX_BUFFERED_BYTES,
-  publicApiKeyStatus
+  publicApiKeyStatus,
+  setActiveRelay,
+  trimPreview
 } from '../server-support.js';
 
 function onceOpen(socket) {
@@ -155,3 +158,50 @@ test('Gemini proxy allows this computer and private LAN clients, and hides the k
   assert.equal(geminiProxyAllowed('8.8.8.8', 'secret-key').ok, false);
   assert.equal(geminiProxyAllowed('127.0.0.1', '').ok, false);
 });
+
+test('trimPreview preserves short text and keeps the last 240 characters of long text', () => {
+  assert.equal(trimPreview(''), '');
+  assert.equal(trimPreview(null), '');
+  assert.equal(trimPreview('Live sermon captions'), 'Live sermon captions');
+  const longText = 'x'.repeat(300);
+  const trimmed = trimPreview(longText);
+  assert.equal(trimmed.length, 240);
+  assert.equal(trimmed, 'x'.repeat(240));
+
+  const textWithMarker = 'OLD_PREFIX_' + 'y'.repeat(230) + '_NEW_SUFFIX';
+  const trimmedMarker = trimPreview(textWithMarker);
+  assert.equal(trimmedMarker.length, 240);
+  assert.equal(trimmedMarker.endsWith('_NEW_SUFFIX'), true);
+  assert.equal(trimmedMarker.includes('OLD_PREFIX_'), false);
+});
+
+test('getActivityInfo returns zeros and empty previews without listening on a port', async () => {
+  const info = await getActivityInfo(null);
+  assert.equal(info.application, 'live-translate');
+  assert.match(info.version, /^\d+\.\d+\.\d+/);
+  assert.equal(typeof info.commit, 'string');
+  assert.equal(info.commit.length <= 7, true);
+  assert.equal(info.translationActive, false);
+  assert.equal(typeof info.geminiConnections, 'number');
+  assert.equal(typeof info.apiKeyConfigured, 'boolean');
+  assert.deepEqual(info.relay, { clients: 0, audioSenders: 0, audioStreaming: false });
+  assert.deepEqual(info.previews, { lang1: '', lang2: '' });
+  assert.equal(info.setup.subtitlePacing, 'smooth');
+  assert.equal(info.setup.obsLanguage, 'both');
+  assert.equal('apiKey' in info, false);
+  assert.equal('geminiApiKey' in info, false);
+
+  const dummyServer = http.createServer();
+  const relay = attachLocalRelay(dummyServer);
+  try {
+    const snapshot = relay.getSnapshot();
+    assert.deepEqual(snapshot.relay, { clients: 0, audioSenders: 0, audioStreaming: false });
+    assert.deepEqual(snapshot.previews, { lang1: '', lang2: '' });
+    assert.equal(snapshot.setup.subtitlePacing, 'smooth');
+  } finally {
+    relay.wss.close();
+    dummyServer.close();
+    setActiveRelay(null);
+  }
+});
+

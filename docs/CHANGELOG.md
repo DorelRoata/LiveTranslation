@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.25 — Activity screen in the terminal
+
+**Why:** The operator needed a terminal view of the running host, the same way a system monitor watches processes it does not own.
+
+**What changed:** `npm run tui` opens an Activity screen. It can watch this Mac or another Mac on the network (`node scripts/dashboard-tui.js 192.168.4.146`). The screen shows whether Gemini is connected, whether an audio sender is streaming, the dashboard, projector, microphone, and OBS links, and the live caption text for both languages. Keys select and copy a link. The host serves this through `GET /api/activity`. Start, stop, and audio stay in the browser. Closing the screen does not stop translation.
+
 ## v1.3.24 — Projector QR stays in the corner
 
 **Why:** The projector Share QR control opened a full-screen card over the subtitles, so the house could not read captions while someone scanned the link.

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
-import { applyLaneUpdate, applyRelaySnapshot, buildSystemSetup, emptyLaneState } from './src/system-setup.js';
+import { applyLaneUpdate, applyRelaySnapshot, buildSystemSetup, emptyLaneState, laneDisplayText } from './src/system-setup.js';
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
@@ -12,8 +12,14 @@ const MAX_WS_PAYLOAD_BYTES = 2 * 1024 * 1024;
 export const MAX_BUFFERED_BYTES = 2 * 1024 * 1024;
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 let geminiProxyClientCount = 0;
+let activeRelay = null;
 const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const execFileAsync = promisify(execFile);
+
+export function trimPreview(text, maxLength = 240) {
+  if (typeof text !== 'string') return '';
+  return text.length > maxLength ? text.slice(-maxLength) : text;
+}
 
 async function runGit(args) {
   const { stdout } = await execFileAsync('git', args, {
@@ -231,8 +237,56 @@ export async function getInstanceInfo() {
   };
 }
 
+export async function getActivityInfo(relay = activeRelay) {
+  const instance = await getInstanceInfo();
+  let apiKey = '';
+  try {
+    apiKey = await readStoredApiKey();
+  } catch {
+    apiKey = '';
+  }
+  const obsPortRaw = Number.parseInt(process.env.LIVE_TRANSLATE_OBS_PORT || '', 10);
+  const obsPort = Number.isInteger(obsPortRaw) && obsPortRaw > 0 ? obsPortRaw : null;
+  const dashboardPort = Number.parseInt(process.env.PORT || '5173', 10);
+
+  const snapshot = relay?.getSnapshot?.();
+
+  return {
+    application: 'live-translate',
+    version: instance.version,
+    commit: (instance.commit || '').slice(0, 7),
+    translationActive: Boolean(instance.translationActive),
+    geminiConnections: geminiProxyClientCount,
+    apiKeyConfigured: Boolean(apiKey),
+    network: {
+      ip: getNetworkIP(),
+      dashboardPort,
+      obsPort
+    },
+    relay: snapshot?.relay || {
+      clients: 0,
+      audioSenders: 0,
+      audioStreaming: false
+    },
+    setup: snapshot?.setup || buildSystemSetup(),
+    previews: snapshot?.previews || {
+      lang1: '',
+      lang2: ''
+    }
+  };
+}
+
 export async function handleRuntimeApi(req, res) {
   const url = new URL(req.url, 'https://localhost');
+
+  if (url.pathname === '/api/activity' && req.method === 'GET') {
+    if (!isOperatorClient(req.socket.remoteAddress)) {
+      sendJson(res, 403, { error: 'Activity details are only available on this computer or the local network.' });
+      return true;
+    }
+    sendJson(res, 200, await getActivityInfo());
+    return true;
+  }
 
   if (url.pathname === '/api/network-ip' && req.method === 'GET') {
     const obsPort = Number.parseInt(process.env.LIVE_TRANSLATE_OBS_PORT || '', 10);
@@ -323,9 +377,18 @@ export async function handleRuntimeApi(req, res) {
   return true;
 }
 
+export function setActiveRelay(relay) {
+  activeRelay = relay;
+}
+
+export function getActiveRelay() {
+  return activeRelay;
+}
+
 export function attachLocalRelay(httpServer, existingRelay = null) {
   if (existingRelay) {
-    existingRelay.attach(httpServer);
+    if (httpServer) existingRelay.attach(httpServer);
+    activeRelay = existingRelay;
     return existingRelay;
   }
 
@@ -376,7 +439,10 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     });
     server.on('close', () => {
       attachedServers.delete(server);
-      if (attachedServers.size === 0) clearInterval(heartbeat);
+      if (attachedServers.size === 0) {
+        clearInterval(heartbeat);
+        if (activeRelay === relay) activeRelay = null;
+      }
     });
   }
 
@@ -436,9 +502,54 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
       client.ping();
     }
   }, 15_000);
+  heartbeat.unref();
+  wss.on('close', () => clearInterval(heartbeat));
 
-  const relay = { attach, wss };
-  attach(httpServer);
+  function getSnapshot() {
+    let clients = 0;
+    let audioSenders = 0;
+    for (const client of wss.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        clients += 1;
+        if (client.isAudioSender) {
+          audioSenders += 1;
+        }
+      }
+    }
+    const audioStreaming = Array.from(wss.clients).some(client =>
+      client.readyState === WebSocket.OPEN && client.isAudioSender && client.isStreaming
+    );
+
+    const relayInfo = {
+      clients,
+      audioSenders,
+      audioStreaming
+    };
+
+    return {
+      clients,
+      audioSenders,
+      audioStreaming,
+      relay: relayInfo,
+      setup: {
+        targetLanguage1: typeof subtitleState.targetLanguage1 === 'string' ? subtitleState.targetLanguage1 : '',
+        targetLanguage2: typeof subtitleState.targetLanguage2 === 'string' ? subtitleState.targetLanguage2 : 'none',
+        targetLanguageName1: typeof subtitleState.targetLanguageName1 === 'string' ? subtitleState.targetLanguageName1 : '',
+        targetLanguageName2: typeof subtitleState.targetLanguageName2 === 'string' ? subtitleState.targetLanguageName2 : '',
+        isDual: Boolean(subtitleState.isDual),
+        subtitlePacing: typeof subtitleState.subtitlePacing === 'string' ? subtitleState.subtitlePacing : 'smooth',
+        obsLanguage: typeof subtitleState.obsLanguage === 'string' ? subtitleState.obsLanguage : 'both'
+      },
+      previews: {
+        lang1: trimPreview(laneDisplayText(subtitleState.lang1)),
+        lang2: trimPreview(laneDisplayText(subtitleState.lang2))
+      }
+    };
+  }
+
+  const relay = { attach, wss, getSnapshot };
+  activeRelay = relay;
+  if (httpServer) attach(httpServer);
   return relay;
 }
 
