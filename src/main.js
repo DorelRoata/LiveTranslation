@@ -9,7 +9,7 @@ import {
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
 import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
-import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline } from './gemini-live.js';
+import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency, transcriptionIsFinished } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
   decodePcm16Base64,
@@ -1045,12 +1045,10 @@ function playPCMChunk(base64Data, channelId) {
     }));
   }
   
-  if (lastSpeechSentTimestamp > 0) {
-    const sampleLatency = Date.now() - lastSpeechSentTimestamp;
-    if (sampleLatency > 80 && sampleLatency < 10000) {
-      smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
-      updateTelemetryLatency(smoothedLatencyMs);
-    }
+  const playbackLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
+  if (playbackLatency !== smoothedLatencyMs) {
+    smoothedLatencyMs = playbackLatency;
+    updateTelemetryLatency(smoothedLatencyMs);
   }
 
   // 1. Decode base64 16-bit PCM bytes to Float32 with remainder reassembly
@@ -2019,7 +2017,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           noteHeardLanguage(inputTx.languageCode);
           maybeWarnTargetLanguageMatch(inputTx.languageCode);
         }
-        if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final));
+        if (inputTx.text) addInputTranscript(inputTx.text, transcriptionIsFinished(inputTx));
       }
       
       const outputTx = data.outputTranscription
@@ -2028,20 +2026,19 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
       if (outputTx) {
         const rawText = outputTx.text;
         if (rawText) {
-          if (lastSpeechSentTimestamp > 0) {
-            const sampleLatency = Date.now() - lastSpeechSentTimestamp;
-            if (sampleLatency > 80 && sampleLatency < 10000) {
-              smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
-              updateTelemetryLatency(smoothedLatencyMs);
-            }
+          const captionLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
+          if (captionLatency !== smoothedLatencyMs) {
+            smoothedLatencyMs = captionLatency;
+            updateTelemetryLatency(smoothedLatencyMs);
           }
           if (chunksReceived === 0) {
             logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
           }
           const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
           const text = applyBiblicalGlossary(rawText, targetLang || 'en');
-          updateOutputTranscript(text, channelId, outputTx.final);
-          updateSubtitleLane(`lang${channelId}`, text, outputTx.final);
+          const phraseFinished = transcriptionIsFinished(outputTx);
+          updateOutputTranscript(text, channelId, phraseFinished);
+          updateSubtitleLane(`lang${channelId}`, text, phraseFinished);
         }
       }
       

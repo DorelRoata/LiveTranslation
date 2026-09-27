@@ -46,10 +46,10 @@ export function buildGeminiSetupMessage({
       realtimeInputConfig: {
         automaticActivityDetection: {
           disabled: false,
-          startOfSpeechSensitivity: 'START_SENSITIVITY_LOW',
+          startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
           endOfSpeechSensitivity: 'END_SENSITIVITY_LOW',
-          prefixPaddingMs: 20,
-          silenceDurationMs: 800
+          prefixPaddingMs: 300,
+          silenceDurationMs: 300
         },
         activityHandling: 'NO_INTERRUPTION'
       }
@@ -80,6 +80,21 @@ export function shouldReconnectOnNetworkOnline({
   if (!primaryReady) return true;
   if (secondaryEnabled && !secondaryReady) return true;
   return false;
+}
+
+export function transcriptionIsFinished(transcription) {
+  return Boolean(transcription && (transcription.finished === true || transcription.final === true));
+}
+
+// Ignore a sample once the preacher has been quiet longer than the phrase
+// itself. Otherwise a breath makes the on-screen lag climb for several seconds.
+export function smoothTranslationLatency(previousMs = 0, lastLoudAt = 0, now = 0, quietHoldMs = 1500) {
+  const previous = Number.isFinite(previousMs) ? previousMs : 0;
+  if (!lastLoudAt || !now || now <= lastLoudAt) return previous;
+  const sample = now - lastLoudAt;
+  if (sample <= 80 || sample >= quietHoldMs) return previous;
+  if (!previous) return sample;
+  return Math.round(previous * 0.7 + sample * 0.3);
 }
 
 export function canForwardGeminiAudio({

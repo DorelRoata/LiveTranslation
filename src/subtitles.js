@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
-import { emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
+import { emptyLaneState, getLanguageName, laneDisplayText, wordsToAppend } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
@@ -280,30 +280,6 @@ function initAudioContext() {
 
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-// Robust overlapping suffix checker to find newly appended characters (handles left-truncated strings)
-function getAppendedText(oldStr, newStr) {
-  if (!newStr) return "";
-  if (!oldStr) return newStr;
-
-  // 1. Check if newStr starts with a substring of oldStr starting at index k (handles left-truncated history)
-  for (let k = 0; k < oldStr.length; k++) {
-    const sub = oldStr.substring(k);
-    if (newStr.startsWith(sub)) {
-      return newStr.substring(sub.length);
-    }
-  }
-
-  // 2. Check if a suffix of oldStr matches a prefix of newStr
-  for (let i = Math.min(oldStr.length, newStr.length); i > 0; i--) {
-    const suffix = oldStr.substring(oldStr.length - i);
-    if (newStr.startsWith(suffix)) {
-      return newStr.substring(i);
-    }
-  }
-
-  return newStr;
 }
 
 // Tracks the active-line DOM element per lane so we can append words incrementally
@@ -646,11 +622,9 @@ function renderSubtitleLane(lane) {
       return;
     }
     
-    const appended = getAppendedText(oldText, newText);
-    if (appended) {
-      const newWords = appended.split(/\s+/).filter(Boolean);
-      enqueueWords(lane, newWords);
-    }
+    const shownOnScreen = [...displayState[lane].lines, displayState[lane].activeLine].filter(Boolean).join(' ');
+    const newWords = wordsToAppend(shownOnScreen, newText);
+    if (newWords.length > 0) enqueueWords(lane, newWords);
   }
 }
 

@@ -81,6 +81,55 @@ export function applyLaneUpdate(laneState = {}, text, isFinal) {
   return next;
 }
 
+function captionWords(text) {
+  return String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function bareCaptionWord(word) {
+  return String(word || '').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').toLowerCase();
+}
+
+// Incoming captions are short fragments. Append only words that are not already
+// the end of the line, so a repeated or punctuated tail is not shown twice.
+export function wordsToAppend(displayedText, incomingText) {
+  const incomingWords = captionWords(incomingText);
+  if (!incomingWords.length) return [];
+
+  const shownBare = captionWords(displayedText).map(bareCaptionWord).filter(Boolean);
+  const incomingBare = incomingWords.map(bareCaptionWord).filter(Boolean);
+  if (incomingBare.length && shownBare.length >= incomingBare.length) {
+    const tail = shownBare.slice(shownBare.length - incomingBare.length);
+    const alreadyShown = tail.every((word, index) => word === incomingBare[index]);
+    if (alreadyShown) return [];
+  }
+
+  const displayed = captionWords(displayedText).join(' ');
+  const incoming = incomingWords.join(' ');
+  if (displayed && incoming.startsWith(displayed)) {
+    const extra = incoming.slice(displayed.length).trim();
+    return extra ? extra.split(/\s+/) : [];
+  }
+
+  const shownWords = captionWords(displayedText).map(bareCaptionWord);
+  let overlap = 0;
+  const max = Math.min(shownWords.length, incomingBare.length);
+  for (let size = max; size > 0; size -= 1) {
+    const tail = shownWords.slice(shownWords.length - size);
+    const head = incomingBare.slice(0, size);
+    if (tail.every((word, index) => word && word === head[index])) {
+      overlap = size;
+      break;
+    }
+  }
+  if (overlap > 0) return incomingWords.slice(overlap);
+
+  return incomingWords;
+}
+
 export function laneDisplayText(laneState = {}) {
   const accumulated = typeof laneState.accumulatedText === 'string' ? laneState.accumulatedText : '';
   const interim = typeof laneState.interimText === 'string' ? laneState.interimText.trim() : '';

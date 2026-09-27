@@ -6,7 +6,9 @@ import {
   canForwardGeminiAudio,
   GEMINI_LIVE_MODEL,
   inputTranscriptionConfig,
-  shouldReconnectOnNetworkOnline
+  shouldReconnectOnNetworkOnline,
+  smoothTranslationLatency,
+  transcriptionIsFinished
 } from '../src/gemini-live.js';
 
 test('Live Translate setup omits instructions and keeps transcription at setup top-level', () => {
@@ -22,10 +24,23 @@ test('Live Translate setup omits instructions and keeps transcription at setup t
   assert.deepEqual(message.setup.outputAudioTranscription, {});
   assert.equal(message.setup.realtimeInputConfig.activityHandling, 'NO_INTERRUPTION');
   assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.disabled, false);
-  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs, 800);
+  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.startOfSpeechSensitivity, 'START_SENSITIVITY_HIGH');
+  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.prefixPaddingMs, 300);
+  assert.equal(message.setup.realtimeInputConfig.automaticActivityDetection.silenceDurationMs, 300);
   assert.equal('systemInstruction' in message.setup, false);
   assert.equal('inputAudioTranscription' in message.setup.generationConfig, false);
   assert.equal('outputAudioTranscription' in message.setup.generationConfig, false);
+});
+
+test('a finished transcription closes the phrase, and quiet time does not raise the lag number', () => {
+  assert.equal(transcriptionIsFinished({ finished: true }), true);
+  assert.equal(transcriptionIsFinished({ final: true }), true);
+  assert.equal(transcriptionIsFinished({ text: 'still speaking' }), false);
+  assert.equal(transcriptionIsFinished(null), false);
+
+  assert.equal(smoothTranslationLatency(0, 1000, 1600), 600);
+  assert.equal(smoothTranslationLatency(600, 1000, 4500), 600);
+  assert.equal(smoothTranslationLatency(600, 1000, 1050), 600);
 });
 
 test('Spoken language is sent as an input transcription hint, not a system instruction', () => {

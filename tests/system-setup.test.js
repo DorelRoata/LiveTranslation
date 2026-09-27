@@ -9,8 +9,17 @@ import {
   emptyLaneState,
   getLanguageName,
   laneDisplayText,
-  mergeIncomingTranscript
+  mergeIncomingTranscript,
+  wordsToAppend
 } from '../src/system-setup.js';
+
+test('caption fragments append new words and drop a tail that is already on screen', () => {
+  assert.deepEqual(wordsToAppend('the one', 'who calls'), ['who', 'calls']);
+  assert.deepEqual(wordsToAppend('the one', 'one who calls'), ['who', 'calls']);
+  assert.deepEqual(wordsToAppend('if he loses his soul', 'his soul.'), []);
+  assert.deepEqual(wordsToAppend('the one who calls', 'the one who calls us'), ['us']);
+  assert.deepEqual(wordsToAppend('', 'My dear ones'), ['My', 'dear', 'ones']);
+});
 
 test('maps language codes to operator-facing names', () => {
   assert.equal(getLanguageName('en'), 'English');
