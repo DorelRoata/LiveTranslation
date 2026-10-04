@@ -68,10 +68,42 @@ export function applyRelaySnapshot(subtitleState = {}, snapshot = {}) {
   return next;
 }
 
+function bareWords(text) {
+  return captionWords(text).map(bareCaptionWord).filter(Boolean);
+}
+
+// A settled caption is either the whole line, or the next phrase to add.
+// It does not rewrite earlier words because they share one common word.
+export function resolveCaptionLine(currentText, incomingText) {
+  const current = typeof currentText === 'string' ? currentText.trim() : '';
+  const incoming = typeof incomingText === 'string' ? incomingText.trim() : '';
+  if (!incoming) return current;
+  if (!current) return incoming;
+
+  const currentWords = bareWords(current);
+  const incomingWords = bareWords(incoming);
+  const currentJoined = currentWords.join(' ');
+  const incomingJoined = incomingWords.join(' ');
+  if (incomingJoined.startsWith(currentJoined) || incomingJoined.includes(currentJoined)) return incoming;
+  if (currentJoined.startsWith(incomingJoined)) return current;
+
+  let keep = 0;
+  const limit = Math.min(currentWords.length, incomingWords.length);
+  while (keep < limit && currentWords[keep] === incomingWords[keep]) keep += 1;
+  if (keep >= 3 && incomingWords.length >= currentWords.length - 4) return incoming;
+
+  if (currentWords.length >= incomingWords.length) {
+    const tail = currentWords.slice(-incomingWords.length);
+    if (incomingWords.every((word, index) => word === tail[index])) return current;
+  }
+
+  const phrase = captionWords(incoming).join(' ');
+  return `${current} ${phrase}`;
+}
+
 export function applyLaneUpdate(laneState = {}, text) {
   const next = replaceLaneState(laneState);
-  const merged = mergeCaptionLine(laneDisplayText(next), text);
-  next.accumulatedText = trimSubtitleHistory(merged);
+  next.accumulatedText = trimSubtitleHistory(resolveCaptionLine(laneDisplayText(next), text));
   next.interimText = '';
   return next;
 }
@@ -235,18 +267,139 @@ export function mergeCaptionLine(previous, incoming) {
   return `${prev}${needsSpace ? ' ' : ''}${nextWords.join(' ')}`;
 }
 
-// The first wording stays private. A correction replaces it. The phrase is
-// published only when Google moves on to a different phrase.
-export function nextCaptionPhrase(openText, incomingText) {
-  const open = typeof openText === 'string' ? openText.trim() : '';
-  const incoming = typeof incomingText === 'string' ? incomingText.trim() : '';
-  if (!incoming) return { open, publish: null };
-  if (!open) return { open: incoming, publish: null };
+function phraseWords(text) {
+  return captionWords(text).map(bareCaptionWord).filter(Boolean);
+}
 
-  const merged = mergeCaptionLine(open, incoming).trim();
-  const appended = `${open} ${captionWords(incoming).join(' ')}`.trim();
-  if (merged !== appended) return { open: merged, publish: null };
-  return { open: incoming, publish: open };
+function revisesPhrase(current, incoming) {
+  const currentWords = phraseWords(current);
+  const incomingWords = phraseWords(incoming);
+  if (!currentWords.length || !incomingWords.length) return false;
+  const currentJoined = currentWords.join(' ');
+  const incomingJoined = incomingWords.join(' ');
+  if (incomingJoined.startsWith(currentJoined) || currentJoined.startsWith(incomingJoined)) return true;
+  if (incomingWords.every(word => currentWords.includes(word))) return true;
+
+  const incomingContent = incomingWords.filter(word => word && !CAPTION_STOP_WORDS.has(word));
+  if (incomingContent.length && incomingContent.every(word => currentWords.includes(word))) return true;
+
+  if (incomingWords.some(word => {
+    const stem = captionStem(word);
+    return stem && currentWords.some(other => captionStem(other) === stem);
+  })) return true;
+
+  const max = Math.min(currentWords.length, incomingWords.length);
+  for (let size = max; size >= 2; size -= 1) {
+    const tail = currentWords.slice(-size);
+    const head = incomingWords.slice(0, size);
+    if (tail.every((word, index) => word === head[index])) return true;
+  }
+
+  return currentWords.length <= 5
+    && incomingWords.length <= 5
+    && currentWords[currentWords.length - 1] === incomingWords[incomingWords.length - 1];
+}
+
+function revisedPhrase(current, incoming) {
+  const currentWords = phraseWords(current);
+  const incomingWords = phraseWords(incoming);
+  const currentJoined = currentWords.join(' ');
+  const incomingJoined = incomingWords.join(' ');
+  if (currentJoined.startsWith(incomingJoined)) return captionWords(current).join(' ');
+  if (incomingWords.every(word => currentWords.includes(word))) return captionWords(current).join(' ');
+  if (incomingJoined.startsWith(currentJoined)) return captionWords(incoming).join(' ');
+
+  const currentTokens = captionWords(current);
+  const incomingTokens = captionWords(incoming);
+  const max = Math.min(currentWords.length, incomingWords.length);
+  for (let size = max; size >= 2; size -= 1) {
+    const tail = currentWords.slice(-size);
+    const head = incomingWords.slice(0, size);
+    if (tail.every((word, index) => word === head[index])) {
+      return [...currentTokens.slice(0, currentTokens.length - size), ...incomingTokens].join(' ');
+    }
+  }
+  return incomingTokens.join(' ');
+}
+
+function appendPhrase(current, phrase) {
+  const line = typeof current === 'string' ? current.trim() : '';
+  const next = captionWords(phrase).join(' ');
+  if (!next) return line;
+  if (!line) return next;
+  const lineWords = captionWords(line);
+  const nextWords = captionWords(next);
+  const lineBare = lineWords.map(bareCaptionWord);
+  const nextBare = nextWords.map(bareCaptionWord);
+  if (lineBare.length >= nextBare.length) {
+    const tail = lineBare.slice(-nextBare.length);
+    if (nextBare.every((word, index) => word === tail[index])) return line;
+  }
+  if (lineBare.length && nextBare.length && lineBare[lineBare.length - 1] === nextBare[0]
+    && CAPTION_STOP_WORDS.has(nextBare[0])) {
+    return [...lineWords, ...nextWords.slice(1)].join(' ');
+  }
+  return `${line} ${next}`;
+}
+
+function replaceLastPhrase(line, lastPhrase, revised) {
+  const current = typeof line === 'string' ? line.trim() : '';
+  const lastWords = phraseWords(lastPhrase);
+  const lineWords = captionWords(current);
+  const lineBare = lineWords.map(bareCaptionWord);
+  if (lastWords.length && lineBare.length >= lastWords.length) {
+    const tail = lineBare.slice(-lastWords.length);
+    if (lastWords.every((word, index) => word === tail[index])) {
+      const kept = lineWords.slice(0, lineWords.length - lastWords.length);
+      return [...kept, captionWords(revised).join(' ')].join(' ').replace(/\s+/g, ' ').trim();
+    }
+  }
+  return appendPhrase(current, revised);
+}
+
+export function emptyCaptionState() {
+  return { committed: '', lastPhrase: '', open: '' };
+}
+
+// Hold the latest wording. A correction replaces that wording. A different
+// phrase publishes the held one. The first guess is not published beside it.
+export function settleCaptionStep(state = {}, incomingText) {
+  const committed = state.committed || '';
+  const lastPhrase = state.lastPhrase || '';
+  const open = typeof state.open === 'string' ? state.open : '';
+  const incoming = typeof incomingText === 'string' ? incomingText.trim() : '';
+  const quiet = { committed, lastPhrase, open, line: null, phrase: null, replaced: false };
+  if (!incoming) return quiet;
+  if (!open) return { ...quiet, open: incoming };
+
+  if (revisesPhrase(open, incoming)) {
+    return { ...quiet, open: revisedPhrase(open, incoming) };
+  }
+
+  if (lastPhrase && revisesPhrase(lastPhrase, incoming)) {
+    const phrase = revisedPhrase(lastPhrase, incoming);
+    const line = replaceLastPhrase(committed, lastPhrase, phrase);
+    return { committed: line, lastPhrase: phrase, open, line, phrase, replaced: true };
+  }
+
+  const line = appendPhrase(committed, open);
+  return { committed: line, lastPhrase: open, open: incoming, line, phrase: open, replaced: false };
+}
+
+export function flushCaption(state = {}) {
+  const open = typeof state.open === 'string' ? state.open.trim() : '';
+  if (!open) {
+    return {
+      committed: state.committed || '',
+      lastPhrase: state.lastPhrase || '',
+      open: '',
+      line: null,
+      phrase: null,
+      replaced: false
+    };
+  }
+  const line = appendPhrase(state.committed || '', open);
+  return { committed: line, lastPhrase: open, open: '', line, phrase: open, replaced: false };
 }
 
 export function captionSync(currentText, targetText) {

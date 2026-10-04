@@ -10,10 +10,12 @@ import {
   getLanguageName,
   captionSync,
   laneDisplayText,
+  emptyCaptionState,
+  flushCaption,
   mergeCaptionLine,
   mergeIncomingTranscript,
-  nextCaptionPhrase,
   outputCaptionUpdate,
+  settleCaptionStep,
   wordsToAppend
 } from '../src/system-setup.js';
 
@@ -77,27 +79,45 @@ test('disabling language 2 clears dual layout for every client', () => {
   assert.equal(setup.obsLanguage, 'lang2');
 });
 
-test('the first wording stays off screen until the phrase settles', () => {
-  let open = '';
-  const shown = [];
-  const step = text => {
-    const result = nextCaptionPhrase(open, text);
-    open = result.open;
-    if (result.publish) shown.push(result.publish);
-  };
+test('live phrases keep the corrected wording and do not drop the next sentence', () => {
+  const incoming = [
+    'very well.',
+    'We know who',
+    'the enemy is,',
+    'we know who the',
+    'adversary is,',
+    'the adversaries',
+    'and so on, right?',
+    'We know very well',
+    'with everyone.',
+    'But',
+    'I liked',
+    'something that says',
+    'that',
+    'Time is one',
+    'of the enemies',
+    "of ours. It's"
+  ];
+  let state = emptyCaptionState();
+  const lines = [];
+  for (const text of incoming) {
+    state = settleCaptionStep(state, text);
+    if (state.line) lines.push(state.line);
+  }
+  state = flushCaption(state);
+  if (state.line) lines.push(state.line);
 
-  step('We know who');
-  step('we know who the');
-  assert.deepEqual(shown, []);
-  assert.equal(open, 'we know who the');
-
-  step('the enemy is');
-  step('adversary is');
-  assert.deepEqual(shown, []);
-
-  step('and so on, right?');
-  assert.deepEqual(shown, ['we know who the adversary is']);
-  assert.equal(open, 'and so on, right?');
+  const screen = lines[lines.length - 1];
+  assert.match(screen, /very well\./);
+  assert.match(screen, /we know who the/);
+  assert.doesNotMatch(screen, /We know who we know who/i);
+  assert.match(screen, /adversar/i);
+  assert.doesNotMatch(screen, /enemy is/);
+  assert.match(screen, /and so on, right\?/);
+  assert.match(screen, /something that says/);
+  assert.match(screen, /of the enemies/);
+  assert.match(screen, /of ours/);
+  assert.equal(screen, applyLaneUpdate(undefined, screen, true).accumulatedText);
 });
 
 test('a restated phrase replaces the old wording instead of doubling it', () => {
@@ -108,10 +128,11 @@ test('a restated phrase replaces the old wording instead of doubling it', () => 
   assert.equal(mergeCaptionLine('if he loses his soul', 'his soul.'), 'if he loses his soul');
   assert.equal(mergeCaptionLine('the one who calls', 'the one who calls us'), 'the one who calls us');
 
-  let lane = applyLaneUpdate(undefined, 'the enemy is', false);
-  lane = applyLaneUpdate(lane, 'adversary is', false);
-  assert.equal(laneDisplayText(lane), 'the adversary is');
-  assert.equal(lane.interimText, '');
+  let state = settleCaptionStep(emptyCaptionState(), 'the enemy is');
+  state = settleCaptionStep(state, 'adversary is');
+  state = flushCaption(state);
+  assert.equal(state.line, 'adversary is');
+  assert.equal(applyLaneUpdate(undefined, state.line, true).accumulatedText, 'adversary is');
 });
 
 test('the screen keeps the shared opening and replaces only the corrected tail', () => {

@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.31 — Keep the corrected phrase and the next sentence
+
+**Why:** v1.3.30 still let a shared word erase real translation, and the first wording could remain beside the correction.
+
+**What changed:** A correction replaces only the phrase it restates. The next sentence is kept. Repeated words are not added again.
+
 ## v1.3.30 — Show the settled phrase once
 
 **Why:** The first wording was still reaching the screen, and the correction was added beside it.
