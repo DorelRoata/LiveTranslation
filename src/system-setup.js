@@ -158,6 +158,26 @@ export function mergeIncomingTranscript(previous, incoming) {
   return `${prev}${needsSpace ? ' ' : ''}${next}`;
 }
 
+// Google sends an early hypothesis while a phrase is still open, then a finished
+// wording. Keep the hypothesis private and publish only when the phrase closes,
+// so the congregation never sees the guess.
+export function settleOutputCaption(pendingText, transcription, isInterim = false) {
+  const pending = typeof pendingText === 'string' ? pendingText : '';
+  if (isInterim || !transcription || typeof transcription !== 'object') {
+    return { pending, publish: null };
+  }
+
+  const incoming = typeof transcription.text === 'string' ? transcription.text.trim() : '';
+  const finished = transcription.finished === true || transcription.final === true;
+  if (!finished) {
+    if (!incoming) return { pending, publish: null };
+    return { pending: mergeIncomingTranscript(pending, incoming), publish: null };
+  }
+
+  const publish = mergeIncomingTranscript(pending, incoming).trim();
+  return { pending: '', publish: publish || null };
+}
+
 export function addedWordCount(previous, next) {
   return Math.max(0, countWords(next) - countWords(previous));
 }

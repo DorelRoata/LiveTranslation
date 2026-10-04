@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.26 — Captions wait for Google's finished wording
+
+**Why:** The early translation was a guess. It reached the dashboard and the house screens while Google was still revising the phrase, so a wrong opening could stay on screen next to the correction.
+
+**What changed:** Translated captions stay off the dashboard, projector, phones, and OBS until Google marks the phrase finished. The finished phrase is then sent once. Spoken translation audio is unchanged. Detected Speech on the dashboard still updates while the preacher is talking.
+
 ## v1.3.25 — Activity screen in the terminal
 
 **Why:** The operator needed a terminal view of the running host, the same way a system monitor watches processes it does not own.

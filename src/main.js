@@ -8,7 +8,7 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
+import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName, settleOutputCaption } from './system-setup.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency, transcriptionIsFinished } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
@@ -29,7 +29,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.25';
+const APP_VERSION = '1.3.26';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -1147,6 +1147,7 @@ function discardStreamingOutput() {
   pending.forEach(bubble => bubble?.remove());
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
+  clearPendingOutputCaptions();
   if (outputList1.children.length === 0) outputPlaceholder1.style.display = 'block';
   if (outputList2.children.length === 0) outputPlaceholder2.style.display = 'block';
 }
@@ -1587,6 +1588,12 @@ function finalizeInputTranscript() {
 
 let currentStreamingBubble1 = null;
 let currentStreamingBubble2 = null;
+const pendingOutputCaption = { 1: '', 2: '' };
+
+function clearPendingOutputCaptions() {
+  pendingOutputCaption[1] = '';
+  pendingOutputCaption[2] = '';
+}
 
 function updateOutputTranscript(text, channelId, isFinal = false) {
   const placeholder = channelId === 1 ? outputPlaceholder1 : outputPlaceholder2;
@@ -1865,6 +1872,7 @@ function scheduleReconnect(reason, generation = sessionGeneration) {
   clearTimeout(setupTimeout);
   setupTimeout = null;
   closeGeminiSockets();
+  clearPendingOutputCaptions();
   setHealthItem('gemini1', 'warning', 'Reconnecting');
   if (!healthItems.gemini2.hidden) setHealthItem('gemini2', 'warning', 'Reconnecting');
 
@@ -1990,8 +1998,6 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         }
         if (sc.turnComplete) {
           logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
-          finalizeOutputTranscript(channelId);
-          if (channelId === 1) finalizeInputTranscript();
         }
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
@@ -2021,11 +2027,11 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
       }
       
       const outputTx = data.outputTranscription
-        || data.serverContent?.outputTranscription
-        || data.serverContent?.interimOutputTranscription;
+        || data.serverContent?.outputTranscription;
       if (outputTx) {
-        const rawText = outputTx.text;
-        if (rawText) {
+        const settled = settleOutputCaption(pendingOutputCaption[channelId], outputTx, false);
+        pendingOutputCaption[channelId] = settled.pending;
+        if (settled.publish) {
           const captionLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
           if (captionLatency !== smoothedLatencyMs) {
             smoothedLatencyMs = captionLatency;
@@ -2035,11 +2041,25 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
             logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
           }
           const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
-          const text = applyBiblicalGlossary(rawText, targetLang || 'en');
-          const phraseFinished = transcriptionIsFinished(outputTx);
-          updateOutputTranscript(text, channelId, phraseFinished);
-          updateSubtitleLane(`lang${channelId}`, text, phraseFinished);
+          const text = applyBiblicalGlossary(settled.publish, targetLang || 'en');
+          updateOutputTranscript(text, channelId, true);
+          updateSubtitleLane(`lang${channelId}`, text, true);
         }
+      }
+
+      if (data.serverContent?.turnComplete) {
+        const held = typeof pendingOutputCaption[channelId] === 'string'
+          ? pendingOutputCaption[channelId].trim()
+          : '';
+        if (held) {
+          pendingOutputCaption[channelId] = '';
+          const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
+          const text = applyBiblicalGlossary(held, targetLang || 'en');
+          updateOutputTranscript(text, channelId, true);
+          updateSubtitleLane(`lang${channelId}`, text, true);
+        }
+        finalizeOutputTranscript(channelId);
+        if (channelId === 1) finalizeInputTranscript();
       }
       
     } catch (err) {
@@ -2108,7 +2128,8 @@ function disconnectSession(clearSubtitles = true) {
   updateReadySongFilterStatus();
   currentStreamingBubble1 = null;
   currentStreamingBubble2 = null;
-  
+  clearPendingOutputCaptions();
+
   if (clearSubtitles) {
     subtitleState.lang1 = emptyLaneState();
     subtitleState.lang2 = emptyLaneState();

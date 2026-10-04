@@ -10,8 +10,36 @@ import {
   getLanguageName,
   laneDisplayText,
   mergeIncomingTranscript,
+  settleOutputCaption,
   wordsToAppend
 } from '../src/system-setup.js';
+
+test('early translation stays private until Google finishes the phrase', () => {
+  let pending = '';
+  let settled = settleOutputCaption(pending, { text: 'the one' }, false);
+  pending = settled.pending;
+  assert.equal(settled.publish, null);
+  assert.equal(pending, 'the one');
+
+  settled = settleOutputCaption(pending, { text: 'who calls' }, false);
+  pending = settled.pending;
+  assert.equal(settled.publish, null);
+  assert.equal(pending, 'the one who calls');
+
+  settled = settleOutputCaption(pending, { text: 'us', finished: true }, false);
+  assert.equal(settled.pending, '');
+  assert.equal(settled.publish, 'the one who calls us');
+
+  settled = settleOutputCaption('Hello', { text: 'Hello there', finished: true }, false);
+  assert.equal(settled.publish, 'Hello there');
+
+  settled = settleOutputCaption('', { text: 'you can\'t', final: true }, false);
+  assert.equal(settled.publish, 'you can\'t');
+
+  settled = settleOutputCaption('don\'t', { text: 'still guessing' }, true);
+  assert.equal(settled.publish, null);
+  assert.equal(settled.pending, 'don\'t');
+});
 
 test('caption fragments append new words and drop a tail that is already on screen', () => {
   assert.deepEqual(wordsToAppend('the one', 'who calls'), ['who', 'calls']);
