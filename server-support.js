@@ -4,7 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
-import { applyLaneUpdate, applyRelaySnapshot, buildSystemSetup, emptyLaneState, laneDisplayText } from './src/system-setup.js';
+import { appendLaneText, applyRelaySnapshot, emptyLaneState, laneDisplayText, pieceToAppend } from './src/caption-stream.js';
+import { buildSystemSetup } from './src/system-setup.js';
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
@@ -446,21 +447,43 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     });
   }
 
+  function appendToLane(lane, addition, sender) {
+    if (!addition) return;
+    subtitleState[lane] = appendLaneText(subtitleState[lane], addition);
+    broadcast(JSON.stringify({
+      type: 'append',
+      lane,
+      text: addition,
+      seq: subtitleState[lane].seq,
+      full: subtitleState[lane].text
+    }), sender);
+  }
+
   wss.on('connection', (ws) => {
     ws.isAlive = true;
     ws.on('pong', () => {
       ws.isAlive = true;
+    });
+    // Without a listener, one malformed or oversized frame from any device on
+    // the network throws and stops the whole server.
+    ws.on('error', error => {
+      console.error('Local relay client error:', error.message);
     });
     send(ws, JSON.stringify({ type: 'sync', state: subtitleState }));
 
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
+        const validLane = data.lane === 'lang1' || data.lane === 'lang2';
 
-        if (data.type === 'update') {
-          if ((data.lane !== 'lang1' && data.lane !== 'lang2') || typeof data.text !== 'string') return;
-          subtitleState[data.lane] = applyLaneUpdate(subtitleState[data.lane], data.text, Boolean(data.isFinal));
-          broadcast(JSON.stringify({ type: 'sync', state: subtitleState }), ws);
+        if (data.type === 'append') {
+          if (!validLane || typeof data.text !== 'string' || data.text.length > 4000) return;
+          appendToLane(data.lane, data.text, ws);
+        } else if (data.type === 'update') {
+          // A dashboard tab still running the previous release sends each
+          // Google piece as an 'update'; append it so screens keep working.
+          if (!validLane || typeof data.text !== 'string' || data.text.length > 4000) return;
+          appendToLane(data.lane, pieceToAppend(subtitleState[data.lane].text, data.text), ws);
         } else if (data.type === 'replace') {
           Object.assign(subtitleState, applyRelaySnapshot(subtitleState, data));
           broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));

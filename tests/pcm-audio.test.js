@@ -7,7 +7,6 @@ import {
   GEMINI_FRAME_SAMPLES,
   nextPlaybackTime,
   PcmAccumulator,
-  peakAmplitude,
   PreRollAudioBuffer,
   schedulePlayback
 } from '../src/pcm-audio.js';
@@ -50,10 +49,6 @@ test('does not overlap already-scheduled audio when a lag burst would exceed the
   const overflow = schedulePlayback(10, rest.nextQueued, 0.2);
   assert.equal(overflow.play, false);
   assert.equal(overflow.nextQueued, rest.nextQueued);
-});
-
-test('reports peak amplitude for the input meter', () => {
-  assert.ok(Math.abs(peakAmplitude(new Float32Array([0.1, -0.4, 0.2])) - 0.4) < 1e-6);
 });
 
 test('accumulates short capture buffers into 100 ms Gemini frames', () => {

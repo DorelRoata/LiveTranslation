@@ -8,8 +8,9 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
-import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency, transcriptionIsFinished } from './gemini-live.js';
+import { buildSystemSetup, countWords, getLanguageName } from './system-setup.js';
+import { appendLaneText, emptyLaneState, endsSentence, pieceToAppend } from './caption-stream.js';
+import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
   decodePcm16Base64,
@@ -28,6 +29,12 @@ import {
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
+// After a goAway rotation the old connection still delivers the translation of
+// audio it already received. New-session captions wait until it has been quiet
+// this long (or ROTATION_DRAIN_MAX_MS passes) so text stays in spoken order.
+const ROTATION_QUIET_MS = 1500;
+const ROTATION_DRAIN_MAX_MS = 8000;
+const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
 const APP_VERSION = '1.3.34';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
@@ -82,6 +89,13 @@ let startToken = 0;
 let sessionConfig = null;
 let apiKeyConfigured = false;
 const socketSetupReady = { 1: false, 2: false };
+// goAway rotation: Google warns ~50 s before closing a connection. A pending
+// replacement resumes the same session; the old socket then drains.
+const resumeHandle = { 1: '', 2: '' };
+const pendingSocket = { 1: null, 2: null };
+const drainingSocket = { 1: null, 2: null };
+const drainQueue = { 1: [], 2: [] };
+const drainTimers = { 1: { quiet: null, max: null }, 2: { quiet: null, max: null } };
 let subtitleWindow = null;
 let localSubtitlesWS = null;
 let localReconnectTimeout = null;
@@ -608,33 +622,21 @@ if (mediaSupported) {
 }
 
 // Clear Logs
-clearInputBtn.addEventListener("click", () => {
-  inputList.innerHTML = "";
-  inputPlaceholder.style.display = "block";
-});
-clearOutputBtn1.addEventListener("click", () => {
-  outputList1.innerHTML = "";
-  outputPlaceholder1.style.display = "block";
-});
-clearOutputBtn2.addEventListener("click", () => {
-  outputList2.innerHTML = "";
-  outputPlaceholder2.style.display = "block";
-});
+clearInputBtn.addEventListener("click", () => clearTranscriptStream(inputStream));
+clearOutputBtn1.addEventListener("click", () => clearTranscriptStream(outputStreams[1]));
+clearOutputBtn2.addEventListener("click", () => clearTranscriptStream(outputStreams[2]));
 
 const clearProjectorBtn = document.getElementById("btn-clear-projector");
 clearProjectorBtn?.addEventListener("click", () => {
   if (!window.confirm('Clear the projector, OBS overlay, and transcript screens?')) return;
-  inputList.innerHTML = "";
-  inputPlaceholder.style.display = "block";
-  outputList1.innerHTML = "";
-  outputPlaceholder1.style.display = "block";
-  outputList2.innerHTML = "";
-  outputPlaceholder2.style.display = "block";
-  
+  clearTranscriptStream(inputStream);
+  clearTranscriptStream(outputStreams[1]);
+  clearTranscriptStream(outputStreams[2]);
+
   // Clear local subtitle state
-  subtitleState.lang1.accumulatedText = "";
-  subtitleState.lang2.accumulatedText = "";
-  
+  subtitleState.lang1 = emptyLaneState();
+  subtitleState.lang2 = emptyLaneState();
+
   // Broadcast clear command
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
@@ -706,6 +708,9 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
       logDebug(`Sent ${chunksSent} ${logLabel} chunks to Google.`, 'ws-sent');
     }
   }
+  // Pre-roll only bridges the outage that is ending now. Audio held during an
+  // earlier backlog must never reach Google minutes later, out of context.
+  preRollBuffer.clear();
 }
 
 function isSocketOpen(ws, requireSetup = false, channelId = 0) {
@@ -1143,13 +1148,8 @@ function setSongFilterStatus(state, message) {
 }
 
 function discardStreamingOutput() {
-  const pending = [currentStreamingBubble1, currentStreamingBubble2];
-  pending.forEach(bubble => bubble?.remove());
-  currentStreamingBubble1 = null;
-  currentStreamingBubble2 = null;
-  clearOpenCaptions();
-  if (outputList1.children.length === 0) outputPlaceholder1.style.display = 'block';
-  if (outputList2.children.length === 0) outputPlaceholder2.style.display = 'block';
+  finishTranscriptBubble(outputStreams[1]);
+  finishTranscriptBubble(outputStreams[2]);
 }
 
 function updateReadySongFilterStatus() {
@@ -1482,10 +1482,6 @@ function stopSessionTimer() {
   }
 }
 
-function incrementWordCount(text) {
-  incrementWordCountBy(addedWordCount('', text));
-}
-
 function incrementWordCountBy(count) {
   if (count > 0) {
     totalWordsCount += count;
@@ -1535,153 +1531,70 @@ function initFontSizePicker() {
 
 initFontSizePicker();
 
-let currentInputBubble = null;
-let lastInputTranscript = '';
-
-function addInputTranscript(text, isFinal = false) {
-  const incoming = typeof text === 'string' ? text.trim() : '';
-  if (!incoming) return;
-
-  inputPlaceholder.style.display = "none";
-
-  const sameUtterance = lastInputTranscript &&
-    (incoming === lastInputTranscript ||
-     incoming.startsWith(lastInputTranscript) ||
-     lastInputTranscript.startsWith(incoming));
-
-  if (sameUtterance && currentInputBubble) {
-    const display = incoming.length >= lastInputTranscript.length ? incoming : lastInputTranscript;
-    incrementWordCountBy(addedWordCount(lastInputTranscript, display));
-    lastInputTranscript = display;
-    currentInputBubble.textContent = display;
-  } else {
-    if (currentInputBubble) finalizeInputTranscript();
-    incrementWordCountBy(addedWordCount('', incoming));
-    lastInputTranscript = incoming;
-    currentInputBubble = document.createElement("div");
-    currentInputBubble.className = "transcript-bubble streaming-text";
-    currentInputBubble.textContent = incoming;
-    inputList.appendChild(currentInputBubble);
-    while (inputList.children.length > 100) {
-      inputList.removeChild(inputList.firstChild);
-    }
-  }
-
-  if (isFinal) finalizeInputTranscript();
-  else document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
+// --- Transcript panels ---
+// Google's pieces are final as sent, so a bubble is just those pieces joined,
+// closed at the end of a sentence (or when it gets long).
+function createTranscriptStream(list, placeholder, scrollId) {
+  return { list, placeholder, scrollId, bubble: null, text: '' };
 }
 
-function finalizeInputTranscript() {
-  if (!currentInputBubble) {
-    lastInputTranscript = '';
-    return;
+const inputStream = createTranscriptStream(inputList, inputPlaceholder, 'input-transcript-scroll');
+const outputStreams = {
+  1: createTranscriptStream(outputList1, outputPlaceholder1, 'output-transcript-scroll-1'),
+  2: createTranscriptStream(outputList2, outputPlaceholder2, 'output-transcript-scroll-2')
+};
+
+function scrollTranscript(stream) {
+  const container = document.getElementById(stream.scrollId);
+  if (container) container.scrollTop = container.scrollHeight;
+}
+
+function appendTranscriptPiece(stream, piece) {
+  if (!stream.bubble?.isConnected) {
+    stream.bubble = null;
+    stream.text = '';
   }
-  currentInputBubble.classList.remove("streaming-text");
-  const ts = document.createElement("span");
-  ts.className = "timestamp";
+  const addition = pieceToAppend(stream.text, piece);
+  if (!addition) return;
+
+  stream.placeholder.style.display = 'none';
+  if (!stream.bubble) {
+    stream.bubble = document.createElement('div');
+    stream.bubble.className = 'transcript-bubble streaming-text';
+    stream.list.appendChild(stream.bubble);
+    while (stream.list.children.length > 100) {
+      stream.list.removeChild(stream.list.firstChild);
+    }
+  }
+  stream.text += addition;
+  stream.bubble.textContent = stream.text;
+  incrementWordCountBy(countWords(addition));
+
+  if (endsSentence(stream.text) || stream.text.length > TRANSCRIPT_BUBBLE_MAX_CHARS) {
+    finishTranscriptBubble(stream);
+  } else {
+    scrollTranscript(stream);
+  }
+}
+
+function finishTranscriptBubble(stream) {
+  const bubble = stream.bubble;
+  stream.bubble = null;
+  stream.text = '';
+  if (!bubble?.isConnected) return;
+  bubble.classList.remove('streaming-text');
+  const ts = document.createElement('span');
+  ts.className = 'timestamp';
   ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  currentInputBubble.appendChild(ts);
-  document.getElementById("input-transcript-scroll").scrollTop = document.getElementById("input-transcript-scroll").scrollHeight;
-  currentInputBubble = null;
-  lastInputTranscript = '';
+  bubble.appendChild(ts);
+  scrollTranscript(stream);
 }
 
-let currentStreamingBubble1 = null;
-let currentStreamingBubble2 = null;
-let lastFinalizedOutput1 = '';
-let lastFinalizedOutput2 = '';
-
-function clearOpenCaptions() {
-  lastFinalizedOutput1 = '';
-  lastFinalizedOutput2 = '';
-}
-
-function updateOutputTranscript(text, channelId, isFinal = false) {
-  const placeholder = channelId === 1 ? outputPlaceholder1 : outputPlaceholder2;
-  const list = channelId === 1 ? outputList1 : outputList2;
-  let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
-  const scrollContainer = document.getElementById(`output-transcript-scroll-${channelId}`);
-  const cleanText = typeof text === 'string' ? text.trim() : '';
-  if (!cleanText) return;
-  
-  const lastFinalized = channelId === 1 ? lastFinalizedOutput1 : lastFinalizedOutput2;
-  if (isFinal && cleanText === lastFinalized) return;
-  
-  placeholder.style.display = "none";
-  
-  if (!currentBubble) {
-    currentBubble = document.createElement("div");
-    currentBubble.className = "transcript-bubble";
-    list.appendChild(currentBubble);
-    
-    // Cap output transcript list to max 100 items to prevent memory leaks
-    while (list.children.length > 100) {
-      list.removeChild(list.firstChild);
-    }
-    
-    if (channelId === 1) {
-      currentStreamingBubble1 = currentBubble;
-    } else {
-      currentStreamingBubble2 = currentBubble;
-    }
-  }
-  
-  if (isFinal) {
-    currentBubble.textContent = cleanText;
-    currentBubble.classList.remove("streaming-text");
-    incrementWordCount(cleanText);
-    
-    const ts = document.createElement("span");
-    ts.className = "timestamp";
-    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    currentBubble.appendChild(ts);
-    if (channelId === 1) {
-      currentStreamingBubble1 = null;
-      lastFinalizedOutput1 = cleanText;
-    } else {
-      currentStreamingBubble2 = null;
-      lastFinalizedOutput2 = cleanText;
-    }
-  } else {
-    currentBubble.textContent = cleanText + "...";
-    currentBubble.classList.add("streaming-text");
-  }
-  
-  scrollContainer.scrollTop = scrollContainer.scrollHeight;
-}
-
-function finalizeOutputTranscript(channelId) {
-  let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
-  if (currentBubble) {
-    const text = currentBubble.textContent.endsWith("...") ? 
-                 currentBubble.textContent.slice(0, -3) : 
-                 currentBubble.textContent;
-    const cleanText = text.trim();
-    if (!cleanText) {
-      currentBubble.remove();
-      if (channelId === 1) currentStreamingBubble1 = null;
-      else currentStreamingBubble2 = null;
-      return;
-    }
-    
-    currentBubble.textContent = cleanText;
-    currentBubble.classList.remove("streaming-text");
-    
-    const ts = document.createElement("span");
-    ts.className = "timestamp";
-    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    currentBubble.appendChild(ts);
-    
-    if (channelId === 1) {
-      currentStreamingBubble1 = null;
-      lastFinalizedOutput1 = cleanText;
-    } else {
-      currentStreamingBubble2 = null;
-      lastFinalizedOutput2 = cleanText;
-    }
-    
-    updateSubtitleLane(`lang${channelId}`, cleanText, true);
-  }
+function clearTranscriptStream(stream) {
+  stream.list.innerHTML = '';
+  stream.placeholder.style.display = 'block';
+  stream.bubble = null;
+  stream.text = '';
 }
 
 
@@ -1699,17 +1612,26 @@ function openSubtitleWindow() {
   }
 }
 
-function updateSubtitleLane(lane, text, isFinal = false) {
-  subtitleState[lane] = applyLaneUpdate(subtitleState[lane], text, isFinal);
+// Adds one translated piece from Google to the screens, exactly as Google sent
+// it. `session` marks the first piece of a new or resumed Gemini session.
+function deliverOutputPiece(channelId, text, session = {}) {
+  const lane = `lang${channelId}`;
+  const addition = pieceToAppend(subtitleState[lane].text, text, session);
+  if (!addition) {
+    logDebug(`Channel ${channelId}: skipped "${text.trim()}" — the resumed session repeated a word already on screen.`, 'info');
+    return;
+  }
+  subtitleState[lane] = appendLaneText(subtitleState[lane], addition);
+  appendTranscriptPiece(outputStreams[channelId], addition);
 
   if (isSocketOpen(localSubtitlesWS)) {
-    localSubtitlesWS.send(JSON.stringify({
-      type: 'update',
-      lane,
-      text,
-      isFinal
-    }));
+    localSubtitlesWS.send(JSON.stringify({ type: 'append', lane, text: addition }));
   }
+}
+
+function deliverInputPiece(text, session = {}) {
+  const addition = pieceToAppend(inputStream.text, text, session);
+  if (addition) appendTranscriptPiece(inputStream, addition);
 }
 
 // --- WebSocket Handlers ---
@@ -1765,6 +1687,8 @@ async function startSession() {
     return;
   }
 
+  subtitleState.lang1 = emptyLaneState();
+  subtitleState.lang2 = emptyLaneState();
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'clear' }));
     syncLocalSubtitlesSetup();
@@ -1807,22 +1731,110 @@ async function startSession() {
   connectGeminiSockets();
 }
 
+function activeSocketFor(channelId) {
+  return channelId === 1 ? socket1 : socket2;
+}
+
+// Which connection a message came from: the live one, a goAway replacement
+// still completing setup, or the old one finishing what it already heard.
+function socketRole(ws, channelId, generation) {
+  if (!isRunning || generation !== sessionGeneration) return null;
+  if (ws === activeSocketFor(channelId)) return 'active';
+  if (ws === pendingSocket[channelId]) return 'pending';
+  if (ws === drainingSocket[channelId]) return 'draining';
+  return null;
+}
+
 function isCurrentSocket(ws, channelId, generation) {
-  const activeSocket = channelId === 1 ? socket1 : socket2;
-  return isRunning && generation === sessionGeneration && ws === activeSocket;
+  return socketRole(ws, channelId, generation) === 'active';
+}
+
+function detachSocket(ws) {
+  if (!ws) return;
+  clearTimeout(ws.rotationTimer);
+  ws.onopen = null;
+  ws.onmessage = null;
+  ws.onclose = null;
+  ws.onerror = null;
+  if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+    try { ws.close(); } catch (error) {}
+  }
+}
+
+function geminiProxyUrl() {
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${window.location.host}${GEMINI_LIVE_WS_PATH}`;
+}
+
+function armDrainQuietTimer(channelId) {
+  clearTimeout(drainTimers[channelId].quiet);
+  drainTimers[channelId].quiet = setTimeout(() => finishDrain(channelId), ROTATION_QUIET_MS);
+}
+
+// Ends a rotation drain: closes the old connection, then delivers the new
+// session's captions that waited for it, in the order they arrived.
+function finishDrain(channelId) {
+  clearTimeout(drainTimers[channelId].quiet);
+  clearTimeout(drainTimers[channelId].max);
+  drainTimers[channelId].quiet = null;
+  drainTimers[channelId].max = null;
+  const old = drainingSocket[channelId];
+  drainingSocket[channelId] = null;
+  detachSocket(old);
+  const queued = drainQueue[channelId];
+  drainQueue[channelId] = [];
+  for (const deliver of queued) deliver();
+}
+
+function abandonRotation(channelId, ws, reason) {
+  if (pendingSocket[channelId] !== ws) return;
+  pendingSocket[channelId] = null;
+  detachSocket(ws);
+  logDebug(`Channel ${channelId}: the replacement connection failed (${reason}). The current connection keeps translating and reconnects when Google closes it.`, 'warning');
+}
+
+// Google sends goAway about 50 s before it closes a connection. Open a
+// replacement that resumes the same session while this one keeps translating.
+function beginRotation(channelId, generation, timing) {
+  if (pendingSocket[channelId] || drainingSocket[channelId] || !sessionConfig) return;
+  const handle = resumeHandle[channelId];
+  if (!handle) {
+    logDebug(`Channel ${channelId}: Google will close this connection${timing} and sent no resumption handle. Translation continues until it closes, then reconnects.`, 'warning');
+    return;
+  }
+  const { sourceLanguage, targetLanguage1, targetLanguage2, echoTargetLanguage } = sessionConfig;
+  const ws = new WebSocket(geminiProxyUrl());
+  ws.resumeHandle = handle;
+  pendingSocket[channelId] = ws;
+  ws.rotationTimer = setTimeout(() => abandonRotation(channelId, ws, 'setup timed out'), SETUP_TIMEOUT_MS);
+  setupSocket(ws, channelId, channelId === 1 ? targetLanguage1 : targetLanguage2, echoTargetLanguage, sourceLanguage, generation);
+  logDebug(`Channel ${channelId}: Google asked to rotate the connection${timing}. Opening a replacement that resumes the same session; the current one keeps translating meanwhile.`, 'info');
+}
+
+function promoteRotation(channelId, ws) {
+  clearTimeout(ws.rotationTimer);
+  pendingSocket[channelId] = null;
+  const old = activeSocketFor(channelId);
+  if (channelId === 1) socket1 = ws;
+  else socket2 = ws;
+  socketSetupReady[channelId] = true;
+  ws.resumed = true;
+  drainingSocket[channelId] = old;
+  armDrainQuietTimer(channelId);
+  drainTimers[channelId].max = setTimeout(() => finishDrain(channelId), ROTATION_DRAIN_MAX_MS);
+  setHealthItem(`gemini${channelId}`, 'good', 'Ready');
+  logDebug(`Channel ${channelId}: replacement connection ready. Live audio now goes to it with no gap.`, 'info');
 }
 
 function closeGeminiSockets() {
-  for (const ws of [socket1, socket2]) {
-    if (!ws) continue;
-    ws.onopen = null;
-    ws.onmessage = null;
-    ws.onclose = null;
-    ws.onerror = null;
-    if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-      try { ws.close(); } catch (error) {}
-    }
+  for (const channelId of [1, 2]) {
+    if (!isRunning) drainQueue[channelId] = [];
+    finishDrain(channelId);
+    detachSocket(pendingSocket[channelId]);
+    pendingSocket[channelId] = null;
   }
+  detachSocket(socket1);
+  detachSocket(socket2);
   socket1 = null;
   socket2 = null;
   socketSetupReady[1] = false;
@@ -1836,8 +1848,10 @@ function connectGeminiSockets() {
   sessionGeneration++;
   const generation = sessionGeneration;
   const { sourceLanguage, targetLanguage1, targetLanguage2, echoTargetLanguage } = sessionConfig;
-  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = `${wsProtocol}//${window.location.host}${GEMINI_LIVE_WS_PATH}`;
+  const url = geminiProxyUrl();
+  // A fresh connection starts a new Gemini session; old handles do not apply.
+  resumeHandle[1] = '';
+  resumeHandle[2] = '';
   setDiagnostic('Connecting to Gemini and verifying the session configuration...', 'warning');
   geminiPcmAccumulator.reset();
 
@@ -1890,7 +1904,6 @@ function scheduleReconnect(reason, generation = sessionGeneration) {
   clearTimeout(setupTimeout);
   setupTimeout = null;
   closeGeminiSockets();
-  clearOpenCaptions();
   setHealthItem('gemini1', 'warning', 'Reconnecting');
   if (!healthItems.gemini2.hidden) setHealthItem('gemini2', 'warning', 'Reconnecting');
 
@@ -1956,13 +1969,20 @@ function noteHeardLanguage(languageCode) {
 
 function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLanguage, generation) {
   ws.onopen = () => {
-    if (!isCurrentSocket(ws, channelId, generation)) return;
+    const role = socketRole(ws, channelId, generation);
+    if (role !== 'active' && role !== 'pending') return;
     logDebug(`WebSocket ${channelId} opened successfully.`, "info");
-    setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
+    if (role === 'active') setHealthItem(`gemini${channelId}`, 'connecting', 'Completing setup');
 
-    const setupMsg = buildGeminiSetupMessage({ targetLanguage, echoTargetLanguage, sourceLanguage });
+    const setupMsg = buildGeminiSetupMessage({
+      targetLanguage,
+      echoTargetLanguage,
+      sourceLanguage,
+      resumeHandle: ws.resumeHandle || ''
+    });
     const sourceHint = normalizeSourceLanguage(sourceLanguage) || 'auto-detect';
-    logDebug(`WebSocket ${channelId}: Sending Live Translate setup ${sourceHint} → ${targetLanguage} (no written instructions)...`, "ws-sent");
+    const resumeNote = ws.resumeHandle ? ', resuming the current session' : '';
+    logDebug(`WebSocket ${channelId}: Sending Live Translate setup ${sourceHint} → ${targetLanguage} (no written instructions${resumeNote})...`, "ws-sent");
     ws.send(JSON.stringify(setupMsg));
   };
   
@@ -1977,20 +1997,34 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         text = event.data;
       }
 
-      if (!isCurrentSocket(ws, channelId, generation)) return;
+      const role = socketRole(ws, channelId, generation);
+      if (!role) return;
       const data = JSON.parse(text);
 
+      const resumption = data.sessionResumptionUpdate;
+      if (resumption?.newHandle && resumption.resumable !== false && role !== 'draining') {
+        resumeHandle[channelId] = resumption.newHandle;
+      }
+
       if (data.goAway) {
+        if (role !== 'active') return;
         const timeLeft = typeof data.goAway.timeLeft === 'string' ? data.goAway.timeLeft : '';
         const timing = timeLeft ? ` (${timeLeft} remaining)` : '';
-        logDebug(`Gemini requested connection rotation${timing}.`, 'warning');
-        setHealthItem(`gemini${channelId}`, 'warning', 'Server requested reconnect');
-        scheduleReconnect('Gemini requested a routine connection rotation.', generation);
+        beginRotation(channelId, generation, timing);
         return;
       }
 
       if (data.error) {
         const errorMessage = data.error.message || data.error.status || 'Unknown Gemini error';
+        if (role === 'pending') {
+          abandonRotation(channelId, ws, errorMessage);
+          return;
+        }
+        if (role === 'draining') {
+          logDebug(`Channel ${channelId}: the previous connection reported "${errorMessage}" while finishing; the new one is already live.`, 'info');
+          finishDrain(channelId);
+          return;
+        }
         if (/goaway|go away/i.test(errorMessage) || data.error.status === 'UNAVAILABLE') {
           logDebug(`Temporary Gemini service response: ${errorMessage}`, 'warning');
           scheduleReconnect('Gemini is temporarily rotating or unavailable.', generation);
@@ -2001,21 +2035,23 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
       }
       
       if (data.setupComplete) {
+        if (role === 'pending') {
+          promoteRotation(channelId, ws);
+          return;
+        }
         logDebug(`Received: WebSocket ${channelId} setupComplete acknowledgment.`, "ws-recv");
         markSocketReady(channelId, generation);
         return;
       }
+      if (role === 'pending') return;
 
       if (isSongSuppressed) return;
-      
+
       if (data.serverContent) {
         const sc = data.serverContent;
-        
+
         if (sc.interrupted) {
           logDebug(`WebSocket ${channelId} received an activity signal; keeping translated audio playing.`, "audio");
-        }
-        if (sc.turnComplete) {
-          logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
         }
         if (sc.modelTurn && sc.modelTurn.parts) {
           sc.modelTurn.parts.forEach(part => {
@@ -2032,48 +2068,55 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         }
       }
       
-      const isTurnComplete = Boolean(data.serverContent?.turnComplete);
+      // Transcripts. Only the final transcription fields are used: Google sends
+      // each piece once and never revises it. Interim fields, if Google ever
+      // sends them, are guesses by definition and never reach the screens.
+      const inputTx = data.serverContent?.inputTranscription || data.inputTranscription;
+      const outputTx = data.serverContent?.outputTranscription || data.outputTranscription;
+      const hasText = Boolean(inputTx?.text || outputTx?.text);
+      if (role === 'draining' && hasText) armDrainQuietTimer(channelId);
 
-      // Handle Transcripts
-      const inputTx = data.inputTranscription
-        || data.serverContent?.inputTranscription
-        || data.serverContent?.interimInputTranscription;
-      if (channelId === 1 && inputTx) {
-        if (inputTx.languageCode) {
-          noteHeardLanguage(inputTx.languageCode);
-          maybeWarnTargetLanguageMatch(inputTx.languageCode);
-        }
-        if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final || isTurnComplete));
-      }
-      
-      const outputTx = data.outputTranscription
-        || data.serverContent?.outputTranscription
-        || data.serverContent?.interimOutputTranscription;
-      if (outputTx && outputTx.text) {
-        const rawText = outputTx.text;
-        if (lastSpeechSentTimestamp > 0) {
-          const sampleLatency = Date.now() - lastSpeechSentTimestamp;
-          if (sampleLatency > 80 && sampleLatency < 10000) {
-            smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
-            updateTelemetryLatency(smoothedLatencyMs);
+      const handleTranscripts = () => {
+        if (channelId === 1 && inputTx) {
+          if (inputTx.languageCode) {
+            noteHeardLanguage(inputTx.languageCode);
+            maybeWarnTargetLanguageMatch(inputTx.languageCode);
+          }
+          if (inputTx.text) {
+            const session = { sessionStart: ws.firstInputPending !== false, resumed: Boolean(ws.resumed) };
+            ws.firstInputPending = false;
+            deliverInputPiece(inputTx.text, session);
           }
         }
-        if (chunksReceived === 0) {
-          logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
-        }
-        const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
-        const text = applyBiblicalGlossary(rawText, targetLang || 'en');
-        const isFinal = Boolean(outputTx.final || isTurnComplete);
-        updateOutputTranscript(text, channelId, isFinal);
-        updateSubtitleLane(`lang${channelId}`, text, isFinal);
-      }
 
-      if (isTurnComplete) {
-        logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
-        finalizeOutputTranscript(channelId);
-        if (channelId === 1) finalizeInputTranscript();
-      }
-      
+        if (outputTx?.text) {
+          const captionLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
+          if (captionLatency !== smoothedLatencyMs) {
+            smoothedLatencyMs = captionLatency;
+            updateTelemetryLatency(smoothedLatencyMs);
+          }
+          if (chunksReceived === 0) {
+            logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
+          }
+          const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
+          const text = applyBiblicalGlossary(outputTx.text, targetLang || 'en');
+          const session = { sessionStart: ws.firstOutputPending !== false, resumed: Boolean(ws.resumed) };
+          ws.firstOutputPending = false;
+          deliverOutputPiece(channelId, text, session);
+        }
+
+        if (data.serverContent?.turnComplete) {
+          logDebug(`WebSocket ${channelId} turnComplete received.`, "ws-recv");
+          finishTranscriptBubble(outputStreams[channelId]);
+          if (channelId === 1) finishTranscriptBubble(inputStream);
+        }
+      };
+
+      // While the previous connection is still delivering the end of what it
+      // heard, the new session's captions wait so the screen stays in order.
+      if (role === 'active' && drainingSocket[channelId]) drainQueue[channelId].push(handleTranscripts);
+      else handleTranscripts();
+
     } catch (err) {
       console.error(`Error parsing WebSocket ${channelId} message:`, err);
       logDebug(`Error parsing server message on channel ${channelId}: ${err.message}`, "error");
@@ -2081,7 +2124,16 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
   };
   
   ws.onclose = (event) => {
-    if (!isCurrentSocket(ws, channelId, generation)) return;
+    const role = socketRole(ws, channelId, generation);
+    if (!role) return;
+    if (role === 'pending') {
+      abandonRotation(channelId, ws, `closed with code ${event.code}`);
+      return;
+    }
+    if (role === 'draining') {
+      finishDrain(channelId);
+      return;
+    }
     console.log(`WebSocket ${channelId} connection closed:`, event);
     logDebug(`WebSocket ${channelId} connection closed. Code: ${event.code} | Reason: ${event.reason || 'None provided'}`, "info");
     if (event.code === 1008 || event.code === 1011) {
@@ -2095,7 +2147,13 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
   };
   
   ws.onerror = (err) => {
-    if (!isCurrentSocket(ws, channelId, generation)) return;
+    const role = socketRole(ws, channelId, generation);
+    if (!role) return;
+    if (role === 'pending') {
+      abandonRotation(channelId, ws, 'connection error');
+      return;
+    }
+    if (role === 'draining') return;
     console.error(`WebSocket ${channelId} error:`, err);
     logDebug(`WebSocket ${channelId} error: ${err.message || 'Unknown network error'}`, "error");
     scheduleReconnect(`Connection error on channel ${channelId}.`, generation);
@@ -2138,9 +2196,9 @@ function disconnectSession(clearSubtitles = true) {
   stopAllPlayback();
   resetSongDetectionGate();
   updateReadySongFilterStatus();
-  currentStreamingBubble1 = null;
-  currentStreamingBubble2 = null;
-  clearOpenCaptions();
+  finishTranscriptBubble(inputStream);
+  finishTranscriptBubble(outputStreams[1]);
+  finishTranscriptBubble(outputStreams[2]);
 
   if (clearSubtitles) {
     subtitleState.lang1 = emptyLaneState();
@@ -2262,9 +2320,9 @@ function initLocalSubtitlesWS() {
 }
 
 function handleIncomingNetworkAudio(base64Data) {
-  const isNetworkSource = audioSourceSelect.value === 'network';
-  const isTranslating = translationSocketsReady();
-  if (!isNetworkSource || !isTranslating) return;
+  // While Gemini reconnects, sendGeminiPcmFrames keeps this audio in the
+  // pre-roll buffer, the same as the local microphone path.
+  if (audioSourceSelect.value !== 'network' || !isRunning) return;
 
   const incomingSamples = decodeBase64Pcm16(base64Data);
 

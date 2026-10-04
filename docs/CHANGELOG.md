@@ -2,6 +2,17 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## Unreleased — Captions show exactly what Google sends
+
+**Why:** A recording of 15 minutes of the 2026-10-04 sermon showed that Google sends each translated piece once and never corrects it, and never sends a "finished" signal. The duplicate and correction rules added in v1.3.29–v1.3.34 were deleting real words: replayed against that sermon, v1.3.33 removed 20% of the translation and v1.3.34 dropped 39 words. Screens that refreshed or joined late showed only the last few words. Every 9 minutes Google rotates the connection, and the app dropped speech and lost the sermon's context each time.
+
+**What changed:**
+- Projector, phones, and OBS show Google's translation word for word, in order. No words are guessed, merged, or removed.
+- A screen that refreshes or connects mid-sermon shows the recent text immediately.
+- The dashboard's translation and Detected Speech panels show whole sentences.
+- When Google rotates the connection, the new connection resumes the same session and takes over with no gap. Speech is no longer lost, including from the Mac audio window.
+- One malformed or oversized message from any device on the network can no longer stop the server.
+
 ## v1.3.34 — Robust word-level subtitle streaming and turn finalization deduplication
 
 **Why:** Subtitles could duplicate and repeat words on screen due to screen history truncation mismatches, and race conditions between output transcription and turn completion created duplicate dashboard bubbles.

@@ -17,7 +17,20 @@ This document records architectural decisions, critical constraints, and failed 
 ### ❌ Failed: Default Activity Interruption (Barge-In)
 * **What happened:** The Gemini Multimodal Live API defaults to conversational barge-in: when new user audio arrives, Gemini interrupts and truncates its own audio output.
 * **Failure mode:** In a sermon, the preacher speaks continuously without pausing. As soon as the preacher began the next sentence, Gemini instantly killed the playback of the previous translated sentence. Translation sounded choppy or stopped entirely.
-* **Lesson & Rule:** Set `activityHandling: 'NO_INTERRUPTION'` in `realtimeInputConfig`. Keep automatic detection on, with high start sensitivity, `prefixPaddingMs: 300` so the first syllable is not clipped, and `silenceDurationMs: 300` so a phrase is released without waiting through a breath. `outputTranscription` on the live translate model has `text` and `languageCode` only. `settleCaptionStep` holds a phrase until Google corrects it or moves on. `dedupeCaptionLine` runs again on the projector before paint. A content word already in the last 20 words is removed there, and the full line is never appended onto itself. The on-screen lag number holds once the preacher has been quiet for 1.5 seconds.
+* **Lesson & Rule:** Set `activityHandling: 'NO_INTERRUPTION'` in `realtimeInputConfig`. Keep automatic detection on, with high start sensitivity, `prefixPaddingMs: 300` so the first syllable is not clipped, and `silenceDurationMs: 300` so a phrase is released without waiting through a breath. The on-screen lag number holds once the preacher has been quiet for 1.5 seconds.
+
+---
+
+### ✅ Verified: What Google Actually Sends for Captions (Oct 2026)
+* **How it was measured:** 15 minutes of a real sermon (livestream of 2026-10-04, 28:00–43:00, Romanian → English) streamed through the app's exact setup message, every server message recorded. The pieces are kept in `tests/fixtures/sermon-2026-10-04-en.json`.
+* **Findings:**
+  * `outputTranscription` and `inputTranscription` arrive as short pieces (840 in 15 minutes) containing **only the new words**, each with its own leading space and punctuation. Joined as sent, they are the full translation.
+  * Google **never revised or restated** a piece. Every piece is final when it arrives.
+  * Google sent **no** `finished`, `final`, `turnComplete`, `generationComplete`, or `interrupted` — not even after 10 seconds of silence. Never wait for them: v1.3.26/27 did, and the screens went blank.
+  * The preacher repeats phrases for emphasis ("he speaks with sense, he speaks with meaning"), and Google translates the repetition faithfully. Repeated words on screen are usually real speech.
+  * The only piece without a leading space is the first one of each session.
+* **❌ Failed: guessing, merging, or removing words.** v1.3.29–v1.3.34 tried to detect "corrections" and duplicates (`settleCaptionStep`, `dedupeCaptionLine`, `getAppendedWords`, a "content word already in the last 20 words is removed" rule). Replayed against the recorded sermon, v1.3.33 removed 462 of 2,280 words (20%) and v1.3.34 dropped 39. Those corrections did not exist; the rules deleted real translation.
+* **Rule:** `src/caption-stream.js` appends each piece exactly as Google sends it. The dashboard sends the relay `{ type: 'append', lane, text }`; the relay re-broadcasts it with `seq` and the lane's full recent text; a screen animates the piece only if `seq` follows what it shows, otherwise it redraws instantly from the full text. Interim transcription fields are ignored. `tests/caption-stream.test.js` replays the recorded sermon and requires every word to reach the projector, in order. **Do not add word-level deduplication.**
 
 ---
 
@@ -47,9 +60,10 @@ This document records architectural decisions, critical constraints, and failed 
 ## 3. Session Resiliency & Reconnection
 
 ### ❌ Failed: Dropping Audio During Gemini Connection Rotation (`goAway`)
-* **What happened:** Google's Live API forces connection rotation via `goAway` every ~15–30 minutes. The app closed the socket and took 1–2 seconds to reconnect.
-* **Failure mode:** Any sentence spoken by the preacher during that 2-second setup window was dropped.
-* **Lesson & Rule:** Maintain a circular **`PreRollAudioBuffer`** (1.5 seconds) in `src/pcm-audio.js`. While sockets are reconnecting or waiting for `setupComplete`, incoming audio is buffered. The moment `setupComplete` arrives, the pre-roll audio is flushed to Gemini, preserving speech continuity.
+* **What happened:** Google sends `goAway` (measured: exactly 9:00 into a connection, with `timeLeft: "50s"`). The app closed the socket immediately, waited, and started a brand-new session.
+* **Failure mode:** Speech during the reconnect was lost (all of it for the Mac-audio/network source, which skipped the pre-roll), the old connection's in-flight translation was thrown away, and the new session had no context.
+* **Lesson & Rule:** Google sends `sessionResumptionUpdate` handles about once a second, unrequested. On `goAway`, open a replacement socket whose setup carries `sessionResumption: { handle }`, keep sending audio to the old socket until the replacement's `setupComplete` (measured: 0.4 s), then switch. The old socket keeps delivering what it already heard; the new session's captions wait until it has been quiet for 1.5 s (max 8 s) so text stays in order. A resumed session may restate the old session's last word once ("sighed."); `pieceToAppend` drops that, and only at the seam. The initial setup message is unchanged.
+* **Pre-roll:** the 1.5-second **`PreRollAudioBuffer`** still bridges unexpected drops, for both the microphone and the network source. It is cleared after every successful send, so audio held during an earlier backlog can never reach Gemini later, out of context.
 
 ---
 

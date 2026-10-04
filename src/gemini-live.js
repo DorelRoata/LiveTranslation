@@ -25,13 +25,17 @@ export function inputTranscriptionConfig(sourceLanguage) {
   return languageCode ? { languageCodes: [languageCode] } : {};
 }
 
+// resumeHandle: the latest sessionResumptionUpdate handle. Google sends these
+// about once a second without being asked; passing one continues the same
+// session (context included) on a new connection after a goAway.
 export function buildGeminiSetupMessage({
   targetLanguage,
   echoTargetLanguage = false,
-  sourceLanguage = 'auto'
+  sourceLanguage = 'auto',
+  resumeHandle = ''
 } = {}) {
   const targetLanguageCode = toGeminiLanguageCode(targetLanguage);
-  return {
+  const message = {
     setup: {
       model: GEMINI_LIVE_MODEL,
       generationConfig: {
@@ -55,6 +59,8 @@ export function buildGeminiSetupMessage({
       }
     }
   };
+  if (resumeHandle) message.setup.sessionResumption = { handle: resumeHandle };
+  return message;
 }
 
 export function buildGeminiAudioMessage(base64Pcm) {
@@ -80,10 +86,6 @@ export function shouldReconnectOnNetworkOnline({
   if (!primaryReady) return true;
   if (secondaryEnabled && !secondaryReady) return true;
   return false;
-}
-
-export function transcriptionIsFinished(transcription) {
-  return Boolean(transcription && (transcription.finished === true || transcription.final === true));
 }
 
 // Ignore a sample once the preacher has been quiet longer than the phrase

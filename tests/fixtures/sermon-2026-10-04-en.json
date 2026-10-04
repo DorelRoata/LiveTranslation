@@ -1,0 +1,4206 @@
+{
+ "description": "Every outputTranscription piece Google Live Translate sent for 15 minutes of a real sermon (Romanian to English, livestream 2026-10-04, 28:00-43:00). Recorded with the app's own setup message. Google rotated the connection at 9:00 (goAway); session 2 resumed session 1 with its resumption handle.",
+ "model": "models/gemini-3.5-live-translate-preview",
+ "pieces": [
+  {
+   "t": 3301,
+   "session": 1,
+   "text": "Amen."
+  },
+  {
+   "t": 7008,
+   "session": 1,
+   "text": " I would like to read"
+  },
+  {
+   "t": 8001,
+   "session": 1,
+   "text": " the word of God,"
+  },
+  {
+   "t": 9011,
+   "session": 1,
+   "text": " which we find in"
+  },
+  {
+   "t": 10006,
+   "session": 1,
+   "text": " 1 Corinthians"
+  },
+  {
+   "t": 11005,
+   "session": 1,
+   "text": " 1:17."
+  },
+  {
+   "t": 12011,
+   "session": 1,
+   "text": " Please stand"
+  },
+  {
+   "t": 13255,
+   "session": 1,
+   "text": " up, let's"
+  },
+  {
+   "t": 14009,
+   "session": 1,
+   "text": " honor the word of"
+  },
+  {
+   "t": 15013,
+   "session": 1,
+   "text": " God."
+  },
+  {
+   "t": 19003,
+   "session": 1,
+   "text": " 1 Corinthians,"
+  },
+  {
+   "t": 20002,
+   "session": 1,
+   "text": " chapter 1,"
+  },
+  {
+   "t": 21004,
+   "session": 1,
+   "text": " verse 17,"
+  },
+  {
+   "t": 22003,
+   "session": 1,
+   "text": " just one verse,"
+  },
+  {
+   "t": 23256,
+   "session": 1,
+   "text": " let's read the word of God."
+  },
+  {
+   "t": 25011,
+   "session": 1,
+   "text": " In fact,"
+  },
+  {
+   "t": 26255,
+   "session": 1,
+   "text": " Christ sent me"
+  },
+  {
+   "t": 27004,
+   "session": 1,
+   "text": " not to baptize,"
+  },
+  {
+   "t": 28002,
+   "session": 1,
+   "text": " but to"
+  },
+  {
+   "t": 29033,
+   "session": 1,
+   "text": " preach the gospel,"
+  },
+  {
+   "t": 30018,
+   "session": 1,
+   "text": " not with"
+  },
+  {
+   "t": 31002,
+   "session": 1,
+   "text": " wisdom of speech,"
+  },
+  {
+   "t": 32005,
+   "session": 1,
+   "text": " lest the cross"
+  },
+  {
+   "t": 33011,
+   "session": 1,
+   "text": " of Christ be"
+  },
+  {
+   "t": 34004,
+   "session": 1,
+   "text": " made of no"
+  },
+  {
+   "t": 35006,
+   "session": 1,
+   "text": " avail. Amen."
+  },
+  {
+   "t": 36001,
+   "session": 1,
+   "text": " Please be seated."
+  },
+  {
+   "t": 41262,
+   "session": 1,
+   "text": " After so many things"
+  },
+  {
+   "t": 42004,
+   "session": 1,
+   "text": " that have been spoken,"
+  },
+  {
+   "t": 43006,
+   "session": 1,
+   "text": " that we have been urged"
+  },
+  {
+   "t": 44003,
+   "session": 1,
+   "text": " through songs,"
+  },
+  {
+   "t": 45010,
+   "session": 1,
+   "text": " through short exhortations,"
+  },
+  {
+   "t": 46007,
+   "session": 1,
+   "text": " from groups"
+  },
+  {
+   "t": 47009,
+   "session": 1,
+   "text": " of praise and"
+  },
+  {
+   "t": 48011,
+   "session": 1,
+   "text": " worship,"
+  },
+  {
+   "t": 49014,
+   "session": 1,
+   "text": " it remains"
+  },
+  {
+   "t": 50012,
+   "session": 1,
+   "text": " only this."
+  },
+  {
+   "t": 51004,
+   "session": 1,
+   "text": " I like"
+  },
+  {
+   "t": 52004,
+   "session": 1,
+   "text": " this motto that"
+  },
+  {
+   "t": 53004,
+   "session": 1,
+   "text": " says the following:"
+  },
+  {
+   "t": 54003,
+   "session": 1,
+   "text": " I have"
+  },
+  {
+   "t": 55032,
+   "session": 1,
+   "text": " noted in my Bible"
+  },
+  {
+   "t": 56009,
+   "session": 1,
+   "text": " for a long time"
+  },
+  {
+   "t": 57003,
+   "session": 1,
+   "text": " and I keep it all the time,"
+  },
+  {
+   "t": 58010,
+   "session": 1,
+   "text": " with"
+  },
+  {
+   "t": 59007,
+   "session": 1,
+   "text": " regret,"
+  },
+  {
+   "t": 60011,
+   "session": 1,
+   "text": " many times"
+  },
+  {
+   "t": 61026,
+   "session": 1,
+   "text": " with slips,"
+  },
+  {
+   "t": 62003,
+   "session": 1,
+   "text": " not really"
+  },
+  {
+   "t": 63007,
+   "session": 1,
+   "text": " fulfilling it,"
+  },
+  {
+   "t": 64003,
+   "session": 1,
+   "text": " it says open"
+  },
+  {
+   "t": 65003,
+   "session": 1,
+   "text": " read"
+  },
+  {
+   "t": 66018,
+   "session": 1,
+   "text": " close,"
+  },
+  {
+   "t": 67008,
+   "session": 1,
+   "text": " fulfill."
+  },
+  {
+   "t": 68008,
+   "session": 1,
+   "text": " I think that"
+  },
+  {
+   "t": 69002,
+   "session": 1,
+   "text": " would be the most"
+  },
+  {
+   "t": 70012,
+   "session": 1,
+   "text": " sufficient for all"
+  },
+  {
+   "t": 71010,
+   "session": 1,
+   "text": " of us to be able to say"
+  },
+  {
+   "t": 72024,
+   "session": 1,
+   "text": " that"
+  },
+  {
+   "t": 73003,
+   "session": 1,
+   "text": " this is the word"
+  },
+  {
+   "t": 74016,
+   "session": 1,
+   "text": " of God and"
+  },
+  {
+   "t": 75008,
+   "session": 1,
+   "text": " we don't have much more"
+  },
+  {
+   "t": 76006,
+   "session": 1,
+   "text": " than that to do"
+  },
+  {
+   "t": 77004,
+   "session": 1,
+   "text": " but to do the will"
+  },
+  {
+   "t": 78006,
+   "session": 1,
+   "text": " of God. Amen."
+  },
+  {
+   "t": 82002,
+   "session": 1,
+   "text": " The message titled"
+  },
+  {
+   "t": 83005,
+   "session": 1,
+   "text": " and the call to prayer"
+  },
+  {
+   "t": 84013,
+   "session": 1,
+   "text": " that we will have in the next"
+  },
+  {
+   "t": 85021,
+   "session": 1,
+   "text": " few moments to"
+  },
+  {
+   "t": 86005,
+   "session": 1,
+   "text": " bless us"
+  },
+  {
+   "t": 87014,
+   "session": 1,
+   "text": " with the Holy Spirit"
+  },
+  {
+   "t": 88007,
+   "session": 1,
+   "text": " so that He may examine"
+  },
+  {
+   "t": 89003,
+   "session": 1,
+   "text": " us, motivate"
+  },
+  {
+   "t": 90004,
+   "session": 1,
+   "text": " us, and"
+  },
+  {
+   "t": 91004,
+   "session": 1,
+   "text": " strengthen us,"
+  },
+  {
+   "t": 92007,
+   "session": 1,
+   "text": " encourage us,"
+  },
+  {
+   "t": 93006,
+   "session": 1,
+   "text": " is the cross"
+  },
+  {
+   "t": 94012,
+   "session": 1,
+   "text": " of Jesus Christ."
+  },
+  {
+   "t": 96005,
+   "session": 1,
+   "text": " So"
+  },
+  {
+   "t": 97015,
+   "session": 1,
+   "text": " many times"
+  },
+  {
+   "t": 98005,
+   "session": 1,
+   "text": " with many"
+  },
+  {
+   "t": 99008,
+   "session": 1,
+   "text": " reflections in"
+  },
+  {
+   "t": 100006,
+   "session": 1,
+   "text": " different works,"
+  },
+  {
+   "t": 101005,
+   "session": 1,
+   "text": " in different"
+  },
+  {
+   "t": 102007,
+   "session": 1,
+   "text": " rituals,"
+  },
+  {
+   "t": 103007,
+   "session": 1,
+   "text": " in different ways,"
+  },
+  {
+   "t": 104019,
+   "session": 1,
+   "text": " it shows it,"
+  },
+  {
+   "t": 105012,
+   "session": 1,
+   "text": " it presents it"
+  },
+  {
+   "t": 106007,
+   "session": 1,
+   "text": " but much"
+  },
+  {
+   "t": 107004,
+   "session": 1,
+   "text": " more, those"
+  },
+  {
+   "t": 108006,
+   "session": 1,
+   "text": " who matter"
+  },
+  {
+   "t": 109018,
+   "session": 1,
+   "text": " what"
+  },
+  {
+   "t": 110004,
+   "session": 1,
+   "text": " was done on"
+  },
+  {
+   "t": 111005,
+   "session": 1,
+   "text": " the cross and"
+  },
+  {
+   "t": 112004,
+   "session": 1,
+   "text": " who was on the cross."
+  },
+  {
+   "t": 113003,
+   "session": 1,
+   "text": " That"
+  },
+  {
+   "t": 114004,
+   "session": 1,
+   "text": " is the most"
+  },
+  {
+   "t": 115005,
+   "session": 1,
+   "text": " important"
+  },
+  {
+   "t": 116004,
+   "session": 1,
+   "text": " for me"
+  },
+  {
+   "t": 117017,
+   "session": 1,
+   "text": " and for"
+  },
+  {
+   "t": 118015,
+   "session": 1,
+   "text": " everyone who has received"
+  },
+  {
+   "t": 119007,
+   "session": 1,
+   "text": " Jesus Christ"
+  },
+  {
+   "t": 120005,
+   "session": 1,
+   "text": " and for the one"
+  },
+  {
+   "t": 121012,
+   "session": 1,
+   "text": " who hears"
+  },
+  {
+   "t": 122005,
+   "session": 1,
+   "text": " the word about the Lord"
+  },
+  {
+   "t": 123005,
+   "session": 1,
+   "text": " Jesus Christ,"
+  },
+  {
+   "t": 124004,
+   "session": 1,
+   "text": " what he must do."
+  },
+  {
+   "t": 125010,
+   "session": 1,
+   "text": " He must"
+  },
+  {
+   "t": 126019,
+   "session": 1,
+   "text": " accept Jesus"
+  },
+  {
+   "t": 127004,
+   "session": 1,
+   "text": " Christ as Lord"
+  },
+  {
+   "t": 128004,
+   "session": 1,
+   "text": " and Savior of his"
+  },
+  {
+   "t": 129010,
+   "session": 1,
+   "text": " personal."
+  },
+  {
+   "t": 130007,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 131015,
+   "session": 1,
+   "text": " in what"
+  },
+  {
+   "t": 132005,
+   "session": 1,
+   "text": " the word of God tells"
+  },
+  {
+   "t": 133004,
+   "session": 1,
+   "text": " me here"
+  },
+  {
+   "t": 134004,
+   "session": 1,
+   "text": " the wisdom"
+  },
+  {
+   "t": 135003,
+   "session": 1,
+   "text": " of speech,"
+  },
+  {
+   "t": 136005,
+   "session": 1,
+   "text": " many times"
+  },
+  {
+   "t": 137005,
+   "session": 1,
+   "text": " I don't know how"
+  },
+  {
+   "t": 138007,
+   "session": 1,
+   "text": " you, but I"
+  },
+  {
+   "t": 139005,
+   "session": 1,
+   "text": " have taken from this"
+  },
+  {
+   "t": 140008,
+   "session": 1,
+   "text": " thing"
+  },
+  {
+   "t": 141003,
+   "session": 1,
+   "text": " speaking"
+  },
+  {
+   "t": 142003,
+   "session": 1,
+   "text": " on any topic,"
+  },
+  {
+   "t": 143004,
+   "session": 1,
+   "text": " we have"
+  },
+  {
+   "t": 144006,
+   "session": 1,
+   "text": " a meeting"
+  },
+  {
+   "t": 145007,
+   "session": 1,
+   "text": " with some very"
+  },
+  {
+   "t": 146012,
+   "session": 1,
+   "text": " important things"
+  },
+  {
+   "t": 147005,
+   "session": 1,
+   "text": " and I have"
+  },
+  {
+   "t": 148007,
+   "session": 1,
+   "text": " noted for myself"
+  },
+  {
+   "t": 149008,
+   "session": 1,
+   "text": " personally,"
+  },
+  {
+   "t": 150009,
+   "session": 1,
+   "text": " I said that"
+  },
+  {
+   "t": 151023,
+   "session": 1,
+   "text": " there are two"
+  },
+  {
+   "t": 152010,
+   "session": 1,
+   "text": " categories of"
+  },
+  {
+   "t": 153007,
+   "session": 1,
+   "text": " people who"
+  },
+  {
+   "t": 154015,
+   "session": 1,
+   "text": " speak."
+  },
+  {
+   "t": 156036,
+   "session": 1,
+   "text": " I think there are"
+  },
+  {
+   "t": 157008,
+   "session": 1,
+   "text": " two."
+  },
+  {
+   "t": 161009,
+   "session": 1,
+   "text": " And those"
+  },
+  {
+   "t": 162012,
+   "session": 1,
+   "text": " categories of people"
+  },
+  {
+   "t": 163004,
+   "session": 1,
+   "text": " the first"
+  },
+  {
+   "t": 164010,
+   "session": 1,
+   "text": " category, so you understand"
+  },
+  {
+   "t": 165008,
+   "session": 1,
+   "text": " correctly,"
+  },
+  {
+   "t": 166005,
+   "session": 1,
+   "text": " it is further divided"
+  },
+  {
+   "t": 167006,
+   "session": 1,
+   "text": " into two."
+  },
+  {
+   "t": 168005,
+   "session": 1,
+   "text": " In the following way:"
+  },
+  {
+   "t": 169009,
+   "session": 1,
+   "text": " the first"
+  },
+  {
+   "t": 170008,
+   "session": 1,
+   "text": " person is the one"
+  },
+  {
+   "t": 171264,
+   "session": 1,
+   "text": " who speaks a lot."
+  },
+  {
+   "t": 172004,
+   "session": 1,
+   "text": " He speaks"
+  },
+  {
+   "t": 173017,
+   "session": 1,
+   "text": " a lot, but"
+  },
+  {
+   "t": 174006,
+   "session": 1,
+   "text": " what"
+  },
+  {
+   "t": 175004,
+   "session": 1,
+   "text": " he speaks with"
+  },
+  {
+   "t": 176005,
+   "session": 1,
+   "text": " sense,"
+  },
+  {
+   "t": 177007,
+   "session": 1,
+   "text": " he speaks with"
+  },
+  {
+   "t": 178009,
+   "session": 1,
+   "text": " meaning, as we"
+  },
+  {
+   "t": 179005,
+   "session": 1,
+   "text": " say, with meaning,"
+  },
+  {
+   "t": 180007,
+   "session": 1,
+   "text": " what"
+  },
+  {
+   "t": 181008,
+   "session": 1,
+   "text": " and"
+  },
+  {
+   "t": 182010,
+   "session": 1,
+   "text": " he speaks"
+  },
+  {
+   "t": 183015,
+   "session": 1,
+   "text": " with wisdom."
+  },
+  {
+   "t": 185007,
+   "session": 1,
+   "text": " The second person"
+  },
+  {
+   "t": 186010,
+   "session": 1,
+   "text": " in this category is"
+  },
+  {
+   "t": 187022,
+   "session": 1,
+   "text": " that he speaks"
+  },
+  {
+   "t": 188013,
+   "session": 1,
+   "text": " little."
+  },
+  {
+   "t": 189009,
+   "session": 1,
+   "text": " And again,"
+  },
+  {
+   "t": 190006,
+   "session": 1,
+   "text": " the same characteristics"
+  },
+  {
+   "t": 191006,
+   "session": 1,
+   "text": " are added"
+  },
+  {
+   "t": 192022,
+   "session": 1,
+   "text": " again to the same"
+  },
+  {
+   "t": 193016,
+   "session": 1,
+   "text": " person."
+  },
+  {
+   "t": 195260,
+   "session": 1,
+   "text": " He speaks with meaning,"
+  },
+  {
+   "t": 196011,
+   "session": 1,
+   "text": " he speaks with sense"
+  },
+  {
+   "t": 196509,
+   "session": 1,
+   "text": " and he speaks"
+  },
+  {
+   "t": 197008,
+   "session": 1,
+   "text": " with wisdom."
+  },
+  {
+   "t": 198009,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 199006,
+   "session": 1,
+   "text": " the opposite of two"
+  },
+  {
+   "t": 200006,
+   "session": 1,
+   "text": " parts of the person"
+  },
+  {
+   "t": 201268,
+   "session": 1,
+   "text": " is, you know,"
+  },
+  {
+   "t": 202010,
+   "session": 1,
+   "text": " I won't repeat it,"
+  },
+  {
+   "t": 203013,
+   "session": 1,
+   "text": " we all know it."
+  },
+  {
+   "t": 204014,
+   "session": 1,
+   "text": " And many"
+  },
+  {
+   "t": 205274,
+   "session": 1,
+   "text": " times I'm afraid"
+  },
+  {
+   "t": 206013,
+   "session": 1,
+   "text": " when I come out here"
+  },
+  {
+   "t": 207007,
+   "session": 1,
+   "text": " so that I don't"
+  },
+  {
+   "t": 208034,
+   "session": 1,
+   "text": " do, so"
+  },
+  {
+   "t": 209007,
+   "session": 1,
+   "text": " that I don't bring"
+  },
+  {
+   "t": 210006,
+   "session": 1,
+   "text": " the cross"
+  },
+  {
+   "t": 211010,
+   "session": 1,
+   "text": " of the Lord Jesus Christ"
+  },
+  {
+   "t": 212009,
+   "session": 1,
+   "text": " and his sacrifice"
+  },
+  {
+   "t": 213037,
+   "session": 1,
+   "text": " to be in"
+  },
+  {
+   "t": 214016,
+   "session": 1,
+   "text": " vain. And"
+  },
+  {
+   "t": 215024,
+   "session": 1,
+   "text": " I pray that the Lord"
+  },
+  {
+   "t": 216017,
+   "session": 1,
+   "text": " will bless us"
+  },
+  {
+   "t": 217021,
+   "session": 1,
+   "text": " each one"
+  },
+  {
+   "t": 218007,
+   "session": 1,
+   "text": " every time"
+  },
+  {
+   "t": 219015,
+   "session": 1,
+   "text": " we open our mouths,"
+  },
+  {
+   "t": 220008,
+   "session": 1,
+   "text": " we speak something"
+  },
+  {
+   "t": 221008,
+   "session": 1,
+   "text": " and especially"
+  },
+  {
+   "t": 222009,
+   "session": 1,
+   "text": " touching on the topic"
+  },
+  {
+   "t": 223006,
+   "session": 1,
+   "text": " of the sacrifice of the"
+  },
+  {
+   "t": 224007,
+   "session": 1,
+   "text": " Lord Jesus Christ,"
+  },
+  {
+   "t": 225014,
+   "session": 1,
+   "text": " of the word of God,"
+  },
+  {
+   "t": 226007,
+   "session": 1,
+   "text": " to be very"
+  },
+  {
+   "t": 227014,
+   "session": 1,
+   "text": " careful with those"
+  },
+  {
+   "t": 228007,
+   "session": 1,
+   "text": " we speak to and"
+  },
+  {
+   "t": 229007,
+   "session": 1,
+   "text": " how we speak."
+  },
+  {
+   "t": 230019,
+   "session": 1,
+   "text": " May the Lord bless"
+  },
+  {
+   "t": 231029,
+   "session": 1,
+   "text": " us in this."
+  },
+  {
+   "t": 232008,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 236012,
+   "session": 1,
+   "text": " Much more in our"
+  },
+  {
+   "t": 237015,
+   "session": 1,
+   "text": " daily speech,"
+  },
+  {
+   "t": 238010,
+   "session": 1,
+   "text": " what I would add is"
+  },
+  {
+   "t": 239009,
+   "session": 1,
+   "text": " a small parenthesis,"
+  },
+  {
+   "t": 240013,
+   "session": 1,
+   "text": " not just"
+  },
+  {
+   "t": 241020,
+   "session": 1,
+   "text": " to speak, but"
+  },
+  {
+   "t": 242017,
+   "session": 1,
+   "text": " to apply it in our"
+  },
+  {
+   "t": 243010,
+   "session": 1,
+   "text": " lives, as I said,"
+  },
+  {
+   "t": 244013,
+   "session": 1,
+   "text": " open,"
+  },
+  {
+   "t": 245012,
+   "session": 1,
+   "text": " read, close"
+  },
+  {
+   "t": 246008,
+   "session": 1,
+   "text": " and fulfill."
+  },
+  {
+   "t": 247007,
+   "session": 1,
+   "text": " May the good"
+  },
+  {
+   "t": 248010,
+   "session": 1,
+   "text": " Lord help us"
+  },
+  {
+   "t": 249014,
+   "session": 1,
+   "text": " to appreciate"
+  },
+  {
+   "t": 250007,
+   "session": 1,
+   "text": " and recognize"
+  },
+  {
+   "t": 251015,
+   "session": 1,
+   "text": " and understand"
+  },
+  {
+   "t": 252023,
+   "session": 1,
+   "text": " and live"
+  },
+  {
+   "t": 253008,
+   "session": 1,
+   "text": " what the Lord Jesus"
+  },
+  {
+   "t": 254007,
+   "session": 1,
+   "text": " Christ did for"
+  },
+  {
+   "t": 255010,
+   "session": 1,
+   "text": " us."
+  },
+  {
+   "t": 256010,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 258013,
+   "session": 1,
+   "text": " In our"
+  },
+  {
+   "t": 259008,
+   "session": 1,
+   "text": " speech, what"
+  },
+  {
+   "t": 260008,
+   "session": 1,
+   "text": " the Apostle Paul"
+  },
+  {
+   "t": 261017,
+   "session": 1,
+   "text": " tells us, we find"
+  },
+  {
+   "t": 262011,
+   "session": 1,
+   "text": " in Galatians 6:"
+  },
+  {
+   "t": 263027,
+   "session": 1,
+   "text": " 14,"
+  },
+  {
+   "t": 264259,
+   "session": 1,
+   "text": " and look at what"
+  },
+  {
+   "t": 265022,
+   "session": 1,
+   "text": " kind of way he tells"
+  },
+  {
+   "t": 266013,
+   "session": 1,
+   "text": " us to be in our"
+  },
+  {
+   "t": 267013,
+   "session": 1,
+   "text": " speech, so"
+  },
+  {
+   "t": 268044,
+   "session": 1,
+   "text": " wonderfully."
+  },
+  {
+   "t": 269012,
+   "session": 1,
+   "text": " As for me,"
+  },
+  {
+   "t": 270014,
+   "session": 1,
+   "text": " far be it"
+  },
+  {
+   "t": 271014,
+   "session": 1,
+   "text": " from me to boast"
+  },
+  {
+   "t": 272009,
+   "session": 1,
+   "text": " about anything else"
+  },
+  {
+   "t": 273009,
+   "session": 1,
+   "text": " but the cross of the Lord"
+  },
+  {
+   "t": 274007,
+   "session": 1,
+   "text": " Jesus Christ,"
+  },
+  {
+   "t": 275013,
+   "session": 1,
+   "text": " our Lord,"
+  },
+  {
+   "t": 276009,
+   "session": 1,
+   "text": " through whom"
+  },
+  {
+   "t": 277007,
+   "session": 1,
+   "text": " the world is"
+  },
+  {
+   "t": 278008,
+   "session": 1,
+   "text": " crucified to"
+  },
+  {
+   "t": 279010,
+   "session": 1,
+   "text": " me and I"
+  },
+  {
+   "t": 280019,
+   "session": 1,
+   "text": " to the world."
+  },
+  {
+   "t": 281010,
+   "session": 1,
+   "text": " This"
+  },
+  {
+   "t": 282011,
+   "session": 1,
+   "text": " urges me"
+  },
+  {
+   "t": 283007,
+   "session": 1,
+   "text": " and this urges"
+  },
+  {
+   "t": 284019,
+   "session": 1,
+   "text": " each one of us"
+  },
+  {
+   "t": 285008,
+   "session": 1,
+   "text": " not to"
+  },
+  {
+   "t": 286017,
+   "session": 1,
+   "text": " boast about other"
+  },
+  {
+   "t": 287009,
+   "session": 1,
+   "text": " things that we"
+  },
+  {
+   "t": 288032,
+   "session": 1,
+   "text": " have,"
+  },
+  {
+   "t": 289011,
+   "session": 1,
+   "text": " what a pity, I admit"
+  },
+  {
+   "t": 290260,
+   "session": 1,
+   "text": " this that"
+  },
+  {
+   "t": 291009,
+   "session": 1,
+   "text": " the flesh"
+  },
+  {
+   "t": 292009,
+   "session": 1,
+   "text": " is in me and"
+  },
+  {
+   "t": 293019,
+   "session": 1,
+   "text": " many times"
+  },
+  {
+   "t": 294011,
+   "session": 1,
+   "text": " I boast more"
+  },
+  {
+   "t": 296015,
+   "session": 1,
+   "text": " about"
+  },
+  {
+   "t": 297260,
+   "session": 1,
+   "text": " my achievements,"
+  },
+  {
+   "t": 298259,
+   "session": 1,
+   "text": " what I've done, how"
+  },
+  {
+   "t": 299259,
+   "session": 1,
+   "text": " I've done it, and so on."
+  },
+  {
+   "t": 301026,
+   "session": 1,
+   "text": " But the Lord"
+  },
+  {
+   "t": 302015,
+   "session": 1,
+   "text": " has searched me"
+  },
+  {
+   "t": 303008,
+   "session": 1,
+   "text": " and puts the thought"
+  },
+  {
+   "t": 304010,
+   "session": 1,
+   "text": " and it's"
+  },
+  {
+   "t": 305017,
+   "session": 1,
+   "text": " a question for"
+  },
+  {
+   "t": 306011,
+   "session": 1,
+   "text": " each one personally."
+  },
+  {
+   "t": 307009,
+   "session": 1,
+   "text": " Daily"
+  },
+  {
+   "t": 308009,
+   "session": 1,
+   "text": " every moment"
+  },
+  {
+   "t": 309020,
+   "session": 1,
+   "text": " of life."
+  },
+  {
+   "t": 310010,
+   "session": 1,
+   "text": " How much"
+  },
+  {
+   "t": 311016,
+   "session": 1,
+   "text": " do I"
+  },
+  {
+   "t": 312022,
+   "session": 1,
+   "text": " I personally"
+  },
+  {
+   "t": 313010,
+   "session": 1,
+   "text": " preach"
+  },
+  {
+   "t": 314020,
+   "session": 1,
+   "text": " and boast"
+  },
+  {
+   "t": 315015,
+   "session": 1,
+   "text": " about the"
+  },
+  {
+   "t": 316261,
+   "session": 1,
+   "text": " sacrifice of the Lord"
+  },
+  {
+   "t": 317016,
+   "session": 1,
+   "text": " Jesus Christ on the cross,"
+  },
+  {
+   "t": 318011,
+   "session": 1,
+   "text": " where he gave his"
+  },
+  {
+   "t": 319017,
+   "session": 1,
+   "text": " life for me"
+  },
+  {
+   "t": 320013,
+   "session": 1,
+   "text": " and for you. It's"
+  },
+  {
+   "t": 321012,
+   "session": 1,
+   "text": " a personal question"
+  },
+  {
+   "t": 322012,
+   "session": 1,
+   "text": " for us to think"
+  },
+  {
+   "t": 323012,
+   "session": 1,
+   "text": " about and examine"
+  },
+  {
+   "t": 324016,
+   "session": 1,
+   "text": " ourselves before"
+  },
+  {
+   "t": 325260,
+   "session": 1,
+   "text": " God for these"
+  },
+  {
+   "t": 326010,
+   "session": 1,
+   "text": " things."
+  },
+  {
+   "t": 327009,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 331010,
+   "session": 1,
+   "text": " Many"
+  },
+  {
+   "t": 332010,
+   "session": 1,
+   "text": " times, as I"
+  },
+  {
+   "t": 333019,
+   "session": 1,
+   "text": " mentioned,"
+  },
+  {
+   "t": 334010,
+   "session": 1,
+   "text": " much"
+  },
+  {
+   "t": 335024,
+   "session": 1,
+   "text": " many seek"
+  },
+  {
+   "t": 336013,
+   "session": 1,
+   "text": " to bring this symbol"
+  },
+  {
+   "t": 337014,
+   "session": 1,
+   "text": " of making"
+  },
+  {
+   "t": 338266,
+   "session": 1,
+   "text": " it easier, to"
+  },
+  {
+   "t": 339013,
+   "session": 1,
+   "text": " make their lives"
+  },
+  {
+   "t": 340012,
+   "session": 1,
+   "text": " easier in their"
+  },
+  {
+   "t": 341022,
+   "session": 1,
+   "text": " own way, it represents"
+  },
+  {
+   "t": 342012,
+   "session": 1,
+   "text": " in the following"
+  },
+  {
+   "t": 343011,
+   "session": 1,
+   "text": " way that"
+  },
+  {
+   "t": 344014,
+   "session": 1,
+   "text": " which"
+  },
+  {
+   "t": 345012,
+   "session": 1,
+   "text": " you have been to"
+  },
+  {
+   "t": 346016,
+   "session": 1,
+   "text": " the Orthodox,"
+  },
+  {
+   "t": 347015,
+   "session": 1,
+   "text": " you know there is"
+  },
+  {
+   "t": 348013,
+   "session": 1,
+   "text": " this sign and"
+  },
+  {
+   "t": 349012,
+   "session": 1,
+   "text": " Catholics, quickly"
+  },
+  {
+   "t": 350015,
+   "session": 1,
+   "text": " to get away and"
+  },
+  {
+   "t": 351018,
+   "session": 1,
+   "text": " make a sign with their hand."
+  },
+  {
+   "t": 352011,
+   "session": 1,
+   "text": " That's"
+  },
+  {
+   "t": 353010,
+   "session": 1,
+   "text": " the representation of the"
+  },
+  {
+   "t": 354013,
+   "session": 1,
+   "text": " cross of the Lord Jesus Christ."
+  },
+  {
+   "t": 355014,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 356013,
+   "session": 1,
+   "text": " many others"
+  },
+  {
+   "t": 357010,
+   "session": 1,
+   "text": " wear a little cross."
+  },
+  {
+   "t": 358014,
+   "session": 1,
+   "text": " Yes."
+  },
+  {
+   "t": 362017,
+   "session": 1,
+   "text": " May the Lord"
+  },
+  {
+   "t": 363014,
+   "session": 1,
+   "text": " search us."
+  },
+  {
+   "t": 364028,
+   "session": 1,
+   "text": " If that's the symbol"
+  },
+  {
+   "t": 365020,
+   "session": 1,
+   "text": " that saved you,"
+  },
+  {
+   "t": 366011,
+   "session": 1,
+   "text": " I think it's"
+  },
+  {
+   "t": 368009,
+   "session": 1,
+   "text": " wrong. If"
+  },
+  {
+   "t": 368516,
+   "session": 1,
+   "text": " it's something"
+  },
+  {
+   "t": 369263,
+   "session": 1,
+   "text": " an illustration,"
+  },
+  {
+   "t": 370019,
+   "session": 1,
+   "text": " that's something else,"
+  },
+  {
+   "t": 371025,
+   "session": 1,
+   "text": " but let's not"
+  },
+  {
+   "t": 372010,
+   "session": 1,
+   "text": " rely on it, let's"
+  },
+  {
+   "t": 373010,
+   "session": 1,
+   "text": " not deceive ourselves,"
+  },
+  {
+   "t": 374016,
+   "session": 1,
+   "text": " let's not be overwhelmed"
+  },
+  {
+   "t": 375016,
+   "session": 1,
+   "text": " and deceived"
+  },
+  {
+   "t": 376013,
+   "session": 1,
+   "text": " by many things,"
+  },
+  {
+   "t": 377013,
+   "session": 1,
+   "text": " many towards"
+  },
+  {
+   "t": 378019,
+   "session": 1,
+   "text": " rituals on different"
+  },
+  {
+   "t": 379032,
+   "session": 1,
+   "text": " things, they seek"
+  },
+  {
+   "t": 380016,
+   "session": 1,
+   "text": " to divine"
+  },
+  {
+   "t": 381023,
+   "session": 1,
+   "text": " from the pure truth"
+  },
+  {
+   "t": 382011,
+   "session": 1,
+   "text": " that is"
+  },
+  {
+   "t": 383013,
+   "session": 1,
+   "text": " pure and"
+  },
+  {
+   "t": 384023,
+   "session": 1,
+   "text": " meaningful"
+  },
+  {
+   "t": 385010,
+   "session": 1,
+   "text": " of God's love"
+  },
+  {
+   "t": 386019,
+   "session": 1,
+   "text": " who gave his only"
+  },
+  {
+   "t": 387014,
+   "session": 1,
+   "text": " son, Jesus"
+  },
+  {
+   "t": 388028,
+   "session": 1,
+   "text": " Christ, to die"
+  },
+  {
+   "t": 389018,
+   "session": 1,
+   "text": " on the cross so that"
+  },
+  {
+   "t": 390013,
+   "session": 1,
+   "text": " whoever believes in him"
+  },
+  {
+   "t": 391262,
+   "session": 1,
+   "text": " should not perish but"
+  },
+  {
+   "t": 392018,
+   "session": 1,
+   "text": " have eternal life."
+  },
+  {
+   "t": 393017,
+   "session": 1,
+   "text": " That's what"
+  },
+  {
+   "t": 394010,
+   "session": 1,
+   "text": " may the good Lord"
+  },
+  {
+   "t": 395019,
+   "session": 1,
+   "text": " help us to have"
+  },
+  {
+   "t": 396013,
+   "session": 1,
+   "text": " that thing"
+  },
+  {
+   "t": 397024,
+   "session": 1,
+   "text": " and much more"
+  },
+  {
+   "t": 398019,
+   "session": 1,
+   "text": " if we look"
+  },
+  {
+   "t": 399011,
+   "session": 1,
+   "text": " at how wonderful"
+  },
+  {
+   "t": 400014,
+   "session": 1,
+   "text": " it tells us in"
+  },
+  {
+   "t": 401011,
+   "session": 1,
+   "text": " 1 John chapter"
+  },
+  {
+   "t": 402011,
+   "session": 1,
+   "text": " 2 and verse"
+  },
+  {
+   "t": 403016,
+   "session": 1,
+   "text": " 1."
+  },
+  {
+   "t": 404024,
+   "session": 1,
+   "text": " For"
+  },
+  {
+   "t": 405014,
+   "session": 1,
+   "text": " many times I fall"
+  },
+  {
+   "t": 406260,
+   "session": 1,
+   "text": " many times"
+  },
+  {
+   "t": 407025,
+   "session": 1,
+   "text": " on"
+  },
+  {
+   "t": 408013,
+   "session": 1,
+   "text": " I sin,"
+  },
+  {
+   "t": 409011,
+   "session": 1,
+   "text": " because I can't consider"
+  },
+  {
+   "t": 410015,
+   "session": 1,
+   "text": " myself the most perfect,"
+  },
+  {
+   "t": 411011,
+   "session": 1,
+   "text": " but look"
+  },
+  {
+   "t": 412011,
+   "session": 1,
+   "text": " at how wonderful the encouragement"
+  },
+  {
+   "t": 413012,
+   "session": 1,
+   "text": " we have is."
+  },
+  {
+   "t": 414014,
+   "session": 1,
+   "text": " In this"
+  },
+  {
+   "t": 415012,
+   "session": 1,
+   "text": " verse, 1 John"
+  },
+  {
+   "t": 416012,
+   "session": 1,
+   "text": " 2:1."
+  },
+  {
+   "t": 417095,
+   "session": 1,
+   "text": " Little children,"
+  },
+  {
+   "t": 418014,
+   "session": 1,
+   "text": " I write these things"
+  },
+  {
+   "t": 419013,
+   "session": 1,
+   "text": " to you so that you"
+  },
+  {
+   "t": 420026,
+   "session": 1,
+   "text": " do not sin, but"
+  },
+  {
+   "t": 421264,
+   "session": 1,
+   "text": " if anyone"
+  },
+  {
+   "t": 422018,
+   "session": 1,
+   "text": " has sinned, we have"
+  },
+  {
+   "t": 423017,
+   "session": 1,
+   "text": " an advocate with the"
+  },
+  {
+   "t": 424014,
+   "session": 1,
+   "text": " Father, Jesus"
+  },
+  {
+   "t": 425012,
+   "session": 1,
+   "text": " Christ, the righteous"
+  },
+  {
+   "t": 426012,
+   "session": 1,
+   "text": " one."
+  },
+  {
+   "t": 427011,
+   "session": 1,
+   "text": " Not him, right?"
+  },
+  {
+   "t": 428011,
+   "session": 1,
+   "text": " It's not the cross"
+  },
+  {
+   "t": 429273,
+   "session": 1,
+   "text": " around the neck, it's"
+  },
+  {
+   "t": 430017,
+   "session": 1,
+   "text": " not other things,"
+  },
+  {
+   "t": 431034,
+   "session": 1,
+   "text": " brothers and sisters,"
+  },
+  {
+   "t": 432010,
+   "session": 1,
+   "text": " dear friend,"
+  },
+  {
+   "t": 433024,
+   "session": 1,
+   "text": " it's nothing."
+  },
+  {
+   "t": 434014,
+   "session": 1,
+   "text": " Don't let yourself"
+  },
+  {
+   "t": 435018,
+   "session": 1,
+   "text": " be deceived,"
+  },
+  {
+   "t": 436029,
+   "session": 1,
+   "text": " don't let yourself"
+  },
+  {
+   "t": 437013,
+   "session": 1,
+   "text": " be convinced"
+  },
+  {
+   "t": 438014,
+   "session": 1,
+   "text": " by"
+  },
+  {
+   "t": 439024,
+   "session": 1,
+   "text": " this flattery"
+  },
+  {
+   "t": 440024,
+   "session": 1,
+   "text": " of the devil who seeks"
+  },
+  {
+   "t": 441013,
+   "session": 1,
+   "text": " to sneak in"
+  },
+  {
+   "t": 442018,
+   "session": 1,
+   "text": " so slowly"
+  },
+  {
+   "t": 443016,
+   "session": 1,
+   "text": " teachings"
+  },
+  {
+   "t": 444013,
+   "session": 1,
+   "text": " heresy"
+  },
+  {
+   "t": 445024,
+   "session": 1,
+   "text": " I would"
+  },
+  {
+   "t": 446031,
+   "session": 1,
+   "text": " say it more directly."
+  },
+  {
+   "t": 447014,
+   "session": 1,
+   "text": " to deceive"
+  },
+  {
+   "t": 448011,
+   "session": 1,
+   "text": " you, to"
+  },
+  {
+   "t": 449012,
+   "session": 1,
+   "text": " calm you down"
+  },
+  {
+   "t": 450013,
+   "session": 1,
+   "text": " gently, to"
+  },
+  {
+   "t": 451014,
+   "session": 1,
+   "text": " settle there,"
+  },
+  {
+   "t": 452016,
+   "session": 1,
+   "text": " that's correct,"
+  },
+  {
+   "t": 453015,
+   "session": 1,
+   "text": " that's better, that's"
+  },
+  {
+   "t": 454018,
+   "session": 1,
+   "text": " easier. Don't"
+  },
+  {
+   "t": 455016,
+   "session": 1,
+   "text": " be deceived, brothers"
+  },
+  {
+   "t": 456015,
+   "session": 1,
+   "text": " and sisters."
+  },
+  {
+   "t": 457015,
+   "session": 1,
+   "text": " Dear young people,"
+  },
+  {
+   "t": 458027,
+   "session": 1,
+   "text": " you are"
+  },
+  {
+   "t": 459014,
+   "session": 1,
+   "text": " often like this,"
+  },
+  {
+   "t": 460020,
+   "session": 1,
+   "text": " we have the expression"
+  },
+  {
+   "t": 461017,
+   "session": 1,
+   "text": " that only young people"
+  },
+  {
+   "t": 462016,
+   "session": 1,
+   "text": " are tempted by this,"
+  },
+  {
+   "t": 463266,
+   "session": 1,
+   "text": " but we adults"
+  },
+  {
+   "t": 464015,
+   "session": 1,
+   "text": " also are. Everyone,"
+  },
+  {
+   "t": 465014,
+   "session": 1,
+   "text": " whatever"
+  },
+  {
+   "t": 466015,
+   "session": 1,
+   "text": " soul is tempted"
+  },
+  {
+   "t": 467040,
+   "session": 1,
+   "text": " to be deceived by the"
+  },
+  {
+   "t": 468014,
+   "session": 1,
+   "text": " evil one, because"
+  },
+  {
+   "t": 469264,
+   "session": 1,
+   "text": " he doesn't look for age,"
+  },
+  {
+   "t": 470263,
+   "session": 1,
+   "text": " he doesn't look for anything."
+  },
+  {
+   "t": 471012,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 473017,
+   "session": 1,
+   "text": " If we"
+  },
+  {
+   "t": 474276,
+   "session": 1,
+   "text": " look at Ephesians"
+  },
+  {
+   "t": 475016,
+   "session": 1,
+   "text": " 2:16,"
+  },
+  {
+   "t": 477016,
+   "session": 1,
+   "text": " it says"
+  },
+  {
+   "t": 478020,
+   "session": 1,
+   "text": " the cross of Christ"
+  },
+  {
+   "t": 479017,
+   "session": 1,
+   "text": " brought reconciliation"
+  },
+  {
+   "t": 480018,
+   "session": 1,
+   "text": " with God"
+  },
+  {
+   "t": 481017,
+   "session": 1,
+   "text": " and look how wonderful"
+  },
+  {
+   "t": 482015,
+   "session": 1,
+   "text": " it tells us."
+  },
+  {
+   "t": 483019,
+   "session": 1,
+   "text": " Ephesians 2:16"
+  },
+  {
+   "t": 484022,
+   "session": 1,
+   "text": " and"
+  },
+  {
+   "t": 485262,
+   "session": 1,
+   "text": " reconciled the two"
+  },
+  {
+   "t": 486019,
+   "session": 1,
+   "text": " with God in"
+  },
+  {
+   "t": 487011,
+   "session": 1,
+   "text": " one body"
+  },
+  {
+   "t": 488017,
+   "session": 1,
+   "text": " through the cross,"
+  },
+  {
+   "t": 489020,
+   "session": 1,
+   "text": " through"
+  },
+  {
+   "t": 490015,
+   "session": 1,
+   "text": " which he"
+  },
+  {
+   "t": 491015,
+   "session": 1,
+   "text": " destroyed"
+  },
+  {
+   "t": 492016,
+   "session": 1,
+   "text": " the enmity."
+  },
+  {
+   "t": 493014,
+   "session": 1,
+   "text": " You know"
+  },
+  {
+   "t": 494014,
+   "session": 1,
+   "text": " many times we"
+  },
+  {
+   "t": 495015,
+   "session": 1,
+   "text": " have this temptation"
+  },
+  {
+   "t": 496015,
+   "session": 1,
+   "text": " to argue, to"
+  },
+  {
+   "t": 497014,
+   "session": 1,
+   "text": " have unpleasant"
+  },
+  {
+   "t": 498014,
+   "session": 1,
+   "text": " misunderstandings,"
+  },
+  {
+   "t": 499012,
+   "session": 1,
+   "text": " but God"
+  },
+  {
+   "t": 500015,
+   "session": 1,
+   "text": " in his love"
+  },
+  {
+   "t": 501013,
+   "session": 1,
+   "text": " sovereignly"
+  },
+  {
+   "t": 502013,
+   "session": 1,
+   "text": " in"
+  },
+  {
+   "t": 503012,
+   "session": 1,
+   "text": " his love"
+  },
+  {
+   "t": 504016,
+   "session": 1,
+   "text": " boundless"
+  },
+  {
+   "t": 505011,
+   "session": 1,
+   "text": " in which"
+  },
+  {
+   "t": 506033,
+   "session": 1,
+   "text": " we limit"
+  },
+  {
+   "t": 507264,
+   "session": 1,
+   "text": " it many times."
+  },
+  {
+   "t": 508016,
+   "session": 1,
+   "text": " Many times as"
+  },
+  {
+   "t": 509014,
+   "session": 1,
+   "text": " humans we seek to"
+  },
+  {
+   "t": 510016,
+   "session": 1,
+   "text": " limit certain things"
+  },
+  {
+   "t": 511013,
+   "session": 1,
+   "text": " the power of God."
+  },
+  {
+   "t": 513018,
+   "session": 1,
+   "text": " And"
+  },
+  {
+   "t": 517014,
+   "session": 1,
+   "text": " I liked a thought."
+  },
+  {
+   "t": 518014,
+   "session": 1,
+   "text": " It's like a joke,"
+  },
+  {
+   "t": 519013,
+   "session": 1,
+   "text": " I'd say it, but"
+  },
+  {
+   "t": 520014,
+   "session": 1,
+   "text": " it makes sense."
+  },
+  {
+   "t": 521022,
+   "session": 1,
+   "text": " It says that"
+  },
+  {
+   "t": 522017,
+   "session": 1,
+   "text": " in a family, the husband"
+  },
+  {
+   "t": 523013,
+   "session": 1,
+   "text": " and wife say"
+  },
+  {
+   "t": 524018,
+   "session": 1,
+   "text": " that they made a"
+  },
+  {
+   "t": 525015,
+   "session": 1,
+   "text": " deal."
+  },
+  {
+   "t": 526017,
+   "session": 1,
+   "text": " Before going to"
+  },
+  {
+   "t": 527013,
+   "session": 1,
+   "text": " bed, they"
+  },
+  {
+   "t": 528271,
+   "session": 1,
+   "text": " promised that they wouldn't"
+  },
+  {
+   "t": 529029,
+   "session": 1,
+   "text": " go to bed"
+  },
+  {
+   "t": 530026,
+   "session": 1,
+   "text": " arguing with each other."
+  },
+  {
+   "t": 531020,
+   "session": 1,
+   "text": " They wouldn't argue,"
+  },
+  {
+   "t": 532015,
+   "session": 1,
+   "text": " but they wouldn't go to bed"
+  },
+  {
+   "t": 533013,
+   "session": 1,
+   "text": " angry."
+  },
+  {
+   "t": 534027,
+   "session": 1,
+   "text": " And the one"
+  },
+  {
+   "t": 535014,
+   "session": 1,
+   "text": " who was listening says:"
+  },
+  {
+   "t": 536021,
+   "session": 1,
+   "text": " it's accepted"
+  },
+  {
+   "t": 538013,
+   "session": 1,
+   "text": " by you."
+  },
+  {
+   "t": 538767,
+   "session": 1,
+   "text": " But the one"
+  },
+  {
+   "t": 539263,
+   "session": 1,
+   "text": " who was telling the story"
+  },
+  {
+   "t": 540267,
+   "session": 1,
+   "text": " sighed and said:"
+  },
+  {
+   "t": 541038,
+   "session": 1,
+   "text": " I haven't slept"
+  },
+  {
+   "t": 543483,
+   "session": 2,
+   "text": "sighed."
+  },
+  {
+   "t": 544421,
+   "session": 2,
+   "text": " It's like"
+  },
+  {
+   "t": 545430,
+   "session": 2,
+   "text": " a joke, but"
+  },
+  {
+   "t": 546425,
+   "session": 2,
+   "text": " you know, it's a"
+  },
+  {
+   "t": 547425,
+   "session": 2,
+   "text": " an"
+  },
+  {
+   "t": 548430,
+   "session": 2,
+   "text": " understanding that"
+  },
+  {
+   "t": 549424,
+   "session": 2,
+   "text": " God is not"
+  },
+  {
+   "t": 550439,
+   "session": 2,
+   "text": " limited, and"
+  },
+  {
+   "t": 551428,
+   "session": 2,
+   "text": " what He urges"
+  },
+  {
+   "t": 552434,
+   "session": 2,
+   "text": " us to do, as"
+  },
+  {
+   "t": 553427,
+   "session": 2,
+   "text": " we should seek"
+  },
+  {
+   "t": 554424,
+   "session": 2,
+   "text": " in everything"
+  },
+  {
+   "t": 555423,
+   "session": 2,
+   "text": " to trust"
+  },
+  {
+   "t": 556431,
+   "session": 2,
+   "text": " in Him and"
+  },
+  {
+   "t": 557429,
+   "session": 2,
+   "text": " ask for strength from"
+  },
+  {
+   "t": 558429,
+   "session": 2,
+   "text": " Him, to have"
+  },
+  {
+   "t": 559432,
+   "session": 2,
+   "text": " the power to forgive"
+  },
+  {
+   "t": 560435,
+   "session": 2,
+   "text": " and move forward."
+  },
+  {
+   "t": 561430,
+   "session": 2,
+   "text": " And blessed"
+  },
+  {
+   "t": 562422,
+   "session": 2,
+   "text": " be the Lord that"
+  },
+  {
+   "t": 563436,
+   "session": 2,
+   "text": " He showed us that"
+  },
+  {
+   "t": 564431,
+   "session": 2,
+   "text": " He has already"
+  },
+  {
+   "t": 565424,
+   "session": 2,
+   "text": " done this."
+  },
+  {
+   "t": 566426,
+   "session": 2,
+   "text": " There's nothing left"
+  },
+  {
+   "t": 567673,
+   "session": 2,
+   "text": " for us to do but"
+  },
+  {
+   "t": 568430,
+   "session": 2,
+   "text": " to add, to"
+  },
+  {
+   "t": 569425,
+   "session": 2,
+   "text": " complete,"
+  },
+  {
+   "t": 570424,
+   "session": 2,
+   "text": " to raise"
+  },
+  {
+   "t": 571425,
+   "session": 2,
+   "text": " up. God"
+  },
+  {
+   "t": 572474,
+   "session": 2,
+   "text": " has done everything perfectly."
+  },
+  {
+   "t": 573429,
+   "session": 2,
+   "text": " We"
+  },
+  {
+   "t": 574431,
+   "session": 2,
+   "text": " just need to believe,"
+  },
+  {
+   "t": 575423,
+   "session": 2,
+   "text": " what we see"
+  },
+  {
+   "t": 576424,
+   "session": 2,
+   "text": " in front of us"
+  },
+  {
+   "t": 577424,
+   "session": 2,
+   "text": " is the symbol"
+  },
+  {
+   "t": 578424,
+   "session": 2,
+   "text": " of God's love."
+  },
+  {
+   "t": 579432,
+   "session": 2,
+   "text": " And the mercy"
+  },
+  {
+   "t": 580440,
+   "session": 2,
+   "text": " of Christ is what"
+  },
+  {
+   "t": 581436,
+   "session": 2,
+   "text": " brought us"
+  },
+  {
+   "t": 582429,
+   "session": 2,
+   "text": " here and we can"
+  },
+  {
+   "t": 583425,
+   "session": 2,
+   "text": " stand before Him"
+  },
+  {
+   "t": 584425,
+   "session": 2,
+   "text": " and if we look"
+  },
+  {
+   "t": 585435,
+   "session": 2,
+   "text": " at"
+  },
+  {
+   "t": 586425,
+   "session": 2,
+   "text": " So"
+  },
+  {
+   "t": 587435,
+   "session": 2,
+   "text": " many times all"
+  },
+  {
+   "t": 588425,
+   "session": 2,
+   "text": " of us who have received"
+  },
+  {
+   "t": 589427,
+   "session": 2,
+   "text": " this love of God"
+  },
+  {
+   "t": 590425,
+   "session": 2,
+   "text": " and accepted"
+  },
+  {
+   "t": 591430,
+   "session": 2,
+   "text": " it, we made"
+  },
+  {
+   "t": 592428,
+   "session": 2,
+   "text": " this covenant"
+  },
+  {
+   "t": 593425,
+   "session": 2,
+   "text": " many times"
+  },
+  {
+   "t": 594431,
+   "session": 2,
+   "text": " many people think"
+  },
+  {
+   "t": 595425,
+   "session": 2,
+   "text": " that the moment you're"
+  },
+  {
+   "t": 596435,
+   "session": 2,
+   "text": " baptized, you've"
+  },
+  {
+   "t": 597426,
+   "session": 2,
+   "text": " received baptism,"
+  },
+  {
+   "t": 598424,
+   "session": 2,
+   "text": " you're already"
+  },
+  {
+   "t": 599427,
+   "session": 2,
+   "text": " freed from all"
+  },
+  {
+   "t": 600427,
+   "session": 2,
+   "text": " trials. No."
+  },
+  {
+   "t": 601435,
+   "session": 2,
+   "text": " Anyone who"
+  },
+  {
+   "t": 602433,
+   "session": 2,
+   "text": " is still going and"
+  },
+  {
+   "t": 603431,
+   "session": 2,
+   "text": " going through trials"
+  },
+  {
+   "t": 604427,
+   "session": 2,
+   "text": " and look at something"
+  },
+  {
+   "t": 605443,
+   "session": 2,
+   "text": " that tells us"
+  },
+  {
+   "t": 606425,
+   "session": 2,
+   "text": " from"
+  },
+  {
+   "t": 607428,
+   "session": 2,
+   "text": " Philippians 3:"
+  },
+  {
+   "t": 608427,
+   "session": 2,
+   "text": " 18."
+  },
+  {
+   "t": 609424,
+   "session": 2,
+   "text": " For"
+  },
+  {
+   "t": 610427,
+   "session": 2,
+   "text": " I have told you"
+  },
+  {
+   "t": 611431,
+   "session": 2,
+   "text": " many times and"
+  },
+  {
+   "t": 612426,
+   "session": 2,
+   "text": " I tell you again"
+  },
+  {
+   "t": 613427,
+   "session": 2,
+   "text": " and now,"
+  },
+  {
+   "t": 614433,
+   "session": 2,
+   "text": " weeping,"
+  },
+  {
+   "t": 615426,
+   "session": 2,
+   "text": " there are many"
+  },
+  {
+   "t": 616426,
+   "session": 2,
+   "text": " who behave like"
+  },
+  {
+   "t": 617483,
+   "session": 2,
+   "text": " enemies of"
+  },
+  {
+   "t": 618447,
+   "session": 2,
+   "text": " the cross of Christ."
+  },
+  {
+   "t": 620425,
+   "session": 2,
+   "text": " What I want to"
+  },
+  {
+   "t": 621430,
+   "session": 2,
+   "text": " bring before you"
+  },
+  {
+   "t": 622425,
+   "session": 2,
+   "text": " is that"
+  },
+  {
+   "t": 623460,
+   "session": 2,
+   "text": " if we look"
+  },
+  {
+   "t": 624428,
+   "session": 2,
+   "text": " at the illustration"
+  },
+  {
+   "t": 625427,
+   "session": 2,
+   "text": " now,"
+  },
+  {
+   "t": 626453,
+   "session": 2,
+   "text": " we make a list"
+  },
+  {
+   "t": 627433,
+   "session": 2,
+   "text": " so big and"
+  },
+  {
+   "t": 628435,
+   "session": 2,
+   "text": " long, and"
+  },
+  {
+   "t": 629431,
+   "session": 2,
+   "text": " a determined"
+  },
+  {
+   "t": 630428,
+   "session": 2,
+   "text": " there are many"
+  },
+  {
+   "t": 631443,
+   "session": 2,
+   "text": " names that"
+  },
+  {
+   "t": 632425,
+   "session": 2,
+   "text": " are enemies of the"
+  },
+  {
+   "t": 633430,
+   "session": 2,
+   "text": " cross of the Lord Jesus"
+  },
+  {
+   "t": 634430,
+   "session": 2,
+   "text": " Christ. In"
+  },
+  {
+   "t": 635441,
+   "session": 2,
+   "text": " turn, and"
+  },
+  {
+   "t": 636435,
+   "session": 2,
+   "text": " followers of the Lord"
+  },
+  {
+   "t": 637426,
+   "session": 2,
+   "text": " Jesus Christ,"
+  },
+  {
+   "t": 638431,
+   "session": 2,
+   "text": " we are all called"
+  },
+  {
+   "t": 639435,
+   "session": 2,
+   "text": " to be"
+  },
+  {
+   "t": 640443,
+   "session": 2,
+   "text": " to be"
+  },
+  {
+   "t": 641427,
+   "session": 2,
+   "text": " hated,"
+  },
+  {
+   "t": 642427,
+   "session": 2,
+   "text": " to be punished."
+  },
+  {
+   "t": 643433,
+   "session": 2,
+   "text": " And I make a very"
+  },
+  {
+   "t": 644429,
+   "session": 2,
+   "text": " large list starting"
+  },
+  {
+   "t": 645429,
+   "session": 2,
+   "text": " with the elementary"
+  },
+  {
+   "t": 646430,
+   "session": 2,
+   "text": " things like atheists"
+  },
+  {
+   "t": 647427,
+   "session": 2,
+   "text": " and Muslims,"
+  },
+  {
+   "t": 648441,
+   "session": 2,
+   "text": " Buddhists, and so"
+  },
+  {
+   "t": 649430,
+   "session": 2,
+   "text": " on. But"
+  },
+  {
+   "t": 650436,
+   "session": 2,
+   "text": " the question comes"
+  },
+  {
+   "t": 651445,
+   "session": 2,
+   "text": " do we find"
+  },
+  {
+   "t": 652427,
+   "session": 2,
+   "text": " in God's word"
+  },
+  {
+   "t": 653428,
+   "session": 2,
+   "text": " that even"
+  },
+  {
+   "t": 654425,
+   "session": 2,
+   "text": " some who have"
+  },
+  {
+   "t": 655458,
+   "session": 2,
+   "text": " crucified Him"
+  },
+  {
+   "t": 656435,
+   "session": 2,
+   "text": " again,"
+  },
+  {
+   "t": 657425,
+   "session": 2,
+   "text": " again, Jesus Christ."
+  },
+  {
+   "t": 658426,
+   "session": 2,
+   "text": " And what I want"
+  },
+  {
+   "t": 659451,
+   "session": 2,
+   "text": " to"
+  },
+  {
+   "t": 660426,
+   "session": 2,
+   "text": " urge you"
+  },
+  {
+   "t": 661427,
+   "session": 2,
+   "text": " to"
+  },
+  {
+   "t": 662426,
+   "session": 2,
+   "text": " flee from"
+  },
+  {
+   "t": 663427,
+   "session": 2,
+   "text": " these things so"
+  },
+  {
+   "t": 664431,
+   "session": 2,
+   "text": " that we don't make"
+  },
+  {
+   "t": 665447,
+   "session": 2,
+   "text": " ourselves enemies."
+  },
+  {
+   "t": 666427,
+   "session": 2,
+   "text": " thinking"
+  },
+  {
+   "t": 667441,
+   "session": 2,
+   "text": " that we are"
+  },
+  {
+   "t": 668432,
+   "session": 2,
+   "text": " perfect, deceiving"
+  },
+  {
+   "t": 669429,
+   "session": 2,
+   "text": " ourselves that we are"
+  },
+  {
+   "t": 670432,
+   "session": 2,
+   "text": " ideal or"
+  },
+  {
+   "t": 671430,
+   "session": 2,
+   "text": " in this way"
+  },
+  {
+   "t": 672427,
+   "session": 2,
+   "text": " not to think"
+  },
+  {
+   "t": 673439,
+   "session": 2,
+   "text": " that way, to think"
+  },
+  {
+   "t": 674426,
+   "session": 2,
+   "text": " in the power of the"
+  },
+  {
+   "t": 675442,
+   "session": 2,
+   "text": " Lord Jesus Christ,"
+  },
+  {
+   "t": 676437,
+   "session": 2,
+   "text": " that only through"
+  },
+  {
+   "t": 677427,
+   "session": 2,
+   "text": " Him we have received"
+  },
+  {
+   "t": 678430,
+   "session": 2,
+   "text": " salvation and"
+  },
+  {
+   "t": 679430,
+   "session": 2,
+   "text": " enemies"
+  },
+  {
+   "t": 680427,
+   "session": 2,
+   "text": " as we know"
+  },
+  {
+   "t": 681429,
+   "session": 2,
+   "text": " very well."
+  },
+  {
+   "t": 682430,
+   "session": 2,
+   "text": " We know who"
+  },
+  {
+   "t": 683427,
+   "session": 2,
+   "text": " the enemy is,"
+  },
+  {
+   "t": 684428,
+   "session": 2,
+   "text": " we know who"
+  },
+  {
+   "t": 685426,
+   "session": 2,
+   "text": " the adversary is,"
+  },
+  {
+   "t": 686428,
+   "session": 2,
+   "text": " adversaries and"
+  },
+  {
+   "t": 687428,
+   "session": 2,
+   "text": " so on, but"
+  },
+  {
+   "t": 688428,
+   "session": 2,
+   "text": " we know very well"
+  },
+  {
+   "t": 689426,
+   "session": 2,
+   "text": " with everyone."
+  },
+  {
+   "t": 690429,
+   "session": 2,
+   "text": " But"
+  },
+  {
+   "t": 691439,
+   "session": 2,
+   "text": " I liked"
+  },
+  {
+   "t": 692441,
+   "session": 2,
+   "text": " something that says"
+  },
+  {
+   "t": 693438,
+   "session": 2,
+   "text": " that"
+  },
+  {
+   "t": 699427,
+   "session": 2,
+   "text": " Time is"
+  },
+  {
+   "t": 700438,
+   "session": 2,
+   "text": " one of our enemies"
+  },
+  {
+   "t": 701428,
+   "session": 2,
+   "text": " It's like"
+  },
+  {
+   "t": 702431,
+   "session": 2,
+   "text": " an illustration,"
+  },
+  {
+   "t": 703441,
+   "session": 2,
+   "text": " let's say"
+  },
+  {
+   "t": 704427,
+   "session": 2,
+   "text": " figuratively,"
+  },
+  {
+   "t": 705430,
+   "session": 2,
+   "text": " let's say that."
+  },
+  {
+   "t": 709431,
+   "session": 2,
+   "text": " He goes ahead,"
+  },
+  {
+   "t": 710427,
+   "session": 2,
+   "text": " he doesn't turn back,"
+  },
+  {
+   "t": 711432,
+   "session": 2,
+   "text": " without mercy,"
+  },
+  {
+   "t": 712429,
+   "session": 2,
+   "text": " without anything,"
+  },
+  {
+   "t": 713450,
+   "session": 2,
+   "text": " he doesn't return anything."
+  },
+  {
+   "t": 714428,
+   "session": 2,
+   "text": " So many"
+  },
+  {
+   "t": 716685,
+   "session": 2,
+   "text": " times it matters"
+  },
+  {
+   "t": 717430,
+   "session": 2,
+   "text": " a lot what we've"
+  },
+  {
+   "t": 718188,
+   "session": 2,
+   "text": " believed, what"
+  },
+  {
+   "t": 718928,
+   "session": 2,
+   "text": " we've given back,"
+  },
+  {
+   "t": 719686,
+   "session": 2,
+   "text": " what we've spoken"
+  },
+  {
+   "t": 720431,
+   "session": 2,
+   "text": " completely"
+  },
+  {
+   "t": 721433,
+   "session": 2,
+   "text": " back, you can't"
+  },
+  {
+   "t": 722427,
+   "session": 2,
+   "text": " return it. You move"
+  },
+  {
+   "t": 723430,
+   "session": 2,
+   "text": " forward. So"
+  },
+  {
+   "t": 724428,
+   "session": 2,
+   "text": " let's be careful"
+  },
+  {
+   "t": 725450,
+   "session": 2,
+   "text": " with our speech"
+  },
+  {
+   "t": 726434,
+   "session": 2,
+   "text": " so that it's not in vain"
+  },
+  {
+   "t": 727430,
+   "session": 2,
+   "text": " the cross of"
+  },
+  {
+   "t": 728429,
+   "session": 2,
+   "text": " Christ in"
+  },
+  {
+   "t": 729427,
+   "session": 2,
+   "text": " the wake of our lives"
+  },
+  {
+   "t": 730430,
+   "session": 2,
+   "text": " on this earth."
+  },
+  {
+   "t": 731435,
+   "session": 2,
+   "text": " And"
+  },
+  {
+   "t": 732430,
+   "session": 2,
+   "text": " someone said"
+  },
+  {
+   "t": 733433,
+   "session": 2,
+   "text": " a"
+  },
+  {
+   "t": 734428,
+   "session": 2,
+   "text": " scholar, he said"
+  },
+  {
+   "t": 735428,
+   "session": 2,
+   "text": " the following,"
+  },
+  {
+   "t": 736427,
+   "session": 2,
+   "text": " that"
+  },
+  {
+   "t": 737434,
+   "session": 2,
+   "text": " it binds"
+  },
+  {
+   "t": 738429,
+   "session": 2,
+   "text": " no,"
+  },
+  {
+   "t": 739435,
+   "session": 2,
+   "text": " it binds no."
+  },
+  {
+   "t": 740428,
+   "session": 2,
+   "text": " To the devil."
+  },
+  {
+   "t": 741430,
+   "session": 2,
+   "text": " to"
+  },
+  {
+   "t": 742434,
+   "session": 2,
+   "text": " our enemy"
+  },
+  {
+   "t": 743433,
+   "session": 2,
+   "text": " the one who seeks"
+  },
+  {
+   "t": 744428,
+   "session": 2,
+   "text": " us to"
+  },
+  {
+   "t": 745447,
+   "session": 2,
+   "text": " distract us from"
+  },
+  {
+   "t": 746431,
+   "session": 2,
+   "text": " the truth,"
+  },
+  {
+   "t": 747442,
+   "session": 2,
+   "text": " it binds no"
+  },
+  {
+   "t": 748431,
+   "session": 2,
+   "text": " to him, he"
+  },
+  {
+   "t": 749442,
+   "session": 2,
+   "text": " has two,"
+  },
+  {
+   "t": 750432,
+   "session": 2,
+   "text": " two magnets,"
+  },
+  {
+   "t": 751443,
+   "session": 2,
+   "text": " that's what I would call them,"
+  },
+  {
+   "t": 752456,
+   "session": 2,
+   "text": " and you know"
+  },
+  {
+   "t": 753431,
+   "session": 2,
+   "text": " what they are?"
+  },
+  {
+   "t": 755432,
+   "session": 2,
+   "text": " procrastination"
+  },
+  {
+   "t": 756440,
+   "session": 2,
+   "text": " and excuses."
+  },
+  {
+   "t": 758429,
+   "session": 2,
+   "text": " Procrastination"
+  },
+  {
+   "t": 759427,
+   "session": 2,
+   "text": " and excuses."
+  },
+  {
+   "t": 760428,
+   "session": 2,
+   "text": " What we"
+  },
+  {
+   "t": 761428,
+   "session": 2,
+   "text": " often are"
+  },
+  {
+   "t": 762439,
+   "session": 2,
+   "text": " very,"
+  },
+  {
+   "t": 763433,
+   "session": 2,
+   "text": " very skilled"
+  },
+  {
+   "t": 764434,
+   "session": 2,
+   "text": " at, let's say,"
+  },
+  {
+   "t": 765428,
+   "session": 2,
+   "text": " and every person"
+  },
+  {
+   "t": 766438,
+   "session": 2,
+   "text": " is tempted"
+  },
+  {
+   "t": 767428,
+   "session": 2,
+   "text": " to more easily"
+  },
+  {
+   "t": 768434,
+   "session": 2,
+   "text": " postpone"
+  },
+  {
+   "t": 769431,
+   "session": 2,
+   "text": " anything, like"
+  },
+  {
+   "t": 770429,
+   "session": 2,
+   "text": " one of the most"
+  },
+  {
+   "t": 771429,
+   "session": 2,
+   "text": " important things in"
+  },
+  {
+   "t": 772428,
+   "session": 2,
+   "text": " this world"
+  },
+  {
+   "t": 773429,
+   "session": 2,
+   "text": " to postpone"
+  },
+  {
+   "t": 774479,
+   "session": 2,
+   "text": " the call of the Lord"
+  },
+  {
+   "t": 775468,
+   "session": 2,
+   "text": " Jesus Christ, to"
+  },
+  {
+   "t": 776428,
+   "session": 2,
+   "text": " come to him, to"
+  },
+  {
+   "t": 777429,
+   "session": 2,
+   "text": " repent, to accept"
+  },
+  {
+   "t": 778431,
+   "session": 2,
+   "text": " the Lord Jesus"
+  },
+  {
+   "t": 779431,
+   "session": 2,
+   "text": " Christ as Lord"
+  },
+  {
+   "t": 780429,
+   "session": 2,
+   "text": " and Savior, and"
+  },
+  {
+   "t": 781435,
+   "session": 2,
+   "text": " again, we are"
+  },
+  {
+   "t": 782431,
+   "session": 2,
+   "text": " so often"
+  },
+  {
+   "t": 783431,
+   "session": 2,
+   "text": " given excuses"
+  },
+  {
+   "t": 784431,
+   "session": 2,
+   "text": " you"
+  },
+  {
+   "t": 785431,
+   "session": 2,
+   "text": " are too young,"
+  },
+  {
+   "t": 786428,
+   "session": 2,
+   "text": " you have"
+  },
+  {
+   "t": 787431,
+   "session": 2,
+   "text": " other things to"
+  },
+  {
+   "t": 788430,
+   "session": 2,
+   "text": " occupy yourself with,"
+  },
+  {
+   "t": 789433,
+   "session": 2,
+   "text": " and we all know the"
+  },
+  {
+   "t": 790429,
+   "session": 2,
+   "text": " list very well."
+  },
+  {
+   "t": 791433,
+   "session": 2,
+   "text": " So may the Lord"
+  },
+  {
+   "t": 792450,
+   "session": 2,
+   "text": " grant"
+  },
+  {
+   "t": 793430,
+   "session": 2,
+   "text": " wisdom as we"
+  },
+  {
+   "t": 794428,
+   "session": 2,
+   "text": " stand before"
+  },
+  {
+   "t": 795429,
+   "session": 2,
+   "text": " these wonderful"
+  },
+  {
+   "t": 796430,
+   "session": 2,
+   "text": " works"
+  },
+  {
+   "t": 797436,
+   "session": 2,
+   "text": " let's not look"
+  },
+  {
+   "t": 798446,
+   "session": 2,
+   "text": " for excuses"
+  },
+  {
+   "t": 799432,
+   "session": 2,
+   "text": " that are cheap and"
+  },
+  {
+   "t": 800430,
+   "session": 2,
+   "text": " small."
+  },
+  {
+   "t": 801430,
+   "session": 2,
+   "text": " that keep"
+  },
+  {
+   "t": 802429,
+   "session": 2,
+   "text": " us from a work"
+  },
+  {
+   "t": 803465,
+   "session": 2,
+   "text": " so"
+  },
+  {
+   "t": 804429,
+   "session": 2,
+   "text": " sovereign, so"
+  },
+  {
+   "t": 805429,
+   "session": 2,
+   "text": " powerful and"
+  },
+  {
+   "t": 806435,
+   "session": 2,
+   "text": " so beautiful."
+  },
+  {
+   "t": 808442,
+   "session": 2,
+   "text": " Let's not look"
+  },
+  {
+   "t": 809434,
+   "session": 2,
+   "text": " for excuses to postpone"
+  },
+  {
+   "t": 810435,
+   "session": 2,
+   "text": " these things,"
+  },
+  {
+   "t": 811437,
+   "session": 2,
+   "text": " to go and do the"
+  },
+  {
+   "t": 812430,
+   "session": 2,
+   "text": " things that the word teaches"
+  },
+  {
+   "t": 813434,
+   "session": 2,
+   "text": " us."
+  },
+  {
+   "t": 814436,
+   "session": 2,
+   "text": " And"
+  },
+  {
+   "t": 816432,
+   "session": 2,
+   "text": " I want"
+  },
+  {
+   "t": 817433,
+   "session": 2,
+   "text": " to tell you"
+  },
+  {
+   "t": 818442,
+   "session": 2,
+   "text": " soul, who"
+  },
+  {
+   "t": 819430,
+   "session": 2,
+   "text": " are here, who"
+  },
+  {
+   "t": 820433,
+   "session": 2,
+   "text": " haven't accepted"
+  },
+  {
+   "t": 821434,
+   "session": 2,
+   "text": " Jesus Christ yet,"
+  },
+  {
+   "t": 822447,
+   "session": 2,
+   "text": " you haven't made"
+  },
+  {
+   "t": 823439,
+   "session": 2,
+   "text": " a covenant with him."
+  },
+  {
+   "t": 824430,
+   "session": 2,
+   "text": " Accept him."
+  },
+  {
+   "t": 825432,
+   "session": 2,
+   "text": " It's a moment"
+  },
+  {
+   "t": 826437,
+   "session": 2,
+   "text": " more than"
+  },
+  {
+   "t": 827438,
+   "session": 2,
+   "text": " perfect and more"
+  },
+  {
+   "t": 828430,
+   "session": 2,
+   "text": " than ideal."
+  },
+  {
+   "t": 829430,
+   "session": 2,
+   "text": " Accept him because"
+  },
+  {
+   "t": 830432,
+   "session": 2,
+   "text": " he is the one"
+  },
+  {
+   "t": 831429,
+   "session": 2,
+   "text": " who will be with him"
+  },
+  {
+   "t": 832429,
+   "session": 2,
+   "text": " forever, in eternity."
+  },
+  {
+   "t": 833432,
+   "session": 2,
+   "text": " And"
+  },
+  {
+   "t": 834430,
+   "session": 2,
+   "text": " at the"
+  },
+  {
+   "t": 835434,
+   "session": 2,
+   "text": " end"
+  },
+  {
+   "t": 837439,
+   "session": 2,
+   "text": " Colossians"
+  },
+  {
+   "t": 838429,
+   "session": 2,
+   "text": " 1:20"
+  },
+  {
+   "t": 839457,
+   "session": 2,
+   "text": " says the following,"
+  },
+  {
+   "t": 842432,
+   "session": 2,
+   "text": " and to"
+  },
+  {
+   "t": 843430,
+   "session": 2,
+   "text": " reconcile all things"
+  },
+  {
+   "t": 844445,
+   "session": 2,
+   "text": " to himself through"
+  },
+  {
+   "t": 845430,
+   "session": 2,
+   "text": " him, whether"
+  },
+  {
+   "t": 846430,
+   "session": 2,
+   "text": " on earth or"
+  },
+  {
+   "t": 847431,
+   "session": 2,
+   "text": " in heaven,"
+  },
+  {
+   "t": 848441,
+   "session": 2,
+   "text": " making peace"
+  },
+  {
+   "t": 849431,
+   "session": 2,
+   "text": " through the blood"
+  },
+  {
+   "t": 850442,
+   "session": 2,
+   "text": " of the cross"
+  },
+  {
+   "t": 851436,
+   "session": 2,
+   "text": " of him,"
+  },
+  {
+   "t": 852452,
+   "session": 2,
+   "text": " the cross of"
+  },
+  {
+   "t": 853431,
+   "session": 2,
+   "text": " Christ gives"
+  },
+  {
+   "t": 854431,
+   "session": 2,
+   "text": " peace, gives"
+  },
+  {
+   "t": 855681,
+   "session": 2,
+   "text": " hope, gives"
+  },
+  {
+   "t": 856433,
+   "session": 2,
+   "text": " victory"
+  },
+  {
+   "t": 857446,
+   "session": 2,
+   "text": " with the Lord Jesus"
+  },
+  {
+   "t": 858430,
+   "session": 2,
+   "text": " Christ."
+  },
+  {
+   "t": 859429,
+   "session": 2,
+   "text": " And"
+  },
+  {
+   "t": 863679,
+   "session": 2,
+   "text": " Let's not leave absolutely"
+  },
+  {
+   "t": 864430,
+   "session": 2,
+   "text": " anything that could"
+  },
+  {
+   "t": 865439,
+   "session": 2,
+   "text": " prevent us from"
+  },
+  {
+   "t": 866431,
+   "session": 2,
+   "text": " being faithful to him,"
+  },
+  {
+   "t": 867438,
+   "session": 2,
+   "text": " let's not let"
+  },
+  {
+   "t": 868430,
+   "session": 2,
+   "text": " ourselves be overwhelmed"
+  },
+  {
+   "t": 869447,
+   "session": 2,
+   "text": " by other works"
+  },
+  {
+   "t": 870454,
+   "session": 2,
+   "text": " that are"
+  },
+  {
+   "t": 871434,
+   "session": 2,
+   "text": " interesting. I don't"
+  },
+  {
+   "t": 872431,
+   "session": 2,
+   "text": " know if you've experienced"
+  },
+  {
+   "t": 873446,
+   "session": 2,
+   "text": " this, but I have"
+  },
+  {
+   "t": 874438,
+   "session": 2,
+   "text": " experienced it and"
+  },
+  {
+   "t": 875690,
+   "session": 2,
+   "text": " so that he learns"
+  },
+  {
+   "t": 876443,
+   "session": 2,
+   "text": " I think he'll experience"
+  },
+  {
+   "t": 877695,
+   "session": 2,
+   "text": " it again."
+  },
+  {
+   "t": 878696,
+   "session": 2,
+   "text": " So"
+  },
+  {
+   "t": 879940,
+   "session": 2,
+   "text": " many times"
+  },
+  {
+   "t": 881191,
+   "session": 2,
+   "text": " it's so hard"
+  },
+  {
+   "t": 881934,
+   "session": 2,
+   "text": " to encourage yourself"
+  },
+  {
+   "t": 882688,
+   "session": 2,
+   "text": " alone, to"
+  },
+  {
+   "t": 883437,
+   "session": 2,
+   "text": " get up from"
+  },
+  {
+   "t": 884435,
+   "session": 2,
+   "text": " somewhere and"
+  },
+  {
+   "t": 885446,
+   "session": 2,
+   "text": " get going."
+  },
+  {
+   "t": 887440,
+   "session": 2,
+   "text": " It's so easy"
+  },
+  {
+   "t": 888182,
+   "session": 2,
+   "text": " to just"
+  },
+  {
+   "t": 889448,
+   "session": 2,
+   "text": " to just"
+  },
+  {
+   "t": 890432,
+   "session": 2,
+   "text": " in despair"
+  },
+  {
+   "t": 891454,
+   "session": 2,
+   "text": " like this."
+  },
+  {
+   "t": 892439,
+   "session": 2,
+   "text": " But it's hard"
+  },
+  {
+   "t": 893442,
+   "session": 2,
+   "text": " to get up."
+  },
+  {
+   "t": 894433,
+   "session": 2,
+   "text": " With the Lord"
+  },
+  {
+   "t": 895430,
+   "session": 2,
+   "text": " Jesus Christ,"
+  },
+  {
+   "t": 896438,
+   "session": 2,
+   "text": " I can do all things,"
+  },
+  {
+   "t": 897434,
+   "session": 2,
+   "text": " in Christ"
+  },
+  {
+   "t": 898431,
+   "session": 2,
+   "text": " Amen."
+  },
+  {
+   "t": 899433,
+   "session": 2,
+   "text": " Amen, brothers."
+  },
+  {
+   "t": 900430,
+   "session": 2,
+   "text": " I like that you're"
+  },
+  {
+   "t": 901435,
+   "session": 2,
+   "text": " paying attention."
+  }
+ ]
+}

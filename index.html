@@ -5,30 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Live Translate provides real-time voice translation and shared subtitles." />
     <title>Live Translate</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div class="glass-bg"></div>
     <div class="app-container">
 
       <header class="live-bar" aria-label="Live session controls">
         <div class="logo-area">
-          <div class="logo-icon">
-            <span aria-hidden="true">T</span>
+          <div class="logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M7 12.5v7M11 9.5v13M15 13v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+              <path d="M19.5 11h6M19.5 16h6M19.5 21h4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity="0.72" />
+            </svg>
           </div>
           <div class="logo-text">
             <h1>Live Translate</h1>
+            <span class="logo-sub">Operator console</span>
           </div>
         </div>
 
-        <div class="live-health" aria-label="Connection health">
-          <div class="health-item health-chip" id="health-local" data-state="connecting">
+        <div class="live-readout">
+          <div class="status-badge" id="connection-status" role="status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span class="status-text">Disconnected</span>
+          </div>
+          <div class="session-stats-badge" id="session-stats-badge">
+            <span class="live-tally" aria-hidden="true">Live</span>
+            <span id="session-timer" class="stat-timer" title="Session Duration">00:00:00</span>
+            <span class="stat-divider" aria-hidden="true"></span>
+            <span id="word-counter" title="Total Words Processed">0 words</span>
+            <span class="stat-divider stat-optional" aria-hidden="true"></span>
+            <span id="chunk-stats" class="stat-optional" title="Microphone packets going to Google versus translated audio coming back. Google does not return one packet for each mic packet.">0 mic / 0 translated</span>
+            <span class="stat-divider" aria-hidden="true"></span>
+            <span id="telemetry-latency" title="Round-trip live translation latency">⚡ -- ms</span>
+          </div>
+        </div>
+
+        <div class="live-actions">
+          <button id="mute-mic-btn" type="button" class="live-bar-btn" aria-pressed="false" title="Temporarily pause the selected audio source without disconnecting">
+            <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+            </svg>
+            <span id="mute-mic-label">Pause input</span>
+          </button>
+          <button id="start-btn" class="primary-btn live-start-btn">
+            <span class="btn-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </span>
+            <span class="btn-text">Start Translation</span>
+          </button>
+        </div>
+
+        <div class="live-health" aria-label="Signal path: audio to Gemini to screens">
+          <span class="signal-label">Signal path</span>
+          <div class="health-item health-chip" id="health-audio" data-state="idle">
             <span class="health-dot" aria-hidden="true"></span>
             <div>
-              <strong>Relay</strong>
-              <span class="health-detail">Connecting...</span>
+              <strong>Audio</strong>
+              <span class="health-detail">Not started</span>
             </div>
           </div>
           <div class="health-item health-chip" id="health-gemini-1" data-state="idle">
@@ -45,48 +86,13 @@
               <span class="health-detail">Not enabled</span>
             </div>
           </div>
-          <div class="health-item health-chip" id="health-audio" data-state="idle">
+          <div class="health-item health-chip" id="health-local" data-state="connecting">
             <span class="health-dot" aria-hidden="true"></span>
             <div>
-              <strong>Audio</strong>
-              <span class="health-detail">Not started</span>
+              <strong>Relay</strong>
+              <span class="health-detail">Connecting...</span>
             </div>
           </div>
-        </div>
-
-        <div class="live-actions">
-          <div class="session-stats-badge" id="session-stats-badge">
-            <span id="session-timer" title="Session Duration">00:00:00</span>
-            <span class="stat-divider" aria-hidden="true">|</span>
-            <span id="word-counter" title="Total Words Processed">0 words</span>
-            <span class="stat-divider" aria-hidden="true">|</span>
-            <span id="chunk-stats" title="Microphone packets going to Google versus translated audio coming back. Google does not return one packet for each mic packet.">0 mic / 0 translated</span>
-            <span class="stat-divider" aria-hidden="true">|</span>
-            <span id="telemetry-latency" title="Round-trip live translation latency">⚡ -- ms</span>
-          </div>
-          <button id="mute-mic-btn" type="button" class="live-bar-btn" aria-pressed="false" title="Temporarily pause the selected audio source without disconnecting">
-            <svg id="mute-mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-            </svg>
-            <span id="mute-mic-label">Pause input</span>
-          </button>
-          <div class="status-badge" id="connection-status" role="status" aria-live="polite">
-            <span class="status-dot"></span>
-            <span class="status-text">Disconnected</span>
-          </div>
-          <button id="start-btn" class="primary-btn live-start-btn">
-            <span class="btn-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            </span>
-            <span class="btn-text">Start Translation</span>
-          </button>
         </div>
       </header>
 
@@ -130,6 +136,7 @@
             <summary class="panel-summary">Setup</summary>
             <div class="config-grid">
               <div class="config-col">
+                <h3 class="config-col-title"><span>01</span> Source</h3>
                 <div class="input-group" id="api-key-group" data-configured="false" data-replacing="false">
                   <label for="api-key-input">Gemini API Key</label>
                   <p class="api-key-saved-note" id="api-key-saved-note">API key saved on this Mac.</p>
@@ -190,6 +197,7 @@
               </div>
 
               <div class="config-col">
+                <h3 class="config-col-title"><span>02</span> Translation</h3>
                 <div class="input-group">
                   <label for="target-language-select-1">Translate To (Language 1)</label>
                   <select id="target-language-select-1">
@@ -253,6 +261,7 @@
               </div>
 
               <div class="config-col">
+                <h3 class="config-col-title"><span>03</span> Screens &amp; extras</h3>
                 <div class="input-group instruction-group">
                   <label for="system-instruction-input">Operator notes</label>
                   <textarea id="system-instruction-input" class="instruction-input" placeholder="Optional notes for this computer only..."></textarea>
@@ -294,14 +303,33 @@
           </details>
 
           <div class="destinations-row">
-            <button id="subtitles-btn" class="secondary-btn" type="button">
-              <span class="btn-text">Open projector</span>
+            <button id="subtitles-btn" class="secondary-btn destination-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2.5" y="4" width="19" height="12.5" rx="1.5"></rect>
+                <path d="M7 9.5h10M8.5 12.5h7M12 16.5V20M8.5 20h7"></path>
+              </svg>
+              <span class="destination-copy">
+                <span class="btn-text">Open projector</span>
+                <span class="btn-sub">Subtitle screen on this computer</span>
+              </span>
             </button>
-            <button id="streamer-btn" class="secondary-btn" type="button">
-              <span class="btn-text">Mac audio</span>
+            <button id="streamer-btn" class="secondary-btn destination-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"></path>
+              </svg>
+              <span class="destination-copy">
+                <span class="btn-text">Mac audio</span>
+                <span class="btn-sub">Capture window for the mixer</span>
+              </span>
             </button>
-            <button id="btn-clear-projector" class="secondary-btn danger-btn" type="button">
-              <span class="btn-text">Clear screens</span>
+            <button id="btn-clear-projector" class="secondary-btn destination-btn danger-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5"></path>
+              </svg>
+              <span class="destination-copy">
+                <span class="btn-text">Clear screens</span>
+                <span class="btn-sub">Projector, phones, and OBS</span>
+              </span>
             </button>
           </div>
 
@@ -482,7 +510,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Powered by Google Gemini Live API | v1.3.34</p>
+        <p>Live Translate v1.3.34 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
       </footer>
     </div>
 

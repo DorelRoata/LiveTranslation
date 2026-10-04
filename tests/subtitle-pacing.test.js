@@ -1,16 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SMOOTH_START_BUFFER_MS,
   easeTickDelay,
   getLiveTickDelay,
   getPunctuationPause,
   getSmoothBatchSize,
   getSmoothTargetDelay,
   normalizePacingMode,
-  shouldEndSmoothBatch,
-  normalizeWordForDiff,
-  getAppendedWords
+  shouldEndSmoothBatch
 } from '../src/subtitle-pacing.js';
 
 
@@ -19,10 +16,6 @@ test('preserves the legacy Live pacing thresholds', () => {
   assert.equal(getLiveTickDelay(3), 110);
   assert.equal(getLiveTickDelay(6), 70);
   assert.equal(getLiveTickDelay(11), 30);
-});
-
-test('uses a conservative 200 ms Smooth start buffer', () => {
-  assert.equal(SMOOTH_START_BUFFER_MS, 200);
 });
 
 test('Smooth pacing accelerates continuously with backlog and age', () => {
@@ -58,29 +51,5 @@ test('punctuation pauses shrink while catching up', () => {
 test('unknown pacing settings safely fall back to Smooth', () => {
   assert.equal(normalizePacingMode('live'), 'live');
   assert.equal(normalizePacingMode('unexpected'), 'smooth');
-});
-
-test('normalizes words for diffing by stripping punctuation and casing', () => {
-  assert.equal(normalizeWordForDiff('Amen.'), 'amen');
-  assert.equal(normalizeWordForDiff('"Hello,'), 'hello');
-  assert.equal(normalizeWordForDiff('(World)'), 'world');
-});
-
-test('getAppendedWords extracts newly added words', () => {
-  assert.deepEqual(getAppendedWords('hello world', 'hello world peace'), ['peace']);
-  assert.deepEqual(getAppendedWords('hello world', 'hello world'), []);
-  assert.deepEqual(getAppendedWords('', 'hello world'), ['hello', 'world']);
-});
-
-test('getAppendedWords ignores punctuation and capitalization revisions on existing words', () => {
-  assert.deepEqual(getAppendedWords('amen and amen', 'Amen, and amen! Halleluja'), ['Halleluja']);
-});
-
-test('getAppendedWords handles left-truncated old history correctly', () => {
-  assert.deepEqual(getAppendedWords('word1 word2 word3 word4 word5', 'word3 word4 word5 word6 word7'), ['word6', 'word7']);
-});
-
-test('getAppendedWords handles interim phrase revisions via common prefix', () => {
-  assert.deepEqual(getAppendedWords('we know who the enemy is', 'we know who the adversary will be'), ['adversary', 'will', 'be']);
 });
 

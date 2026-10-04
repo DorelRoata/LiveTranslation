@@ -7,8 +7,7 @@ import {
   GEMINI_LIVE_MODEL,
   inputTranscriptionConfig,
   shouldReconnectOnNetworkOnline,
-  smoothTranslationLatency,
-  transcriptionIsFinished
+  smoothTranslationLatency
 } from '../src/gemini-live.js';
 
 test('Live Translate setup omits instructions and keeps transcription at setup top-level', () => {
@@ -32,12 +31,17 @@ test('Live Translate setup omits instructions and keeps transcription at setup t
   assert.equal('outputAudioTranscription' in message.setup.generationConfig, false);
 });
 
-test('a finished transcription closes the phrase, and quiet time does not raise the lag number', () => {
-  assert.equal(transcriptionIsFinished({ finished: true }), true);
-  assert.equal(transcriptionIsFinished({ final: true }), true);
-  assert.equal(transcriptionIsFinished({ text: 'still speaking' }), false);
-  assert.equal(transcriptionIsFinished(null), false);
+test('a goAway replacement resumes the same session; a fresh setup does not', () => {
+  const fresh = buildGeminiSetupMessage({ targetLanguage: 'en', sourceLanguage: 'ro' });
+  assert.equal('sessionResumption' in fresh.setup, false);
 
+  const resumed = buildGeminiSetupMessage({ targetLanguage: 'en', sourceLanguage: 'ro', resumeHandle: 'handle-123' });
+  assert.deepEqual(resumed.setup.sessionResumption, { handle: 'handle-123' });
+  assert.deepEqual(resumed.setup.generationConfig, fresh.setup.generationConfig);
+  assert.deepEqual(resumed.setup.realtimeInputConfig, fresh.setup.realtimeInputConfig);
+});
+
+test('quiet time does not raise the lag number', () => {
   assert.equal(smoothTranslationLatency(0, 1000, 1600), 600);
   assert.equal(smoothTranslationLatency(600, 1000, 4500), 600);
   assert.equal(smoothTranslationLatency(600, 1000, 1050), 600);

@@ -1,12 +1,12 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
-import { applyLaneUpdate, captionSync, dedupeCaptionLine, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
+import { emptyLaneState, laneUpdatePlan, normalizeLaneState } from './caption-stream.js';
+import { getLanguageName } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
   easeTickDelay,
-  getAppendedWords,
   getLiveTickDelay,
   getPunctuationPause,
   getSmoothBatchSize,
@@ -46,17 +46,18 @@ let subtitleState = {
   obsLanguage: "both"
 };
 
-// Client-side display state to store immutable locked lines
+// Client-side display state to store immutable locked lines. seq is the last
+// relay piece this screen has shown (or queued to show).
 let displayState = {
   lang1: {
     lines: [],
     activeLine: "",
-    lastText: ""
+    seq: 0
   },
   lang2: {
     lines: [],
     activeLine: "",
-    lastText: ""
+    seq: 0
   }
 };
 
@@ -588,50 +589,30 @@ function rafLoop(timestamp) {
 // Start the vsync-locked render loop
 requestAnimationFrame(rafLoop);
 
-function renderSubtitleLane(lane) {
-  const state = subtitleState[lane] || emptyLaneState();
-  const displayText = laneDisplayText(state);
-
-  if (!displayText || displayText === "-") {
-    displayState[lane] = {
-      lines: [],
-      activeLine: "",
-      lastText: ""
-    };
-    wordQueue[lane] = [];
-    resetLanePacing(lane);
-    rebuildSubtitleDOM(lane);
-  } else {
-    const oldText = displayState[lane].lastText;
-    const newText = displayText;
-    displayState[lane].lastText = newText;
-    
-    // If this is an initial sync (page refresh / first connect), populate the
-    // display state directly so the text appears instantly instead of fast-
-    // forwarding hundreds of words through the animation queue.
-    if (!oldText && newText.length > 0) {
-      const allWords = newText.split(/\s+/).filter(Boolean);
-      displayState[lane].lines = [];
-      displayState[lane].activeLine = "";
-      rebuildSubtitleDOM(lane, false);
-      
-      for (const word of allWords) {
-        appendWordToDisplayState(lane, word);
-      }
-      
-      rebuildSubtitleDOM(lane);
-      return;
-    }
-    
-    const extraWords = getAppendedWords(oldText, newText);
-    if (extraWords.length > 0) {
-      enqueueWords(lane, extraWords);
-    }
+// Redraws a lane instantly from the relay's full text: first connect, page
+// refresh, reconnect, or a missed piece. No words are animated or guessed.
+function redrawSubtitleLane(lane, words, seq) {
+  displayState[lane] = { lines: [], activeLine: "", seq };
+  wordQueue[lane] = [];
+  resetLanePacing(lane);
+  clearLeavingLine(lane);
+  rebuildSubtitleDOM(lane, false);
+  for (const word of words) {
+    appendWordToDisplayState(lane, word);
   }
+  rebuildSubtitleDOM(lane);
 }
 
-function renderInterimSubtitle(lane, text) {
-  renderSubtitleLane(lane);
+// Shows a relay lane update. `addition` is the exact text Google sent for the
+// newest piece; it animates in only when it directly follows what is shown.
+function renderSubtitleLane(lane, addition) {
+  const plan = laneUpdatePlan(displayState[lane].seq, subtitleState[lane] || emptyLaneState(), addition);
+  if (plan.mode === 'append') {
+    displayState[lane].seq = plan.seq;
+    enqueueWords(lane, plan.words);
+  } else if (plan.mode === 'redraw') {
+    redrawSubtitleLane(lane, plan.words, plan.seq);
+  }
 }
 
 function applyHostLayout(state) {
@@ -757,29 +738,27 @@ function connect() {
       
       if (data.type === 'sync') {
         subtitleState = {
-          lang1: emptyLaneState(),
-          lang2: emptyLaneState(),
           ...data.state,
-          lang1: { ...emptyLaneState(), ...data.state?.lang1 },
-          lang2: { ...emptyLaneState(), ...data.state?.lang2 }
+          lang1: normalizeLaneState(data.state?.lang1),
+          lang2: normalizeLaneState(data.state?.lang2)
         };
         pacingMode = normalizePacingMode(subtitleState.subtitlePacing);
         applyHostLayout(subtitleState);
         updateUIElements();
         renderSubtitleLane("lang1");
         renderSubtitleLane("lang2");
-      } else if (data.type === 'update') {
-        if (data.lane && typeof data.text === 'string') {
-          subtitleState[data.lane] = applyLaneUpdate(subtitleState[data.lane], data.text, Boolean(data.isFinal));
-          renderSubtitleLane(data.lane);
+      } else if (data.type === 'append') {
+        if ((data.lane === 'lang1' || data.lane === 'lang2') && typeof data.text === 'string') {
+          subtitleState[data.lane] = normalizeLaneState({ text: data.full, seq: data.seq });
+          renderSubtitleLane(data.lane, data.text);
         }
       } else if (data.type === 'audio') {
         playPCMChunk(data.audioData, data.channelId);
       } else if (data.type === 'clear') {
         subtitleState.lang1 = emptyLaneState();
         subtitleState.lang2 = emptyLaneState();
-        displayState.lang1 = { lines: [], activeLine: "", lastText: "" };
-        displayState.lang2 = { lines: [], activeLine: "", lastText: "" };
+        displayState.lang1 = { lines: [], activeLine: "", seq: 0 };
+        displayState.lang2 = { lines: [], activeLine: "", seq: 0 };
         wordQueue.lang1 = [];
         wordQueue.lang2 = [];
         resetLanePacing('lang1');
