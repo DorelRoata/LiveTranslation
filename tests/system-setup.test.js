@@ -8,7 +8,9 @@ import {
   buildSystemSetup,
   emptyLaneState,
   getLanguageName,
+  captionSync,
   laneDisplayText,
+  mergeCaptionLine,
   mergeIncomingTranscript,
   outputCaptionUpdate,
   wordsToAppend
@@ -74,12 +76,37 @@ test('disabling language 2 clears dual layout for every client', () => {
   assert.equal(setup.obsLanguage, 'lang2');
 });
 
+test('a restated phrase replaces the old wording instead of doubling it', () => {
+  assert.equal(mergeCaptionLine('We know who', 'we know who the'), 'we know who the');
+  assert.equal(mergeCaptionLine('We know who the enemy is', 'adversary is'), 'We know who the adversary is');
+  assert.equal(mergeCaptionLine('We know who the enemy is', 'the adversaries'), 'We know who the adversaries');
+  assert.equal(mergeCaptionLine('very well.', 'We know who'), 'very well. We know who');
+  assert.equal(mergeCaptionLine('if he loses his soul', 'his soul.'), 'if he loses his soul');
+  assert.equal(mergeCaptionLine('the one who calls', 'the one who calls us'), 'the one who calls us');
+
+  let lane = applyLaneUpdate(undefined, 'the enemy is', false);
+  lane = applyLaneUpdate(lane, 'adversary is', false);
+  assert.equal(laneDisplayText(lane), 'the adversary is');
+  assert.equal(lane.interimText, '');
+});
+
+test('the screen keeps the shared opening and replaces only the corrected tail', () => {
+  assert.deepEqual(
+    captionSync('We know who the enemy is', 'We know who the adversaries'),
+    { keep: 4, words: ['adversaries'] }
+  );
+  assert.deepEqual(
+    captionSync('We know who', 'We know who the'),
+    { keep: 3, words: ['the'] }
+  );
+});
+
 test('interim subtitle updates replace the working phrase instead of concatenating', () => {
   let lane = applyLaneUpdate(undefined, 'Hello', false);
   lane = applyLaneUpdate(lane, 'Hello there', false);
 
-  assert.equal(lane.accumulatedText, '');
-  assert.equal(lane.interimText, 'Hello there');
+  assert.equal(lane.accumulatedText, 'Hello there');
+  assert.equal(lane.interimText, '');
   assert.equal(laneDisplayText(lane), 'Hello there');
 });
 

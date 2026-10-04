@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.29 — Replace a restated phrase instead of doubling it
+
+**Why:** Google sends a phrase and then a correction. The projector kept the first wording and added the correction after it, so the same words appeared twice.
+
+**What changed:** A correction replaces the words it restates. New words are still added. The shared opening of the line stays.
+
 ## v1.3.28 — Show the translation phrases Google is sending
 
 **Why:** A live session was connected and receiving audio, and the projector was blank. Google was sending the English and Russian lines in `outputTranscription`, with `text` and `languageCode` only. None of those messages had a finished flag, so v1.3.27 threw every line away.

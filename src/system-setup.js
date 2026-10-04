@@ -68,16 +68,11 @@ export function applyRelaySnapshot(subtitleState = {}, snapshot = {}) {
   return next;
 }
 
-export function applyLaneUpdate(laneState = {}, text, isFinal) {
+export function applyLaneUpdate(laneState = {}, text) {
   const next = replaceLaneState(laneState);
-
-  if (isFinal) {
-    next.accumulatedText = appendFinalSubtitle(next.accumulatedText, text);
-    next.interimText = '';
-  } else {
-    next.interimText = typeof text === 'string' ? text : '';
-  }
-
+  const merged = mergeCaptionLine(laneDisplayText(next), text);
+  next.accumulatedText = trimSubtitleHistory(merged);
+  next.interimText = '';
   return next;
 }
 
@@ -128,6 +123,127 @@ export function wordsToAppend(displayedText, incomingText) {
   if (overlap > 0) return incomingWords.slice(overlap);
 
   return incomingWords;
+}
+
+const CAPTION_STOP_WORDS = new Set([
+  'a', 'an', 'and', 'the', 'of', 'or', 'to', 'in', 'on', 'is', 'it', 'its',
+  'that', 'this', 'we', 'who', 'our', 'ours', 'for', 'with'
+]);
+
+function sameCaptionWord(left, right) {
+  return Boolean(left) && left === right;
+}
+
+function captionStem(word) {
+  if (!word || word.length < 6 || CAPTION_STOP_WORDS.has(word)) return '';
+  return word.slice(0, 5);
+}
+
+// Google restates a phrase instead of extending it. Keep the line and replace
+// the restated words so the correction does not sit beside the old wording.
+export function mergeCaptionLine(previous, incoming) {
+  const prev = typeof previous === 'string' ? previous.trim() : '';
+  const next = typeof incoming === 'string' ? incoming.trim() : '';
+  if (!next) return prev;
+  if (!prev) return next;
+
+  const prevWords = captionWords(prev);
+  const nextWords = captionWords(next);
+  const prevBare = prevWords.map(bareCaptionWord);
+  const nextBare = nextWords.map(bareCaptionWord);
+  const prevJoined = prevBare.join(' ');
+  const nextJoined = nextBare.join(' ');
+
+  if (prevBare.length >= nextBare.length) {
+    const tail = prevBare.slice(-nextBare.length);
+    if (nextBare.every((word, index) => sameCaptionWord(word, tail[index]))) return prev;
+  }
+
+  if (nextJoined.startsWith(prevJoined)) return nextWords.join(' ');
+
+  let overlap = 0;
+  const maxOverlap = Math.min(prevBare.length, nextBare.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    const tail = prevBare.slice(-size);
+    const head = nextBare.slice(0, size);
+    if (tail.every((word, index) => sameCaptionWord(word, head[index]))) {
+      overlap = size;
+      break;
+    }
+  }
+  if (overlap > 0) {
+    return [...prevWords.slice(0, prevWords.length - overlap), ...nextWords].join(' ');
+  }
+
+  const windowStart = Math.max(0, prevBare.length - Math.max(nextBare.length + 3, 8));
+  let best = null;
+  for (let index = windowStart; index < prevBare.length; index += 1) {
+    for (let incomingIndex = 0; incomingIndex < nextBare.length; incomingIndex += 1) {
+      if (!sameCaptionWord(prevBare[index], nextBare[incomingIndex])) continue;
+      let length = 0;
+      while (
+        index + length < prevBare.length &&
+        incomingIndex + length < nextBare.length &&
+        sameCaptionWord(prevBare[index + length], nextBare[incomingIndex + length])
+      ) {
+        length += 1;
+      }
+      const contentMatches = nextBare
+        .slice(incomingIndex, incomingIndex + length)
+        .filter(word => word && !CAPTION_STOP_WORDS.has(word)).length;
+      if (length >= 2 || contentMatches >= 1) {
+        if (!best || length > best.length || (length === best.length && index > best.index)) {
+          best = { index, length };
+        }
+      }
+    }
+  }
+
+  if (!best) {
+    for (let incomingIndex = 0; incomingIndex < nextBare.length; incomingIndex += 1) {
+      const stem = captionStem(nextBare[incomingIndex]);
+      if (!stem) continue;
+      for (let index = windowStart; index < prevBare.length; index += 1) {
+        if (captionStem(prevBare[index]) === stem) {
+          best = { index, length: 1 };
+          break;
+        }
+      }
+      if (best) break;
+    }
+  }
+
+  if (best) return [...prevWords.slice(0, best.index), ...nextWords].join(' ');
+
+  const span = Math.min(prevWords.length, Math.max(nextWords.length, 1) + 1);
+  const region = prevBare.slice(-span);
+  const shareFirst = sameCaptionWord(region[0], nextBare[0]);
+  const shareLast = sameCaptionWord(prevBare[prevBare.length - 1], nextBare[nextBare.length - 1]);
+  const shareContent = nextBare.some(word => word && !CAPTION_STOP_WORDS.has(word) && region.includes(word));
+  const shareStem = nextBare.some(word => {
+    const stem = captionStem(word);
+    return stem && region.some(other => captionStem(other) === stem);
+  });
+  if (nextWords.length <= 8 && (shareFirst || shareLast || shareContent || shareStem)) {
+    const cutLength = shareLast && !shareFirst && !shareContent && !shareStem
+      ? nextWords.length
+      : span;
+    return [...prevWords.slice(0, Math.max(0, prevWords.length - cutLength)), ...nextWords].join(' ');
+  }
+
+  const needsSpace = !/\s$/.test(prev);
+  return `${prev}${needsSpace ? ' ' : ''}${nextWords.join(' ')}`;
+}
+
+export function captionSync(currentText, targetText) {
+  const current = captionWords(currentText);
+  const target = captionWords(targetText);
+  const currentBare = current.map(bareCaptionWord);
+  const targetBare = target.map(bareCaptionWord);
+  let keep = 0;
+  const limit = Math.min(currentBare.length, targetBare.length);
+  while (keep < limit && sameCaptionWord(currentBare[keep], targetBare[keep])) keep += 1;
+  return { keep, words: target.slice(keep) };
 }
 
 export function laneDisplayText(laneState = {}) {

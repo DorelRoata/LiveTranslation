@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
-import { emptyLaneState, getLanguageName, laneDisplayText, wordsToAppend } from './system-setup.js';
+import { captionSync, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
@@ -622,9 +622,32 @@ function renderSubtitleLane(lane) {
       return;
     }
     
-    const shownOnScreen = [...displayState[lane].lines, displayState[lane].activeLine].filter(Boolean).join(' ');
-    const newWords = wordsToAppend(shownOnScreen, newText);
-    if (newWords.length > 0) enqueueWords(lane, newWords);
+    const paintedWords = [...displayState[lane].lines, displayState[lane].activeLine]
+      .filter(Boolean)
+      .join(' ')
+      .split(/\s+/)
+      .filter(Boolean);
+    const queuedWords = wordQueue[lane].map(item => item.word);
+    const pendingText = [...paintedWords, ...queuedWords].join(' ');
+    const sync = captionSync(pendingText, newText);
+    const pendingCount = paintedWords.length + queuedWords.length;
+    if (sync.keep === pendingCount && sync.words.length === 0) return;
+
+    if (sync.keep < paintedWords.length) {
+      const kept = paintedWords.slice(0, sync.keep);
+      wordQueue[lane] = [];
+      displayState[lane].lines = [];
+      displayState[lane].activeLine = '';
+      rebuildSubtitleDOM(lane, false);
+      for (const word of kept) appendWordToDisplayState(lane, word);
+      rebuildSubtitleDOM(lane);
+      if (sync.words.length > 0) enqueueWords(lane, sync.words);
+      return;
+    }
+
+    wordQueue[lane] = [];
+    const extra = newText.split(/\s+/).filter(Boolean).slice(paintedWords.length);
+    if (extra.length > 0) enqueueWords(lane, extra);
   }
 }
 
