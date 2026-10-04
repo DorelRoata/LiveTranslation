@@ -8,7 +8,7 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, finishedCaptionText, getLanguageName } from './system-setup.js';
+import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName, outputCaptionUpdate } from './system-setup.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency, transcriptionIsFinished } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
@@ -29,7 +29,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.27';
+const APP_VERSION = '1.3.28';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -2020,8 +2020,8 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
       
       const outputTx = data.outputTranscription
         || data.serverContent?.outputTranscription;
-      const finishedText = finishedCaptionText(outputTx, false);
-      if (finishedText) {
+      const caption = outputCaptionUpdate(outputTx, false);
+      if (caption) {
         const captionLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
         if (captionLatency !== smoothedLatencyMs) {
           smoothedLatencyMs = captionLatency;
@@ -2031,9 +2031,9 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
         }
         const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
-        const text = applyBiblicalGlossary(finishedText, targetLang || 'en');
-        updateOutputTranscript(text, channelId, true);
-        updateSubtitleLane(`lang${channelId}`, text, true);
+        const text = applyBiblicalGlossary(caption.text, targetLang || 'en');
+        updateOutputTranscript(text, channelId, caption.isFinal);
+        updateSubtitleLane(`lang${channelId}`, text, caption.isFinal);
       }
 
       if (data.serverContent?.turnComplete) {

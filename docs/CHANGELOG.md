@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.28 — Show the translation phrases Google is sending
+
+**Why:** A live session was connected and receiving audio, and the projector was blank. Google was sending the English and Russian lines in `outputTranscription`, with `text` and `languageCode` only. None of those messages had a finished flag, so v1.3.27 threw every line away.
+
+**What changed:** A caption is shown from that translation text as soon as it arrives. When Google does send `finished` or `final`, that phrase is locked.
+
 ## v1.3.27 — Show only the finished phrase
 
 **Why:** v1.3.26 kept the early guess and attached it to the finished phrase. The screens then showed the guess and the correction in the same line. A turn ending could also dump that guess onto the screen.

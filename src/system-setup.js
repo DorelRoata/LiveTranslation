@@ -158,12 +158,16 @@ export function mergeIncomingTranscript(previous, incoming) {
   return `${prev}${needsSpace ? ' ' : ''}${next}`;
 }
 
-// The unfinished text is Google's early guess. Only the finished phrase is shown,
-// and that phrase is not combined with the guess.
-export function finishedCaptionText(transcription, isInterim = false) {
-  if (isInterim || !transcription || typeof transcription !== 'object') return '';
-  if (transcription.finished !== true && transcription.final !== true) return '';
-  return typeof transcription.text === 'string' ? transcription.text.trim() : '';
+// Live Translate sends outputTranscription with text and languageCode only.
+// A finished flag is not included on those phrases, so the text itself is the caption.
+export function outputCaptionUpdate(transcription, isInterim = false) {
+  if (isInterim || !transcription || typeof transcription !== 'object') return null;
+  const text = typeof transcription.text === 'string' ? transcription.text.trim() : '';
+  if (!text) return null;
+  return {
+    text,
+    isFinal: transcription.finished === true || transcription.final === true
+  };
 }
 
 export function addedWordCount(previous, next) {

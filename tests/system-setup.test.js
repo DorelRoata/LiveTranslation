@@ -9,18 +9,26 @@ import {
   emptyLaneState,
   getLanguageName,
   laneDisplayText,
-  finishedCaptionText,
   mergeIncomingTranscript,
+  outputCaptionUpdate,
   wordsToAppend
 } from '../src/system-setup.js';
 
-test('only the finished phrase is shown, without the early guess', () => {
-  assert.equal(finishedCaptionText({ text: 'the one' }), '');
-  assert.equal(finishedCaptionText({ text: 'who calls' }), '');
-  assert.equal(finishedCaptionText({ text: 'you can\'t serve two masters', finished: true }), 'you can\'t serve two masters');
-  assert.equal(finishedCaptionText({ text: 'you can\'t', final: true }), 'you can\'t');
-  assert.equal(finishedCaptionText({ text: 'still guessing' }, true), '');
-  assert.equal(finishedCaptionText({ finished: true }), '');
+test('output transcription text is shown even when Google omits the finished flag', () => {
+  assert.deepEqual(outputCaptionUpdate({ text: ' We know who', languageCode: 'en' }), {
+    text: 'We know who',
+    isFinal: false
+  });
+  assert.deepEqual(outputCaptionUpdate({ text: 'very well.', finished: true }), {
+    text: 'very well.',
+    isFinal: true
+  });
+  assert.deepEqual(outputCaptionUpdate({ text: 'you can\'t', final: true }), {
+    text: 'you can\'t',
+    isFinal: true
+  });
+  assert.equal(outputCaptionUpdate({ text: 'guess' }, true), null);
+  assert.equal(outputCaptionUpdate({ languageCode: 'en' }), null);
 });
 
 test('caption fragments append new words and drop a tail that is already on screen', () => {
