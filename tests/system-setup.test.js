@@ -12,6 +12,7 @@ import {
   laneDisplayText,
   mergeCaptionLine,
   mergeIncomingTranscript,
+  nextCaptionPhrase,
   outputCaptionUpdate,
   wordsToAppend
 } from '../src/system-setup.js';
@@ -74,6 +75,29 @@ test('disabling language 2 clears dual layout for every client', () => {
   assert.equal(setup.targetLanguage2, 'none');
   assert.equal(setup.targetLanguageName2, '');
   assert.equal(setup.obsLanguage, 'lang2');
+});
+
+test('the first wording stays off screen until the phrase settles', () => {
+  let open = '';
+  const shown = [];
+  const step = text => {
+    const result = nextCaptionPhrase(open, text);
+    open = result.open;
+    if (result.publish) shown.push(result.publish);
+  };
+
+  step('We know who');
+  step('we know who the');
+  assert.deepEqual(shown, []);
+  assert.equal(open, 'we know who the');
+
+  step('the enemy is');
+  step('adversary is');
+  assert.deepEqual(shown, []);
+
+  step('and so on, right?');
+  assert.deepEqual(shown, ['we know who the adversary is']);
+  assert.equal(open, 'and so on, right?');
 });
 
 test('a restated phrase replaces the old wording instead of doubling it', () => {

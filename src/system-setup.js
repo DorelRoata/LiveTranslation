@@ -235,6 +235,20 @@ export function mergeCaptionLine(previous, incoming) {
   return `${prev}${needsSpace ? ' ' : ''}${nextWords.join(' ')}`;
 }
 
+// The first wording stays private. A correction replaces it. The phrase is
+// published only when Google moves on to a different phrase.
+export function nextCaptionPhrase(openText, incomingText) {
+  const open = typeof openText === 'string' ? openText.trim() : '';
+  const incoming = typeof incomingText === 'string' ? incomingText.trim() : '';
+  if (!incoming) return { open, publish: null };
+  if (!open) return { open: incoming, publish: null };
+
+  const merged = mergeCaptionLine(open, incoming).trim();
+  const appended = `${open} ${captionWords(incoming).join(' ')}`.trim();
+  if (merged !== appended) return { open: merged, publish: null };
+  return { open: incoming, publish: open };
+}
+
 export function captionSync(currentText, targetText) {
   const current = captionWords(currentText);
   const target = captionWords(targetText);

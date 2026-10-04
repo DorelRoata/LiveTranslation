@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.30 — Show the settled phrase once
+
+**Why:** The first wording was still reaching the screen, and the correction was added beside it.
+
+**What changed:** The first wording stays off the screen. A correction replaces it while the phrase is still open. The screen gets that phrase once, when Google moves on or the phrase settles.
+
 ## v1.3.29 — Replace a restated phrase instead of doubling it
 
 **Why:** Google sends a phrase and then a correction. The projector kept the first wording and added the correction after it, so the same words appeared twice.
