@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.32 — Drop a word that is already on the screen
+
+**Why:** A later correction still added words that were already in the line, so the same words showed twice.
+
+**What changed:** A content word already in the last 20 words is not added again. A new sentence that uses different words is still added.
+
 ## v1.3.31 — Keep the corrected phrase and the next sentence
 
 **Why:** v1.3.30 still let a shared word erase real translation, and the first wording could remain beside the correction.

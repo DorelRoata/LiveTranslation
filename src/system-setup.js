@@ -322,24 +322,43 @@ function revisedPhrase(current, incoming) {
   return incomingTokens.join(' ');
 }
 
+function isContentWord(word) {
+  return Boolean(word) && !CAPTION_STOP_WORDS.has(word);
+}
+
 function appendPhrase(current, phrase) {
   const line = typeof current === 'string' ? current.trim() : '';
-  const next = captionWords(phrase).join(' ');
-  if (!next) return line;
-  if (!line) return next;
-  const lineWords = captionWords(line);
-  const nextWords = captionWords(next);
-  const lineBare = lineWords.map(bareCaptionWord);
+  const nextWords = captionWords(phrase);
   const nextBare = nextWords.map(bareCaptionWord);
+  if (!nextWords.length) return line;
+  if (!line) return nextWords.join(' ');
+
+  const lineWords = captionWords(line);
+  const lineBare = lineWords.map(bareCaptionWord);
   if (lineBare.length >= nextBare.length) {
     const tail = lineBare.slice(-nextBare.length);
     if (nextBare.every((word, index) => word === tail[index])) return line;
   }
-  if (lineBare.length && nextBare.length && lineBare[lineBare.length - 1] === nextBare[0]
-    && CAPTION_STOP_WORDS.has(nextBare[0])) {
-    return [...lineWords, ...nextWords.slice(1)].join(' ');
+
+  const recent = lineBare.slice(-20);
+  const recentStems = new Set(recent.map(captionStem).filter(Boolean));
+  const kept = [];
+  const keptBare = [];
+  for (let index = 0; index < nextWords.length; index += 1) {
+    const bare = nextBare[index];
+    const stem = captionStem(bare);
+    const alreadyShown = isContentWord(bare) && (recent.includes(bare) || (stem && recentStems.has(stem)));
+    if (alreadyShown) continue;
+    kept.push(nextWords[index]);
+    keptBare.push(bare);
   }
-  return `${line} ${next}`;
+  if (!keptBare.some(isContentWord)) return line;
+
+  if (lineBare.length && keptBare.length && lineBare[lineBare.length - 1] === keptBare[0]
+    && CAPTION_STOP_WORDS.has(keptBare[0])) {
+    return [...lineWords, ...kept.slice(1)].join(' ');
+  }
+  return `${line} ${kept.join(' ')}`;
 }
 
 function replaceLastPhrase(line, lastPhrase, revised) {
@@ -383,7 +402,11 @@ export function settleCaptionStep(state = {}, incomingText) {
   }
 
   const line = appendPhrase(committed, open);
-  return { committed: line, lastPhrase: open, open: incoming, line, phrase: open, replaced: false };
+  if (line === committed) {
+    return { committed, lastPhrase, open: incoming, line: null, phrase: null, replaced: false };
+  }
+  const phrase = line.slice(committed.length).trim() || open;
+  return { committed: line, lastPhrase: phrase, open: incoming, line, phrase, replaced: false };
 }
 
 export function flushCaption(state = {}) {
@@ -398,8 +421,13 @@ export function flushCaption(state = {}) {
       replaced: false
     };
   }
-  const line = appendPhrase(state.committed || '', open);
-  return { committed: line, lastPhrase: open, open: '', line, phrase: open, replaced: false };
+  const committed = state.committed || '';
+  const line = appendPhrase(committed, open);
+  if (line === committed) {
+    return { committed, lastPhrase: state.lastPhrase || '', open: '', line: null, phrase: null, replaced: false };
+  }
+  const phrase = line.slice(committed.length).trim() || open;
+  return { committed: line, lastPhrase: phrase, open: '', line, phrase, replaced: false };
 }
 
 export function captionSync(currentText, targetText) {

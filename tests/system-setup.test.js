@@ -108,9 +108,9 @@ test('live phrases keep the corrected wording and do not drop the next sentence'
   if (state.line) lines.push(state.line);
 
   const screen = lines[lines.length - 1];
-  assert.match(screen, /very well\./);
+  assert.equal((screen.match(/\bwell\b/gi) || []).length, 1);
+  assert.equal((screen.match(/\bknow\b/gi) || []).length, 1);
   assert.match(screen, /we know who the/);
-  assert.doesNotMatch(screen, /We know who we know who/i);
   assert.match(screen, /adversar/i);
   assert.doesNotMatch(screen, /enemy is/);
   assert.match(screen, /and so on, right\?/);
