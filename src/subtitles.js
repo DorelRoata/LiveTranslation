@@ -1,11 +1,12 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
-import { captionSync, dedupeCaptionLine, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
+import { applyLaneUpdate, captionSync, dedupeCaptionLine, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
   SMOOTH_START_BUFFER_MS,
   easeTickDelay,
+  getAppendedWords,
   getLiveTickDelay,
   getPunctuationPause,
   getSmoothBatchSize,
@@ -602,7 +603,7 @@ function renderSubtitleLane(lane) {
     rebuildSubtitleDOM(lane);
   } else {
     const oldText = displayState[lane].lastText;
-    const newText = dedupeCaptionLine(displayText);
+    const newText = displayText;
     displayState[lane].lastText = newText;
     
     // If this is an initial sync (page refresh / first connect), populate the
@@ -622,32 +623,10 @@ function renderSubtitleLane(lane) {
       return;
     }
     
-    const paintedWords = [...displayState[lane].lines, displayState[lane].activeLine]
-      .filter(Boolean)
-      .join(' ')
-      .split(/\s+/)
-      .filter(Boolean);
-    const queuedWords = wordQueue[lane].map(item => item.word);
-    const pendingText = [...paintedWords, ...queuedWords].join(' ');
-    const sync = captionSync(pendingText, newText);
-    const pendingCount = paintedWords.length + queuedWords.length;
-    if (sync.keep === pendingCount && sync.words.length === 0) return;
-
-    if (sync.keep < paintedWords.length) {
-      const kept = paintedWords.slice(0, sync.keep);
-      wordQueue[lane] = [];
-      displayState[lane].lines = [];
-      displayState[lane].activeLine = '';
-      rebuildSubtitleDOM(lane, false);
-      for (const word of kept) appendWordToDisplayState(lane, word);
-      rebuildSubtitleDOM(lane);
-      if (sync.words.length > 0) enqueueWords(lane, sync.words);
-      return;
+    const extraWords = getAppendedWords(oldText, newText);
+    if (extraWords.length > 0) {
+      enqueueWords(lane, extraWords);
     }
-
-    wordQueue[lane] = [];
-    const extra = captionSync(paintedWords.join(' '), newText).words;
-    if (extra.length > 0) enqueueWords(lane, extra);
   }
 }
 
@@ -790,7 +769,10 @@ function connect() {
         renderSubtitleLane("lang1");
         renderSubtitleLane("lang2");
       } else if (data.type === 'update') {
-        renderInterimSubtitle(data.lane, data.text);
+        if (data.lane && typeof data.text === 'string') {
+          subtitleState[data.lane] = applyLaneUpdate(subtitleState[data.lane], data.text, Boolean(data.isFinal));
+          renderSubtitleLane(data.lane);
+        }
       } else if (data.type === 'audio') {
         playPCMChunk(data.audioData, data.channelId);
       } else if (data.type === 'clear') {

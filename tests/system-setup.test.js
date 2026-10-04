@@ -165,8 +165,8 @@ test('interim subtitle updates replace the working phrase instead of concatenati
   let lane = applyLaneUpdate(undefined, 'Hello', false);
   lane = applyLaneUpdate(lane, 'Hello there', false);
 
-  assert.equal(lane.accumulatedText, 'Hello there');
-  assert.equal(lane.interimText, '');
+  assert.equal(lane.accumulatedText, '');
+  assert.equal(lane.interimText, 'Hello there');
   assert.equal(laneDisplayText(lane), 'Hello there');
 });
 

@@ -84,7 +84,7 @@ export function resolveCaptionLine(currentText, incomingText) {
   const incomingWords = bareWords(incoming);
   const currentJoined = currentWords.join(' ');
   const incomingJoined = incomingWords.join(' ');
-  if (incomingJoined.startsWith(currentJoined) || incomingJoined.includes(currentJoined) || incomingWords.length >= currentWords.length) {
+  if (incomingJoined.startsWith(currentJoined) || incomingJoined.includes(currentJoined)) {
     return dedupeCaptionLine(incoming);
   }
   if (currentJoined.startsWith(incomingJoined)) return dedupeCaptionLine(current);
@@ -92,12 +92,17 @@ export function resolveCaptionLine(currentText, incomingText) {
   return dedupeCaptionLine(appendPhrase(current, incoming));
 }
 
-export function applyLaneUpdate(laneState = {}, text) {
+export function applyLaneUpdate(laneState = {}, text, isFinal = false) {
   const next = replaceLaneState(laneState);
-  next.accumulatedText = trimSubtitleHistory(resolveCaptionLine(laneDisplayText(next), text));
-  next.interimText = '';
+  if (isFinal) {
+    next.accumulatedText = appendFinalSubtitle(next.accumulatedText, text);
+    next.interimText = '';
+  } else {
+    next.interimText = typeof text === 'string' ? text : '';
+  }
   return next;
 }
+
 
 function captionWords(text) {
   return String(text || '')

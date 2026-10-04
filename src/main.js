@@ -8,7 +8,7 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyCaptionState, emptyLaneState, flushCaption, getLanguageName, outputCaptionUpdate, settleCaptionStep } from './system-setup.js';
+import { addedWordCount, applyLaneUpdate, buildSystemSetup, emptyLaneState, getLanguageName } from './system-setup.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency, transcriptionIsFinished } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
@@ -29,7 +29,7 @@ const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 const MAX_BUFFERED_AUDIO_BYTES = 2 * 1024 * 1024;
 const SETUP_TIMEOUT_MS = 15_000;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.33';
+const APP_VERSION = '1.3.34';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -1588,83 +1588,12 @@ function finalizeInputTranscript() {
 
 let currentStreamingBubble1 = null;
 let currentStreamingBubble2 = null;
-const captionState = { 1: emptyCaptionState(), 2: emptyCaptionState() };
-const captionSettleTimer = { 1: null, 2: null };
-const CAPTION_SETTLE_MS = 1200;
+let lastFinalizedOutput1 = '';
+let lastFinalizedOutput2 = '';
 
 function clearOpenCaptions() {
-  captionState[1] = emptyCaptionState();
-  captionState[2] = emptyCaptionState();
-  clearTimeout(captionSettleTimer[1]);
-  clearTimeout(captionSettleTimer[2]);
-  captionSettleTimer[1] = null;
-  captionSettleTimer[2] = null;
-}
-
-function showSettledCaption(channelId, step) {
-  if (!step?.line || !step.phrase) return;
-  const captionLatency = smoothTranslationLatency(smoothedLatencyMs, lastSpeechSentTimestamp, Date.now());
-  if (captionLatency !== smoothedLatencyMs) {
-    smoothedLatencyMs = captionLatency;
-    updateTelemetryLatency(smoothedLatencyMs);
-  }
-  const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
-  const phrase = applyBiblicalGlossary(step.phrase, targetLang || 'en');
-  const line = applyBiblicalGlossary(step.line, targetLang || 'en');
-  if (step.replaced) replaceLastOutputPhrase(channelId, phrase);
-  else updateOutputTranscript(phrase, channelId, true);
-  updateSubtitleLane(`lang${channelId}`, line, true);
-}
-
-function acceptOutputCaption(channelId, text, force = false) {
-  let state = captionState[channelId] || emptyCaptionState();
-  if (text) {
-    state = settleCaptionStep(state, text);
-    showSettledCaption(channelId, state);
-  }
-  if (force) {
-    const flushed = flushCaption(state);
-    showSettledCaption(channelId, flushed);
-    captionState[channelId] = {
-      committed: flushed.committed,
-      lastPhrase: flushed.lastPhrase,
-      open: ''
-    };
-    clearTimeout(captionSettleTimer[channelId]);
-    captionSettleTimer[channelId] = null;
-    return;
-  }
-  captionState[channelId] = {
-    committed: state.committed,
-    lastPhrase: state.lastPhrase,
-    open: state.open
-  };
-  clearTimeout(captionSettleTimer[channelId]);
-  captionSettleTimer[channelId] = setTimeout(() => {
-    captionSettleTimer[channelId] = null;
-    const flushed = flushCaption(captionState[channelId]);
-    captionState[channelId] = {
-      committed: flushed.committed,
-      lastPhrase: flushed.lastPhrase,
-      open: ''
-    };
-    showSettledCaption(channelId, flushed);
-  }, CAPTION_SETTLE_MS);
-}
-
-function replaceLastOutputPhrase(channelId, text) {
-  const list = channelId === 1 ? outputList1 : outputList2;
-  const last = list?.lastElementChild;
-  if (!last) {
-    updateOutputTranscript(text, channelId, true);
-    return;
-  }
-  last.textContent = text;
-  last.classList.remove('streaming-text');
-  const ts = document.createElement('span');
-  ts.className = 'timestamp';
-  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  last.appendChild(ts);
+  lastFinalizedOutput1 = '';
+  lastFinalizedOutput2 = '';
 }
 
 function updateOutputTranscript(text, channelId, isFinal = false) {
@@ -1672,6 +1601,11 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
   const list = channelId === 1 ? outputList1 : outputList2;
   let currentBubble = channelId === 1 ? currentStreamingBubble1 : currentStreamingBubble2;
   const scrollContainer = document.getElementById(`output-transcript-scroll-${channelId}`);
+  const cleanText = typeof text === 'string' ? text.trim() : '';
+  if (!cleanText) return;
+  
+  const lastFinalized = channelId === 1 ? lastFinalizedOutput1 : lastFinalizedOutput2;
+  if (isFinal && cleanText === lastFinalized) return;
   
   placeholder.style.display = "none";
   
@@ -1693,9 +1627,9 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
   }
   
   if (isFinal) {
-    currentBubble.textContent = text;
+    currentBubble.textContent = cleanText;
     currentBubble.classList.remove("streaming-text");
-    incrementWordCount(text);
+    incrementWordCount(cleanText);
     
     const ts = document.createElement("span");
     ts.className = "timestamp";
@@ -1703,11 +1637,13 @@ function updateOutputTranscript(text, channelId, isFinal = false) {
     currentBubble.appendChild(ts);
     if (channelId === 1) {
       currentStreamingBubble1 = null;
+      lastFinalizedOutput1 = cleanText;
     } else {
       currentStreamingBubble2 = null;
+      lastFinalizedOutput2 = cleanText;
     }
   } else {
-    currentBubble.textContent = text + "...";
+    currentBubble.textContent = cleanText + "...";
     currentBubble.classList.add("streaming-text");
   }
   
@@ -1720,8 +1656,15 @@ function finalizeOutputTranscript(channelId) {
     const text = currentBubble.textContent.endsWith("...") ? 
                  currentBubble.textContent.slice(0, -3) : 
                  currentBubble.textContent;
+    const cleanText = text.trim();
+    if (!cleanText) {
+      currentBubble.remove();
+      if (channelId === 1) currentStreamingBubble1 = null;
+      else currentStreamingBubble2 = null;
+      return;
+    }
     
-    currentBubble.textContent = text;
+    currentBubble.textContent = cleanText;
     currentBubble.classList.remove("streaming-text");
     
     const ts = document.createElement("span");
@@ -1731,13 +1674,16 @@ function finalizeOutputTranscript(channelId) {
     
     if (channelId === 1) {
       currentStreamingBubble1 = null;
+      lastFinalizedOutput1 = cleanText;
     } else {
       currentStreamingBubble2 = null;
+      lastFinalizedOutput2 = cleanText;
     }
     
-    updateSubtitleLane(`lang${channelId}`, text, true);
+    updateSubtitleLane(`lang${channelId}`, cleanText, true);
   }
 }
+
 
 // --- Subtitle Presentation Window ---
 function openSubtitleWindow() {
@@ -2086,6 +2032,8 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
         }
       }
       
+      const isTurnComplete = Boolean(data.serverContent?.turnComplete);
+
       // Handle Transcripts
       const inputTx = data.inputTranscription
         || data.serverContent?.inputTranscription
@@ -2095,21 +2043,33 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           noteHeardLanguage(inputTx.languageCode);
           maybeWarnTargetLanguageMatch(inputTx.languageCode);
         }
-        if (inputTx.text) addInputTranscript(inputTx.text, transcriptionIsFinished(inputTx));
+        if (inputTx.text) addInputTranscript(inputTx.text, Boolean(inputTx.final || isTurnComplete));
       }
       
       const outputTx = data.outputTranscription
-        || data.serverContent?.outputTranscription;
-      const caption = outputCaptionUpdate(outputTx, false);
-      if (caption) {
+        || data.serverContent?.outputTranscription
+        || data.serverContent?.interimOutputTranscription;
+      if (outputTx && outputTx.text) {
+        const rawText = outputTx.text;
+        if (lastSpeechSentTimestamp > 0) {
+          const sampleLatency = Date.now() - lastSpeechSentTimestamp;
+          if (sampleLatency > 80 && sampleLatency < 10000) {
+            smoothedLatencyMs = smoothedLatencyMs === 0 ? sampleLatency : Math.round(smoothedLatencyMs * 0.7 + sampleLatency * 0.3);
+            updateTelemetryLatency(smoothedLatencyMs);
+          }
+        }
         if (chunksReceived === 0) {
           logDebug(`Received translation text on channel ${channelId} before any audio chunks.`, "ws-recv");
         }
-        acceptOutputCaption(channelId, caption.text, caption.isFinal);
+        const targetLang = channelId === 1 ? sessionConfig?.targetLanguage1 : sessionConfig?.targetLanguage2;
+        const text = applyBiblicalGlossary(rawText, targetLang || 'en');
+        const isFinal = Boolean(outputTx.final || isTurnComplete);
+        updateOutputTranscript(text, channelId, isFinal);
+        updateSubtitleLane(`lang${channelId}`, text, isFinal);
       }
 
-      if (data.serverContent?.turnComplete) {
-        acceptOutputCaption(channelId, '', true);
+      if (isTurnComplete) {
+        logDebug(`WebSocket ${channelId} turnComplete received. Finalizing transcription.`, "ws-recv");
         finalizeOutputTranscript(channelId);
         if (channelId === 1) finalizeInputTranscript();
       }

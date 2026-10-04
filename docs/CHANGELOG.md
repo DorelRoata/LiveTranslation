@@ -2,6 +2,15 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.34 — Robust word-level subtitle streaming and turn finalization deduplication
+
+**Why:** Subtitles could duplicate and repeat words on screen due to screen history truncation mismatches, and race conditions between output transcription and turn completion created duplicate dashboard bubbles.
+
+**What changed:**
+- Replaced fragile character/prefix synchronization with normalized word-level diffing (`getAppendedWords`) supporting left-truncated scrollback and longest-common-prefix fallbacks.
+- Eliminated artificial settling delay and screen-clearing resets so captions stream continuously without re-enqueueing historical words.
+- Handled `outputTranscription` before `turnComplete` and tracked finalized output IDs to prevent trailing duplicate bubbles.
+
 ## v1.3.33 — Block a repeated word at the screen
 
 **Why:** A repeated word could still be added when the whole line was sent again.
