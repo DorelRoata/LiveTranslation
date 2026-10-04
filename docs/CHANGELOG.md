@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.27 — Show only the finished phrase
+
+**Why:** v1.3.26 kept the early guess and attached it to the finished phrase. The screens then showed the guess and the correction in the same line. A turn ending could also dump that guess onto the screen.
+
+**What changed:** A caption is shown only when Google marks the phrase finished. The text on screen is that finished phrase alone. The early guess is dropped.
+
 ## v1.3.26 — Captions wait for Google's finished wording
 
 **Why:** The early translation was a guess. It reached the dashboard and the house screens while Google was still revising the phrase, so a wrong opening could stay on screen next to the correction.

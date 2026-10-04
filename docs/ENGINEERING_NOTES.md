@@ -17,7 +17,7 @@ This document records architectural decisions, critical constraints, and failed 
 ### ❌ Failed: Default Activity Interruption (Barge-In)
 * **What happened:** The Gemini Multimodal Live API defaults to conversational barge-in: when new user audio arrives, Gemini interrupts and truncates its own audio output.
 * **Failure mode:** In a sermon, the preacher speaks continuously without pausing. As soon as the preacher began the next sentence, Gemini instantly killed the playback of the previous translated sentence. Translation sounded choppy or stopped entirely.
-* **Lesson & Rule:** Set `activityHandling: 'NO_INTERRUPTION'` in `realtimeInputConfig`. Keep automatic detection on, with high start sensitivity, `prefixPaddingMs: 300` so the first syllable is not clipped, and `silenceDurationMs: 300` so a phrase is released without waiting through a breath. A finished transcription (`finished` or `final`) is the only caption text shown. Early output hypotheses stay off the dashboard, projector, and OBS until Google closes the phrase. The on-screen lag number holds once the preacher has been quiet for 1.5 seconds.
+* **Lesson & Rule:** Set `activityHandling: 'NO_INTERRUPTION'` in `realtimeInputConfig`. Keep automatic detection on, with high start sensitivity, `prefixPaddingMs: 300` so the first syllable is not clipped, and `silenceDurationMs: 300` so a phrase is released without waiting through a breath. A finished transcription (`finished` or `final`) is the only caption text shown. The early guess is discarded. It is not shown, and it is not joined onto the finished phrase. The on-screen lag number holds once the preacher has been quiet for 1.5 seconds.
 
 ---
 

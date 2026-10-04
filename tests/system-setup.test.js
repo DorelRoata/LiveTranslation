@@ -9,36 +9,18 @@ import {
   emptyLaneState,
   getLanguageName,
   laneDisplayText,
+  finishedCaptionText,
   mergeIncomingTranscript,
-  settleOutputCaption,
   wordsToAppend
 } from '../src/system-setup.js';
 
-test('early translation stays private until Google finishes the phrase', () => {
-  let pending = '';
-  let settled = settleOutputCaption(pending, { text: 'the one' }, false);
-  pending = settled.pending;
-  assert.equal(settled.publish, null);
-  assert.equal(pending, 'the one');
-
-  settled = settleOutputCaption(pending, { text: 'who calls' }, false);
-  pending = settled.pending;
-  assert.equal(settled.publish, null);
-  assert.equal(pending, 'the one who calls');
-
-  settled = settleOutputCaption(pending, { text: 'us', finished: true }, false);
-  assert.equal(settled.pending, '');
-  assert.equal(settled.publish, 'the one who calls us');
-
-  settled = settleOutputCaption('Hello', { text: 'Hello there', finished: true }, false);
-  assert.equal(settled.publish, 'Hello there');
-
-  settled = settleOutputCaption('', { text: 'you can\'t', final: true }, false);
-  assert.equal(settled.publish, 'you can\'t');
-
-  settled = settleOutputCaption('don\'t', { text: 'still guessing' }, true);
-  assert.equal(settled.publish, null);
-  assert.equal(settled.pending, 'don\'t');
+test('only the finished phrase is shown, without the early guess', () => {
+  assert.equal(finishedCaptionText({ text: 'the one' }), '');
+  assert.equal(finishedCaptionText({ text: 'who calls' }), '');
+  assert.equal(finishedCaptionText({ text: 'you can\'t serve two masters', finished: true }), 'you can\'t serve two masters');
+  assert.equal(finishedCaptionText({ text: 'you can\'t', final: true }), 'you can\'t');
+  assert.equal(finishedCaptionText({ text: 'still guessing' }, true), '');
+  assert.equal(finishedCaptionText({ finished: true }), '');
 });
 
 test('caption fragments append new words and drop a tail that is already on screen', () => {
