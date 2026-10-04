@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
-import { captionSync, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
+import { captionSync, dedupeCaptionLine, emptyLaneState, getLanguageName, laneDisplayText } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import {
@@ -602,7 +602,7 @@ function renderSubtitleLane(lane) {
     rebuildSubtitleDOM(lane);
   } else {
     const oldText = displayState[lane].lastText;
-    const newText = displayText;
+    const newText = dedupeCaptionLine(displayText);
     displayState[lane].lastText = newText;
     
     // If this is an initial sync (page refresh / first connect), populate the
@@ -646,7 +646,7 @@ function renderSubtitleLane(lane) {
     }
 
     wordQueue[lane] = [];
-    const extra = newText.split(/\s+/).filter(Boolean).slice(paintedWords.length);
+    const extra = captionSync(paintedWords.join(' '), newText).words;
     if (extra.length > 0) enqueueWords(lane, extra);
   }
 }

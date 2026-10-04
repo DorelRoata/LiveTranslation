@@ -9,7 +9,9 @@ import {
   emptyLaneState,
   getLanguageName,
   captionSync,
+  dedupeCaptionLine,
   laneDisplayText,
+  resolveCaptionLine,
   emptyCaptionState,
   flushCaption,
   mergeCaptionLine,
@@ -77,6 +79,19 @@ test('disabling language 2 clears dual layout for every client', () => {
   assert.equal(setup.targetLanguage2, 'none');
   assert.equal(setup.targetLanguageName2, '');
   assert.equal(setup.obsLanguage, 'lang2');
+});
+
+test('a word already on the line cannot be painted again', () => {
+  assert.equal(dedupeCaptionLine('very well we know who We know very well'), 'very well we know who');
+  assert.equal(dedupeCaptionLine('the the adversaries'), 'the adversaries');
+  assert.equal(dedupeCaptionLine('of the enemies of ours'), 'of the enemies of ours');
+  const screen = resolveCaptionLine(
+    'very well we know who the adversaries',
+    'very well we know who the adversaries We know very well'
+  );
+  assert.equal((screen.match(/\bknow\b/gi) || []).length, 1);
+  assert.equal((screen.match(/\bwell\b/gi) || []).length, 1);
+  assert.equal((screen.match(/\bvery\b/gi) || []).length, 1);
 });
 
 test('live phrases keep the corrected wording and do not drop the next sentence', () => {

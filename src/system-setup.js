@@ -84,21 +84,12 @@ export function resolveCaptionLine(currentText, incomingText) {
   const incomingWords = bareWords(incoming);
   const currentJoined = currentWords.join(' ');
   const incomingJoined = incomingWords.join(' ');
-  if (incomingJoined.startsWith(currentJoined) || incomingJoined.includes(currentJoined)) return incoming;
-  if (currentJoined.startsWith(incomingJoined)) return current;
-
-  let keep = 0;
-  const limit = Math.min(currentWords.length, incomingWords.length);
-  while (keep < limit && currentWords[keep] === incomingWords[keep]) keep += 1;
-  if (keep >= 3 && incomingWords.length >= currentWords.length - 4) return incoming;
-
-  if (currentWords.length >= incomingWords.length) {
-    const tail = currentWords.slice(-incomingWords.length);
-    if (incomingWords.every((word, index) => word === tail[index])) return current;
+  if (incomingJoined.startsWith(currentJoined) || incomingJoined.includes(currentJoined) || incomingWords.length >= currentWords.length) {
+    return dedupeCaptionLine(incoming);
   }
+  if (currentJoined.startsWith(incomingJoined)) return dedupeCaptionLine(current);
 
-  const phrase = captionWords(incoming).join(' ');
-  return `${current} ${phrase}`;
+  return dedupeCaptionLine(appendPhrase(current, incoming));
 }
 
 export function applyLaneUpdate(laneState = {}, text) {
@@ -118,6 +109,41 @@ function captionWords(text) {
 
 function bareCaptionWord(word) {
   return String(word || '').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').toLowerCase();
+}
+
+// The last gate. A content word already in the last 20 words cannot be painted again.
+function wordRepeats(bare, recent) {
+  if (!bare) return false;
+  const window = recent.slice(-20);
+  if (window.length && window[window.length - 1] === bare) return true;
+  if (!isContentWord(bare)) return false;
+  const stem = captionStem(bare);
+  return window.includes(bare) || (stem && window.some(other => captionStem(other) === stem));
+}
+
+function restatesRecentWords(words, start, recent) {
+  let sawContent = false;
+  for (let index = start; index < words.length; index += 1) {
+    const bare = bareCaptionWord(words[index]);
+    if (!isContentWord(bare)) continue;
+    sawContent = true;
+    if (!wordRepeats(bare, recent)) return false;
+  }
+  return sawContent;
+}
+
+export function dedupeCaptionLine(text) {
+  const words = captionWords(text);
+  const kept = [];
+  const recent = [];
+  for (let index = 0; index < words.length; index += 1) {
+    const bare = bareCaptionWord(words[index]);
+    if (!bare) continue;
+    if (wordRepeats(bare, recent) || restatesRecentWords(words, index, recent)) continue;
+    kept.push(words[index]);
+    recent.push(bare);
+  }
+  return kept.join(' ');
 }
 
 // Incoming captions are short fragments. Append only words that are not already
@@ -159,7 +185,7 @@ export function wordsToAppend(displayedText, incomingText) {
 
 const CAPTION_STOP_WORDS = new Set([
   'a', 'an', 'and', 'the', 'of', 'or', 'to', 'in', 'on', 'is', 'it', 'its',
-  'that', 'this', 'we', 'who', 'our', 'ours', 'for', 'with'
+  'that', 'this', 'we', 'for', 'with'
 ]);
 
 function sameCaptionWord(left, right) {
@@ -330,8 +356,8 @@ function appendPhrase(current, phrase) {
   const line = typeof current === 'string' ? current.trim() : '';
   const nextWords = captionWords(phrase);
   const nextBare = nextWords.map(bareCaptionWord);
-  if (!nextWords.length) return line;
-  if (!line) return nextWords.join(' ');
+  if (!nextWords.length) return dedupeCaptionLine(line);
+  if (!line) return dedupeCaptionLine(nextWords.join(' '));
 
   const lineWords = captionWords(line);
   const lineBare = lineWords.map(bareCaptionWord);
@@ -356,9 +382,9 @@ function appendPhrase(current, phrase) {
 
   if (lineBare.length && keptBare.length && lineBare[lineBare.length - 1] === keptBare[0]
     && CAPTION_STOP_WORDS.has(keptBare[0])) {
-    return [...lineWords, ...kept.slice(1)].join(' ');
+    return dedupeCaptionLine([...lineWords, ...kept.slice(1)].join(' '));
   }
-  return `${line} ${kept.join(' ')}`;
+  return dedupeCaptionLine(`${line} ${kept.join(' ')}`);
 }
 
 function replaceLastPhrase(line, lastPhrase, revised) {

@@ -2,6 +2,12 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.33 — Block a repeated word at the screen
+
+**Why:** A repeated word could still be added when the whole line was sent again.
+
+**What changed:** The line shown on the projector is checked before it is painted. A content word already in the last 20 words is removed. The same word cannot be added beside itself.
+
 ## v1.3.32 — Drop a word that is already on the screen
 
 **Why:** A later correction still added words that were already in the line, so the same words showed twice.
