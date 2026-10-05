@@ -2,6 +2,17 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.3.36 — Accuracy audit: safe glossary, no silent audio loss
+
+**Why:** A review of the whole translation path on real sermon audio. Google's translation was accurate, but the app's glossary could replace correct English with wrong words ("we, the Romanians" became "we, Romans"; "stuck in a rut" became "Ruth"), and audio could be lost in three places without anyone being told.
+
+**What changed:**
+- The glossary only changes a Bible reference it is sure about, such as an untranslated "Romani 8" → "Romans 8". It never changes ordinary English, and its Romanian entries with ă, â, î, ș, ț now work. On a real 15-minute sermon it changes nothing, because Google already gets these right.
+- The dashboard checks that audio is reaching Google at full speed. If it falls behind, the operator sees a warning in the status bar and the Audio light.
+- Copy Status now reports how much audio, if any, did not reach Google, and why.
+- The server logs any audio it could not pass to Google instead of dropping it silently.
+- Measured and left unchanged: browser audio cleanup on vs off, and Spoken language auto-detect vs Romanian, made no difference to accuracy. The Mac audio page keeps full speed as a background tab in Chrome.
+
 ## v1.3.35 — Captions show exactly what Google sends; redesigned dashboard
 
 **Why:** A recording of 15 minutes of the 2026-10-04 sermon showed that Google sends each translated piece once and never corrects it, and never sends a "finished" signal. The duplicate and correction rules added in v1.3.29–v1.3.34 were deleting real words: replayed against that sermon, v1.3.33 removed 20% of the translation and v1.3.34 dropped 39 words. Screens that refreshed or joined late showed only the last few words. Every 9 minutes Google rotates the connection, and the app dropped speech and lost the sermon's context each time.

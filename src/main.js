@@ -13,6 +13,7 @@ import { appendLaneText, emptyLaneState, endsSentence, pieceToAppend } from './c
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
 import {
+  AudioDeliveryMonitor,
   decodePcm16Base64,
   downsampleToRate,
   floatToPcm16,
@@ -36,7 +37,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.35';
+const APP_VERSION = '1.3.36';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -683,9 +684,10 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
     secondaryReady: socket2Ready
   })) {
     preRollBuffer.push(float32);
-    if (isRunning && translationSocketsReady() && chunksSent > 0 && chunksSent % 50 === 0) {
-      logDebug('Live audio was not sent because Gemini is backed up. Audio is not being queued.', 'warning');
-      setHealthItem('gemini1', 'warning', 'Catching up — not queuing audio');
+    if (isRunning && translationSocketsReady() && !audioLoss.backlogWarned) {
+      audioLoss.backlogWarned = true;
+      logDebug('Gemini is backed up. Live audio is being held briefly; anything older than 1.5 s is lost and counted in Copy Status.', 'warning');
+      setHealthItem('gemini1', 'warning', 'Catching up — holding audio');
     }
     return;
   }
@@ -693,24 +695,97 @@ function sendGeminiPcmFrames(float32, logLabel = 'audio') {
   const geminiBackedUp = socket1.bufferedAmount > 64 * 1024 ||
     (dual && socket2.bufferedAmount > 64 * 1024);
 
+  let sent = 0;
   for (const frame of frames) {
     const amplitude = peakAmplitude(frame);
-    if (geminiBackedUp && amplitude < QUIET_FRAME_PEAK) continue;
+    if (geminiBackedUp && amplitude < QUIET_FRAME_PEAK) {
+      audioLoss.quietFramesSkipped++;
+      continue;
+    }
     if (amplitude > 0.04) {
       lastSpeechSentTimestamp = Date.now();
     }
     const msgStr = JSON.stringify(buildGeminiAudioMessage(pcm16ToBase64(floatToPcm16(frame))));
     socket1.send(msgStr);
     if (dual) socket2.send(msgStr);
+    sent++;
     chunksSent++;
     updateChunkStats();
     if (chunksSent === 1 || chunksSent % 25 === 0) {
       logDebug(`Sent ${chunksSent} ${logLabel} chunks to Google.`, 'ws-sent');
     }
   }
+  deliveryMonitor.record(sent, Date.now());
+  audioLoss.backlogWarned = false;
   // Pre-roll only bridges the outage that is ending now. Audio held during an
   // earlier backlog must never reach Google minutes later, out of context.
+  audioLoss.staleSamples += preRollBuffer.totalSamples;
   preRollBuffer.clear();
+}
+
+// --- Audio delivery check ---
+// Live audio reaches Google at 10 frames per second. Anything less, while
+// translation is running and the source is live, means speech is being lost
+// before Google hears it. The operator is told, and Copy Status shows totals.
+const audioLoss = { quietFramesSkipped: 0, staleSamples: 0, backlogWarned: false };
+const deliveryMonitor = new AudioDeliveryMonitor();
+let deliveryWatchSince = 0;
+let deliveryShortfall = false;
+let lastDeliveryRate = null;
+
+function resetAudioLossCounters() {
+  audioLoss.quietFramesSkipped = 0;
+  audioLoss.staleSamples = 0;
+  audioLoss.backlogWarned = false;
+  preRollBuffer.droppedSamples = 0;
+}
+
+function audioShouldBeFlowing() {
+  if (!isRunning || !translationSocketsReady() || isMicMuted || isSongSuppressed) return false;
+  if (audioSourceSelect.value === 'network') return remoteAudioStreaming;
+  return Boolean(scriptProcessor);
+}
+
+function checkAudioDelivery() {
+  const now = Date.now();
+  if (!audioShouldBeFlowing()) {
+    deliveryWatchSince = 0;
+    deliveryMonitor.reset();
+    lastDeliveryRate = null;
+    return;
+  }
+  if (!deliveryWatchSince) {
+    deliveryWatchSince = now;
+    deliveryMonitor.reset();
+    return;
+  }
+  const rate = deliveryMonitor.rate(now, deliveryWatchSince);
+  if (rate === null) return;
+  lastDeliveryRate = rate;
+  const short = deliveryMonitor.isShort(rate);
+  if (short && !deliveryShortfall) {
+    deliveryShortfall = true;
+    const message = `Only ${rate.toFixed(1)} of 10 audio frames per second are reaching Google. Speech is being lost — check the audio source and that its window is open and awake.`;
+    setHealthItem('audio', 'warning', `${rate.toFixed(1)} of 10 frames/s`);
+    setDiagnostic(message, 'warning');
+    logDebug(message, 'warning');
+  } else if (!short && deliveryShortfall) {
+    deliveryShortfall = false;
+    setHealthItem('audio', 'good', audioSourceSelect.value === 'network' ? networkAudioHealthDetail(true) : 'Audio reaching Google');
+    logDebug(`Audio is reaching Google at full rate again (${rate.toFixed(1)} frames/s).`, 'info');
+  }
+}
+
+setInterval(checkAudioDelivery, 2000);
+
+function audioLossSummary() {
+  const seconds = samples => (samples / TARGET_CAPTURE_RATE).toFixed(1);
+  const rate = lastDeliveryRate === null ? 'measuring' : `${lastDeliveryRate.toFixed(1)} frames/s (expected 10)`;
+  return [
+    `Audio reaching Google: ${rate}`,
+    `Audio not sent: ${(audioLoss.quietFramesSkipped / 10).toFixed(1)} s of quiet skipped during backlog, ` +
+      `${seconds(preRollBuffer.droppedSamples)} s lost in long outages, ${seconds(audioLoss.staleSamples)} s discarded as stale`
+  ];
 }
 
 function isSocketOpen(ws, requireSetup = false, channelId = 0) {
@@ -809,6 +884,13 @@ async function copyDiagnostics() {
     .filter(([name]) => name !== 'gemini2' || !healthItems.gemini2.hidden)
     .map(([name, value]) => `${labels[name]}: ${value.state} - ${value.detail}`);
   const recentLogs = Array.from(debugLogList.children).slice(-8).map(line => line.textContent);
+  let proxyLine = 'Host audio drops: unavailable';
+  try {
+    const activity = await (await fetch('/api/activity', { cache: 'no-store' })).json();
+    proxyLine = `Host audio drops: ${activity.audioDroppedByHost ?? 0} frames (Google connection backed up)`;
+  } catch (error) {
+    // Laptop operators may not reach the activity API; the rest still applies.
+  }
   const report = [
     `Live Translate v${APP_VERSION} diagnostics`,
     `Time: ${new Date().toISOString()}`,
@@ -820,6 +902,8 @@ async function copyDiagnostics() {
     `OBS language: ${obsLanguageSelect.selectedOptions[0]?.textContent || 'Both Languages'}`,
     `Automatic song filter: ${ignoreSongsToggle.checked ? songFilterStatus.textContent : 'Off'}`,
     ...statusLines,
+    ...audioLossSummary(),
+    proxyLine,
     `Operator message: ${diagnosticMessage.textContent}`,
     '',
     'Recent status log:',
@@ -1884,7 +1968,8 @@ function markSocketReady(channelId, generation) {
   reconnectAttempt = 0;
   updateConnectionStatus("connected", "Connected");
   logDebug("All Gemini connections completed setup. Ready.", "info");
-  if (!sessionTimerInterval) startSessionTimer();
+  const sessionStarting = !sessionTimerInterval;
+  if (sessionStarting) startSessionTimer();
   startBtn.disabled = false;
   startBtn.classList.add("recording");
   startBtn.querySelector(".btn-text").textContent = "Stop Interpreter";
@@ -1897,6 +1982,9 @@ function markSocketReady(channelId, generation) {
     logDebug(`Flushing ${preRoll.length} samples of pre-roll audio into reconnected session.`, 'info');
     sendGeminiPcmFrames(preRoll, 'reconnect pre-roll');
   }
+  // Audio captured while the first connection was being set up is not speech
+  // that was lost; count losses from the moment translation is live.
+  if (sessionStarting) resetAudioLossCounters();
 }
 
 function scheduleReconnect(reason, generation = sessionGeneration) {

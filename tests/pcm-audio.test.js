@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  AudioDeliveryMonitor,
   decodePcm16Base64,
   downsampleToRate,
   floatToPcm16,
@@ -111,7 +112,29 @@ test('PreRollAudioBuffer retains up to target duration and flushes on demand', (
   preRoll.push(large1);
   preRoll.push(large2); // 120 samples total, exceeds 100 -> large1 is shifted out
   assert.equal(preRoll.totalSamples, 60);
+  assert.equal(preRoll.droppedSamples, 60, 'audio pushed out of the buffer is counted, not silently lost');
   const flushed2 = preRoll.flush();
   assert.equal(flushed2.length, 60);
   assert.equal(flushed2[0], 2);
+});
+
+test('audio delivery check flags speech that is not reaching Google at real-time speed', () => {
+  const monitor = new AudioDeliveryMonitor({ windowMs: 10_000 });
+  const start = 1_000_000;
+  // Nothing is judged until a full window has been watched.
+  monitor.record(5, start + 500);
+  assert.equal(monitor.rate(start + 5_000, start), null);
+
+  // Ten 100 ms frames per second is real time.
+  monitor.reset();
+  for (let second = 0; second < 12; second++) monitor.record(10, start + second * 1000);
+  const fullRate = monitor.rate(start + 11_000, start);
+  assert.ok(fullRate >= 9.9 && fullRate <= 10.1);
+  assert.equal(monitor.isShort(fullRate), false);
+
+  // A source delivering 8 frames per second is losing 20% of the speech.
+  monitor.reset();
+  for (let second = 0; second < 12; second++) monitor.record(8, start + second * 1000);
+  const slowRate = monitor.rate(start + 11_000, start);
+  assert.equal(monitor.isShort(slowRate), true);
 });

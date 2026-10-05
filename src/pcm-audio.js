@@ -134,6 +134,8 @@ export class PreRollAudioBuffer {
     this.maxSamples = Math.round(maxDurationSec * sampleRate);
     this.buffer = [];
     this.totalSamples = 0;
+    // Audio that had to be thrown away because the outage outlasted the buffer.
+    this.droppedSamples = 0;
   }
 
   push(samples) {
@@ -144,6 +146,7 @@ export class PreRollAudioBuffer {
 
     while (this.buffer.length > 1 && this.totalSamples > this.maxSamples) {
       this.totalSamples -= this.buffer[0].length;
+      this.droppedSamples += this.buffer[0].length;
       this.buffer.shift();
     }
   }
@@ -163,5 +166,42 @@ export class PreRollAudioBuffer {
   clear() {
     this.buffer = [];
     this.totalSamples = 0;
+  }
+}
+
+// Watches how fast audio reaches Google. Live audio is 10 frames (100 ms each)
+// per second; a sustained lower rate means speech is being lost before Google
+// hears it (a stalled source, a throttled browser window, or a backlog).
+export class AudioDeliveryMonitor {
+  constructor({ windowMs = 10_000, expectedFps = 1000 / 100, minRatio = 0.9 } = {}) {
+    this.windowMs = windowMs;
+    this.expectedFps = expectedFps;
+    this.minRatio = minRatio;
+    this.events = [];
+  }
+
+  reset() {
+    this.events = [];
+  }
+
+  record(frames, now) {
+    if (frames > 0) this.events.push({ now, frames });
+    this.#trim(now);
+  }
+
+  // Frames per second over the window, or null until a full window has passed.
+  rate(now, since) {
+    this.#trim(now);
+    if (!since || now - since < this.windowMs) return null;
+    const frames = this.events.reduce((sum, event) => sum + event.frames, 0);
+    return frames / (this.windowMs / 1000);
+  }
+
+  isShort(rate) {
+    return rate !== null && rate < this.expectedFps * this.minRatio;
+  }
+
+  #trim(now) {
+    while (this.events.length && now - this.events[0].now >= this.windowMs) this.events.shift();
   }
 }

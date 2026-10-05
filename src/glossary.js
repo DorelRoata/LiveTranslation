@@ -112,53 +112,58 @@ export const THEOLOGICAL_TERMS_EN = Object.freeze({
   'evanghelia': 'the Gospel'
 });
 
-export const ENGLISH_CORRECTIONS = Object.freeze({
-  'the romanians': 'Romans',
-  'book of facts': 'Book of Acts',
-  'book of deeds': 'Book of Acts'
-});
+// English phrases that are only wrong inside a Bible reference. "The Romanians"
+// is ordinary English in a Romanian church, so it changes only as a book name.
+export const ENGLISH_CORRECTIONS = Object.freeze([
+  { pattern: /(?<![\p{L}\p{N}])book of the romanians(?![\p{L}\p{N}])/giu, replacement: 'book of Romans' },
+  { pattern: /(?<![\p{L}\p{N}])the romanians(?=,?\s+(?:chapter\s+)?\d)/giu, replacement: 'Romans' },
+  { pattern: /(?<![\p{L}\p{N}])book of (?:facts|deeds)(?![\p{L}\p{N}])/giu, replacement: 'Book of Acts' }
+]);
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Whole words only. \b treats Romanian letters (ă, â, î, ș, ț) as word
+// boundaries, so these use Unicode letter classes instead.
+function wholeWord(term, lookahead = '') {
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])${lookahead}`, 'giu');
+}
+
+function keepLeadingCapital(match, replacement) {
+  return match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase()
+    ? replacement[0].toUpperCase() + replacement.slice(1)
+    : replacement;
+}
+
+// Google already translates book names and church terms correctly; on a
+// recorded 15-minute sermon this changed nothing. It is a safety net for a
+// Romanian word left untranslated, and it must never alter ordinary English.
 export function applyBiblicalGlossary(text, targetLanguage = 'en', customGlossary = {}) {
   if (!text || typeof text !== 'string') return text || '';
   let result = text;
 
   const lang = String(targetLanguage || '').toLowerCase();
   if (lang.startsWith('en')) {
-    for (const [wrong, correct] of Object.entries(ENGLISH_CORRECTIONS)) {
-      const regex = new RegExp(`\\b${escapeRegExp(wrong)}\\b`, 'gi');
-      result = result.replace(regex, (match) => {
-        if (match[0] === match[0].toUpperCase()) {
-          return correct[0].toUpperCase() + correct.slice(1);
-        }
-        return correct;
-      });
+    for (const { pattern, replacement } of ENGLISH_CORRECTIONS) {
+      result = result.replace(pattern, match => keepLeadingCapital(match, replacement));
     }
 
     for (const [roTerm, enTerm] of Object.entries(THEOLOGICAL_TERMS_EN)) {
-      const regex = new RegExp(`\\b${escapeRegExp(roTerm)}\\b`, 'gi');
-      result = result.replace(regex, (match) => {
-        if (match[0] === match[0].toUpperCase()) {
-          return enTerm[0].toUpperCase() + enTerm.slice(1);
-        }
-        return enTerm;
-      });
+      result = result.replace(wholeWord(roTerm), match => keepLeadingCapital(match, enTerm));
     }
 
+    // Book names only as references ("Romani 8", "Matei capitolul 5"). Several
+    // are also English words (rut, tit, mica), so a bare word never changes.
     for (const [roBook, enBook] of Object.entries(BIBLICAL_BOOKS_EN)) {
-      const regex = new RegExp(`\\b${escapeRegExp(roBook)}\\b(?=\\s+\\d+|\\s+capitolul|\\s+versetul|$)`, 'gi');
-      result = result.replace(regex, enBook);
+      result = result.replace(wholeWord(roBook, '(?=\\s+(?:\\d|capitolul))'), enBook);
     }
   }
 
   if (customGlossary && typeof customGlossary === 'object') {
     for (const [sourceWord, targetWord] of Object.entries(customGlossary)) {
       if (!sourceWord || !targetWord) continue;
-      const regex = new RegExp(`\\b${escapeRegExp(sourceWord.trim())}\\b`, 'gi');
-      result = result.replace(regex, targetWord.trim());
+      result = result.replace(wholeWord(sourceWord.trim()), targetWord.trim());
     }
   }
 

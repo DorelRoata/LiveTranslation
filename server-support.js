@@ -14,6 +14,23 @@ export const MAX_BUFFERED_BYTES = 2 * 1024 * 1024;
 const GEMINI_LIVE_WS_PATH = '/gemini-live-ws';
 let geminiProxyClientCount = 0;
 let activeRelay = null;
+// Audio frames the host could not pass to Google because that connection was
+// backed up. Shown in Copy Status and /api/activity; never dropped silently.
+let audioDroppedByHost = 0;
+let lastDropWarningAt = 0;
+
+function noteDroppedAudio(reason) {
+  audioDroppedByHost += 1;
+  const now = Date.now();
+  if (now - lastDropWarningAt > 10_000) {
+    lastDropWarningAt = now;
+    console.warn(`Gemini proxy dropped live audio (${reason}); ${audioDroppedByHost} frame(s) so far this run.`);
+  }
+}
+
+export function getAudioDroppedByHost() {
+  return audioDroppedByHost;
+}
 const GEMINI_UPSTREAM_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const execFileAsync = promisify(execFile);
 
@@ -258,6 +275,7 @@ export async function getActivityInfo(relay = activeRelay) {
     commit: (instance.commit || '').slice(0, 7),
     translationActive: Boolean(instance.translationActive),
     geminiConnections: geminiProxyClientCount,
+    audioDroppedByHost,
     apiKeyConfigured: Boolean(apiKey),
     network: {
       ip: getNetworkIP(),
@@ -596,14 +614,16 @@ function toTextPayload(data) {
   return String(data);
 }
 
+// Returns false when the frame could not be sent.
 function sendOrDrop(socket, data, isBinary) {
-  if (!socket || socket.readyState !== WebSocket.OPEN) return;
-  if (socket.bufferedAmount > MAX_BUFFERED_BYTES) return;
+  if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+  if (socket.bufferedAmount > MAX_BUFFERED_BYTES) return false;
   if (isBinary) {
     socket.send(data, { binary: true });
-    return;
+    return true;
   }
   socket.send(toTextPayload(data), { binary: false });
+  return true;
 }
 
 function sendAlways(socket, data, isBinary) {
@@ -660,7 +680,7 @@ export function attachGeminiProxy(httpServer) {
       const text = toTextPayload(data);
       const audio = text.includes('"audio"') || text.includes('mediaChunks');
       if (audio) {
-        sendOrDrop(session.upstream, text, false);
+        if (!sendOrDrop(session.upstream, text, false)) noteDroppedAudio('Google connection backed up');
         return;
       }
       sendAlways(session.upstream, text, false);
@@ -672,6 +692,7 @@ export function attachGeminiProxy(httpServer) {
         return;
       }
       if (pending.length < 32) pending.push([data, isBinary]);
+      else noteDroppedAudio('Google connection still opening');
     });
     client.on('close', () => safeCloseSocket(session.upstream, 1000, ''));
     client.on('error', () => safeCloseSocket(session.upstream, 1011, 'Client error'));

@@ -92,7 +92,31 @@ This document records architectural decisions, critical constraints, and failed 
 
 ---
 
-## 6. Model Selection
+## 6. Accuracy Measurements (Oct 2026)
+
+All on real sermon audio from the 2026-10-04 livestream, through the real dashboard or the app's exact Gemini setup.
+
+### ❌ Failed: A Glossary That Matched Bare Words
+* **What happened:** `applyBiblicalGlossary` replaced "the Romanians" with "Romans" anywhere, and Romanian book names at the end of any piece (`$` lookahead).
+* **Failure mode:** Ordinary English became wrong: "we, the Romanians, came…" → "we, Romans, came…", "stuck in a rut" → "Ruth", "tit" → "Titus", "mica" → "Micah". Its `\b` boundaries never matched words starting or ending in ă, â, î, ș, ț. On 15 minutes of real Google output it changed nothing, because Google already translates book names and church terms correctly.
+* **Rule:** Replacements only in an unambiguous context: a book name followed by a chapter number, "the Romanians" only inside a Bible reference. Use Unicode letter boundaries (`(?<![\p{L}\p{N}])`). `tests/glossary.test.js` requires zero changes to the recorded sermon and to ordinary sentences.
+
+### ✅ Verified: Settings That Do Not Need Changing
+* **Browser audio processing** (echo cancellation, noise suppression, auto-gain): same 3 minutes with it on vs off — 467 vs 469 Romanian words heard, 473 vs 458 English words, both within run-to-run variation. Left on; echo cancellation also protects a room microphone if "Play on this Mac" is used.
+* **Spoken language** auto-detect vs Romanian hint: both heard Romanian on every piece (169/169 and 171/171) with equivalent translations.
+* **Mac-audio page as a background tab** (how the launcher opens it): Chrome still delivered 10.00 of 10 audio frames per second. Safari was not measured; the delivery check below catches it if it falls behind.
+
+### ✅ Rule: No Audio Is Lost Silently
+* The dashboard checks that audio reaches Google at real-time speed (10 frames of 100 ms per second, measured over 10 s). Below 9 frames per second it warns the operator and logs it.
+* Every place audio can be lost is counted and shown in Copy Status: quiet frames skipped while Google is backed up, reconnect-buffer overflow beyond 1.5 s, stale audio discarded after a backlog, and frames the host proxy could not pass to Google (`/api/activity` `audioDroppedByHost`, also logged by the server).
+
+### Known Google Wording Variations (left as sent)
+* Verse references are always split across pieces ("Galatians 6:" + " 14"), so the joined text shows "6: 14". It reads correctly; fixing it would mean editing words already on screen.
+* Romanian "2 cu 16" (chapter 2, verse 16) is sometimes translated literally as "2 with 16" (2 of 13 references across three runs).
+
+---
+
+## 7. Model Selection
 
 * **Current Model:** `models/gemini-3.5-live-translate-preview`.
 * **Why not `gemini-2.0-flash`?** General Gemini models require conversational turn orchestration and do not support `translationConfig` for continuous direct audio-to-audio/text translation. `gemini-3.5-live-translate-preview` is specifically Google's low-latency speech-to-speech translation model.
