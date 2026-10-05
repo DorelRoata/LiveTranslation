@@ -2,7 +2,7 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
-## Unreleased — Captions show exactly what Google sends
+## v1.3.35 — Captions show exactly what Google sends; redesigned dashboard
 
 **Why:** A recording of 15 minutes of the 2026-10-04 sermon showed that Google sends each translated piece once and never corrects it, and never sends a "finished" signal. The duplicate and correction rules added in v1.3.29–v1.3.34 were deleting real words: replayed against that sermon, v1.3.33 removed 20% of the translation and v1.3.34 dropped 39 words. Screens that refreshed or joined late showed only the last few words. Every 9 minutes Google rotates the connection, and the app dropped speech and lost the sermon's context each time.
 
@@ -12,6 +12,9 @@ This file is the operator-facing record of Live Translate releases: what changed
 - The dashboard's translation and Detected Speech panels show whole sentences.
 - When Google rotates the connection, the new connection resumes the same session and takes over with no gap. Speech is no longer lost, including from the Mac audio window.
 - One malformed or oversized message from any device on the network can no longer stop the server.
+- The dashboard is redesigned as an operator console: a LIVE light beside the session timer, a signal-path row (Audio → Gemini → Relay), sentence cards for transcripts, and clearer buttons. The sentence still being spoken is shown at full strength with a live cursor, because Google's words are already final.
+- The whole dashboard scales with the window, from a laptop to a large monitor or TV, and stacks cleanly on a phone.
+- Fonts are bundled with the app, so the dashboard no longer loads anything from the internet to display.
 
 ## v1.3.34 — Robust word-level subtitle streaming and turn finalization deduplication
 

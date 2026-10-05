@@ -57,6 +57,14 @@
   display: none !important;
 }
 
+/* The whole console scales with the window. Every size below is in rem, so
+   this one value sets it: ~14.5px on a laptop, ~17px at 1920 wide, ~20px at
+   2560, capped at 22px. Height also limits it, so a short wide window stays
+   usable. Phones stay at 14px. */
+html {
+  font-size: clamp(14px, min(calc(8.5px + 0.44vw), calc(6px + 1.15vh)), 22px);
+}
+
 body {
   min-height: 100vh;
   overflow-x: hidden;
@@ -67,7 +75,7 @@ body {
     linear-gradient(180deg, var(--bg-color) 0%, var(--bg-deep) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: 1rem;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -101,7 +109,7 @@ body::before {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  max-width: 1600px;
+  max-width: 106rem;
   margin: 0 auto;
   padding: 0 1.5rem 1.5rem;
 }
@@ -121,16 +129,37 @@ body::before {
   row-gap: 0.7rem;
   margin: 0 -1.5rem 1.25rem;
   padding: 0.85rem 1.5rem 0.75rem;
-  border-bottom: 1px solid var(--panel-border);
-  background: rgba(14, 19, 23, 0.9);
+  background: rgba(14, 19, 23, 0.94);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  transition: box-shadow 0.4s ease;
+  /* The bar paints across the full window width while its content stays in
+     the centered column. border-image outset draws outside the box without
+     widening the page, so nothing scrolls sideways. */
+  border: 0 solid transparent;
+  border-image: linear-gradient(rgba(14, 19, 23, 0.94), rgba(14, 19, 23, 0.94)) 0 fill / 0 / 0 100vmax;
 }
 
-/* A thin on-air line across the top while a session is live. */
-body.is-live .live-bar {
-  box-shadow: inset 0 3px 0 var(--accent-rose), 0 10px 30px -20px rgba(224, 86, 110, 0.5);
+.live-bar::after,
+body.is-live .live-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: 0 solid transparent;
+  pointer-events: none;
+}
+
+.live-bar::after {
+  bottom: 0;
+  height: 1px;
+  border-image: linear-gradient(var(--panel-border), var(--panel-border)) 0 fill / 0 / 0 100vmax;
+}
+
+/* A thin on-air line across the top of the window while a session is live. */
+body.is-live .live-bar::before {
+  top: 0;
+  height: 3px;
+  border-image: linear-gradient(var(--accent-rose), var(--accent-rose)) 0 fill / 0 / 0 100vmax;
 }
 
 .logo-area {
@@ -216,9 +245,9 @@ body.is-live .live-bar {
 }
 
 .status-badge .status-dot {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 0.85rem;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #56636c, #2c353c 70%);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -283,8 +312,8 @@ body.is-live .live-bar {
 
 .live-tally::before {
   content: '';
-  width: 7px;
-  height: 7px;
+  width: 0.45rem;
+  height: 0.45rem;
   border-radius: 50%;
   background: currentColor;
   opacity: 0.6;
@@ -319,7 +348,7 @@ body.is-live .live-tally::before {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 40px;
+  min-height: 2.65rem;
   padding: 0.4rem 0.85rem;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
@@ -338,8 +367,8 @@ body.is-live .live-tally::before {
 }
 
 .live-bar-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 1rem;
+  height: 1rem;
 }
 
 .live-bar-btn:hover {
@@ -423,9 +452,9 @@ body.is-live .live-tally::before {
 }
 
 .health-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 9px;
+  width: 0.6rem;
+  height: 0.6rem;
+  flex: 0 0 0.6rem;
   border-radius: 50%;
   background: #48545c;
 }
@@ -511,7 +540,7 @@ body.is-live .live-tally::before {
 .primary-btn.live-start-btn {
   width: auto;
   min-width: 13rem;
-  min-height: 46px;
+  min-height: 3rem;
   padding: 0.65rem 1.2rem;
 }
 
@@ -564,7 +593,7 @@ body.is-live .live-tally::before {
 }
 
 .health-btn {
-  min-height: 38px;
+  min-height: 2.5rem;
   padding: 0.5rem 0.85rem;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
@@ -652,7 +681,7 @@ body.is-live .live-tally::before {
   flex: 1;
   align-items: center;
   gap: 0.7rem;
-  min-height: 48px;
+  min-height: 3.15rem;
   padding: 0.65rem 1rem;
   border: 1px solid var(--panel-border);
   border-left: 4px solid #4b5961;
@@ -665,9 +694,9 @@ body.is-live .live-tally::before {
 
 .diagnostic-icon {
   display: grid;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: 0 0 1.45rem;
   place-items: center;
   border-radius: 50%;
   background: #34424b;
@@ -759,9 +788,9 @@ body[data-operator="remote"] #check-updates-btn {
 }
 
 .recovery-spinner {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: 0 0 1.45rem;
   border: 3px solid rgba(230, 169, 79, 0.25);
   border-top-color: var(--accent-amber);
   border-radius: 50%;
@@ -783,8 +812,8 @@ body[data-operator="remote"] #check-updates-btn {
 }
 
 .network-disconnect-warning svg {
-  width: 20px;
-  height: 20px;
+  width: 1.3rem;
+  height: 1.3rem;
   flex-shrink: 0;
 }
 
@@ -902,7 +931,7 @@ input[type="password"],
 input[type="text"],
 select {
   width: 100%;
-  min-height: 44px;
+  min-height: 2.9rem;
   padding: 0.65rem 0.9rem;
   border: 1px solid var(--panel-border-strong);
   border-radius: var(--radius-sm);
@@ -1083,9 +1112,9 @@ select {
 
 .switch-slider {
   position: relative;
-  flex: 0 0 42px;
-  width: 42px;
-  height: 24px;
+  flex: 0 0 2.8rem;
+  width: 2.8rem;
+  height: 1.6rem;
   border: 1px solid var(--panel-border-strong);
   border-radius: 999px;
   background: var(--panel-inset);
@@ -1095,10 +1124,10 @@ select {
 .switch-slider::before {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.05rem;
+  height: 1.05rem;
   border-radius: 50%;
   background: #7c8a93;
   transition: var(--transition-smooth);
@@ -1112,7 +1141,7 @@ select {
 .switch-container input:checked + .switch-slider::before {
   background: var(--accent-coral);
   box-shadow: 0 0 10px rgba(240, 120, 94, 0.6);
-  transform: translateX(18px);
+  transform: translateX(1.2rem);
 }
 
 .switch-container input:focus-visible + .switch-slider {
@@ -1192,7 +1221,7 @@ select {
 
 .qr-grid-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 0.9rem;
   padding: 1rem;
   border-top: 1px solid var(--panel-border);
@@ -1246,8 +1275,8 @@ select {
 
 .share-qr-frame {
   display: flex;
-  width: 104px;
-  height: 104px;
+  width: 6.9rem;
+  height: 6.9rem;
   align-items: center;
   justify-content: center;
   padding: 6px;
@@ -1258,8 +1287,8 @@ select {
 
 .share-qr-frame canvas {
   display: block;
-  width: 92px;
-  height: 92px;
+  width: 6.1rem;
+  height: 6.1rem;
 }
 
 .share-link-actions {
@@ -1269,7 +1298,7 @@ select {
 }
 
 .share-link-btn {
-  min-height: 34px;
+  min-height: 2.25rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid rgba(91, 192, 164, 0.32);
   border-radius: 6px;
@@ -1355,7 +1384,7 @@ select {
 }
 
 #host-volume-slider {
-  width: 80px;
+  width: 5.3rem;
   accent-color: var(--accent-coral);
   cursor: pointer;
 }
@@ -1363,7 +1392,7 @@ select {
 /* Oscilloscope screen behind the level traces. */
 .visualizer-box {
   position: relative;
-  height: 72px;
+  height: 4.8rem;
   overflow: hidden;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
@@ -1436,9 +1465,9 @@ canvas {
 .transcript-grid {
   display: grid;
   flex: 1;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: 1.25rem;
-  min-height: 400px;
+  min-height: 26rem;
 }
 
 .transcript-col {
@@ -1496,8 +1525,8 @@ canvas {
 .transcript-scroll {
   position: relative;
   flex: 1;
-  min-height: 240px;
-  max-height: min(48vh, 520px);
+  min-height: 16rem;
+  max-height: min(48vh, 34rem);
   overflow-y: auto;
   padding-right: 0.3rem;
   scroll-behavior: smooth;
@@ -1596,7 +1625,7 @@ body.is-live .transcript-scroll {
 }
 
 .debug-scroll {
-  max-height: 180px;
+  max-height: 12rem;
   overflow-y: auto;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--panel-border);
@@ -1779,12 +1808,12 @@ summary:focus-visible {
   }
   .transcript-grid {
     grid-template-columns: 1fr;
-    min-height: 600px;
+    min-height: 34rem;
   }
   button,
   select,
   input {
-    min-height: 44px;
+    min-height: 2.9rem;
   }
   .glass-card,
   .transcript-col {
