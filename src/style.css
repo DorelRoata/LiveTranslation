@@ -41,6 +41,9 @@
 
   --radius: 10px;
   --radius-sm: 7px;
+  /* Shared heights so controls that sit side by side line up exactly. */
+  --control-h: 2.85rem;
+  --pill-h: 2.35rem;
   --shadow-lg: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
   --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -226,7 +229,8 @@ body.is-live .live-bar::before {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.45rem 0.9rem 0.45rem 0.6rem;
+  height: var(--pill-h);
+  padding: 0 0.9rem 0 0.6rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   background: var(--panel-inset);
@@ -280,7 +284,8 @@ body.is-live .live-bar::before {
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
-  padding: 0.38rem 0.85rem 0.38rem 0.4rem;
+  height: var(--pill-h);
+  padding: 0 0.85rem 0 0.4rem;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   background: var(--panel-inset);
@@ -348,8 +353,8 @@ body.is-live .live-tally::before {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 2.65rem;
-  padding: 0.4rem 0.85rem;
+  height: var(--control-h);
+  padding: 0 0.85rem;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.04);
@@ -540,8 +545,8 @@ body.is-live .live-tally::before {
 .primary-btn.live-start-btn {
   width: auto;
   min-width: 13rem;
-  min-height: 3rem;
-  padding: 0.65rem 1.2rem;
+  height: var(--control-h);
+  padding: 0 1.2rem;
 }
 
 .secondary-btn {
@@ -593,8 +598,8 @@ body.is-live .live-tally::before {
 }
 
 .health-btn {
-  min-height: 2.5rem;
-  padding: 0.5rem 0.85rem;
+  height: var(--control-h);
+  padding: 0 0.85rem;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.035);
@@ -669,9 +674,11 @@ body.is-live .live-tally::before {
 }
 
 /* Operator message line + recovery tools */
+/* The message bar and the tool buttons share one height and one top edge. If
+   a long message wraps, the bar grows downward and the buttons stay put. */
 .operator-strip {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
@@ -681,8 +688,8 @@ body.is-live .live-tally::before {
   flex: 1;
   align-items: center;
   gap: 0.7rem;
-  min-height: 3.15rem;
-  padding: 0.65rem 1rem;
+  min-height: var(--control-h);
+  padding: 0.45rem 1rem;
   border: 1px solid var(--panel-border);
   border-left: 4px solid #4b5961;
   border-radius: var(--radius);
@@ -736,7 +743,6 @@ body.is-live .live-tally::before {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  align-self: center;
   gap: 0.5rem;
 }
 
@@ -846,8 +852,15 @@ body[data-operator="remote"] #check-updates-btn {
   display: none;
 }
 
-.panel-summary::before {
+.qr-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* One disclosure chevron for every collapsible section. */
+.panel-summary::before,
+.qr-summary::before {
   content: '';
+  flex: 0 0 auto;
   width: 0.5rem;
   height: 0.5rem;
   border-right: 2px solid var(--accent-coral);
@@ -856,7 +869,8 @@ body[data-operator="remote"] #check-updates-btn {
   transition: transform 0.2s ease;
 }
 
-details[open] > .panel-summary::before {
+details[open] > .panel-summary::before,
+details[open] > .qr-summary::before {
   transform: rotate(45deg) translate(-2px, -2px);
 }
 
@@ -1023,6 +1037,19 @@ select {
 .api-key-actions {
   align-items: center;
   gap: 0.65rem;
+}
+
+/* Replace / Cancel read as buttons, not labels. */
+.api-key-actions .text-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--panel-border-strong);
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+
+.api-key-actions .text-btn:hover {
+  border-color: rgba(240, 120, 94, 0.55);
+  color: var(--text-primary);
 }
 
 #api-key-group[data-configured="true"][data-replacing="false"] .password-wrapper {
@@ -1203,6 +1230,10 @@ select {
 }
 
 .qr-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  list-style: none;
   padding: 0.8rem 1rem;
   outline: none;
   cursor: pointer;
@@ -1227,7 +1258,11 @@ select {
   border-top: 1px solid var(--panel-border);
 }
 
+/* Share cards: the description takes whatever room it needs; the URL, QR code,
+   and buttons sit at the bottom so they line up across every card. */
 .network-info-box {
+  display: flex;
+  flex-direction: column;
   padding: 0.9rem 1rem;
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
@@ -1254,15 +1289,21 @@ select {
   color: var(--accent-cyan);
 }
 
+/* Room for two lines in every card, so a long address that wraps does not
+   push its card's QR code out of line with the others. */
 .share-url {
-  margin: 0.45rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  min-height: calc(2 * 1.45em + 0.9rem);
+  margin: auto 0 0.75rem;
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
   background: var(--panel-inset);
   color: var(--accent-cyan);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  word-break: break-all;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .share-qr-block {
@@ -1318,7 +1359,7 @@ select {
 }
 
 .obs-language-group {
-  margin: 0.75rem 0 0.5rem;
+  margin: 0.75rem 0 0.9rem;
 }
 
 /* ---------- Workspace ---------- */
@@ -1328,24 +1369,31 @@ select {
   gap: 1.25rem;
 }
 
+/* Both meters share one header row (subgrid), so the screens below always
+   start at the same height even though only one header has controls. */
 .visualizer-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  grid-template-rows: auto auto;
+  column-gap: 1.25rem;
+  row-gap: 0.55rem;
   padding: 1.1rem 1.25rem;
 }
 
 .visualizer-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  min-width: 0;
 }
 
 .visualizer-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.4rem 0.75rem;
+  min-height: 1.9rem;
 }
 
 .visualizer-header h3,
@@ -1793,6 +1841,16 @@ summary:focus-visible {
   .destinations-row,
   .visualizer-row {
     grid-template-columns: 1fr;
+  }
+  .visualizer-row {
+    grid-template-rows: none;
+    row-gap: 1.25rem;
+  }
+  .visualizer-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    grid-row: auto;
   }
   .config-col,
   .config-col:nth-child(2),
