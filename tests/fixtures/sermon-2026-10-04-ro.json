@@ -1,0 +1,4241 @@
+{
+ "description": "Every inputTranscription piece (the preacher's Romanian, as Google heard it) from the same 15-minute recording as sermon-2026-10-04-en.json: livestream of 2026-10-04, 28:00-43:00, recorded with the app's own setup message. t and session line up with the English pieces.",
+ "model": "models/gemini-3.5-live-translate-preview",
+ "pieces": [
+  {
+   "t": 3112,
+   "session": 1,
+   "text": "Amém."
+  },
+  {
+   "t": 6853,
+   "session": 1,
+   "text": " Aș dori ca să dau citire cuvântului"
+  },
+  {
+   "t": 7850,
+   "session": 1,
+   "text": " Dumnezeu, care îl"
+  },
+  {
+   "t": 8874,
+   "session": 1,
+   "text": " găsim de la 1"
+  },
+  {
+   "t": 9820,
+   "session": 1,
+   "text": " Corinteni 1 cu"
+  },
+  {
+   "t": 10860,
+   "session": 1,
+   "text": " 17. Vă rog"
+  },
+  {
+   "t": 11843,
+   "session": 1,
+   "text": " ca să ne sculăm pe"
+  },
+  {
+   "t": 12932,
+   "session": 1,
+   "text": " picioare, să dăm"
+  },
+  {
+   "t": 13839,
+   "session": 1,
+   "text": " cinste cuvântului"
+  },
+  {
+   "t": 14739,
+   "session": 1,
+   "text": " Dumnezeu."
+  },
+  {
+   "t": 18832,
+   "session": 1,
+   "text": " 1 Corinteni, capitolul"
+  },
+  {
+   "t": 19800,
+   "session": 1,
+   "text": " 1 de la versetul"
+  },
+  {
+   "t": 20802,
+   "session": 1,
+   "text": " 17, doar un"
+  },
+  {
+   "t": 21834,
+   "session": 1,
+   "text": " singur verset, să dăm"
+  },
+  {
+   "t": 22911,
+   "session": 1,
+   "text": " citire cuvântului Dumnezeu."
+  },
+  {
+   "t": 24724,
+   "session": 1,
+   "text": " De fapt,"
+  },
+  {
+   "t": 25809,
+   "session": 1,
+   "text": " Hristos m a trimis"
+  },
+  {
+   "t": 26810,
+   "session": 1,
+   "text": " nu să botez,"
+  },
+  {
+   "t": 27776,
+   "session": 1,
+   "text": " ci să"
+  },
+  {
+   "t": 28841,
+   "session": 1,
+   "text": " propovăduiesc Evanghelia,"
+  },
+  {
+   "t": 29821,
+   "session": 1,
+   "text": " nu cu"
+  },
+  {
+   "t": 30839,
+   "session": 1,
+   "text": " înțelepciunea vorbirii, ca"
+  },
+  {
+   "t": 31856,
+   "session": 1,
+   "text": " nu cumva crucea lui"
+  },
+  {
+   "t": 32766,
+   "session": 1,
+   "text": " Hristos să"
+  },
+  {
+   "t": 33810,
+   "session": 1,
+   "text": " fie făcută"
+  },
+  {
+   "t": 34820,
+   "session": 1,
+   "text": " zădarnică. Amin."
+  },
+  {
+   "t": 35804,
+   "session": 1,
+   "text": " Reocupați vă"
+  },
+  {
+   "t": 36811,
+   "session": 1,
+   "text": " locul."
+  },
+  {
+   "t": 40898,
+   "session": 1,
+   "text": " După așa multe lucruri câte s au"
+  },
+  {
+   "t": 41803,
+   "session": 1,
+   "text": " vorbit, câte ni s au"
+  },
+  {
+   "t": 42881,
+   "session": 1,
+   "text": " îndemnat prin cântări,"
+  },
+  {
+   "t": 43847,
+   "session": 1,
+   "text": " prin mici"
+  },
+  {
+   "t": 44815,
+   "session": 1,
+   "text": " scurte îndemnuri"
+  },
+  {
+   "t": 45797,
+   "session": 1,
+   "text": " de grupuri"
+  },
+  {
+   "t": 46788,
+   "session": 1,
+   "text": " de laudă și"
+  },
+  {
+   "t": 47753,
+   "session": 1,
+   "text": " închinare,"
+  },
+  {
+   "t": 48789,
+   "session": 1,
+   "text": " îmi rămâne"
+  },
+  {
+   "t": 49757,
+   "session": 1,
+   "text": " doar atât."
+  },
+  {
+   "t": 50786,
+   "session": 1,
+   "text": " Îmi place"
+  },
+  {
+   "t": 51870,
+   "session": 1,
+   "text": " această deviză care"
+  },
+  {
+   "t": 52754,
+   "session": 1,
+   "text": " spune felul"
+  },
+  {
+   "t": 53815,
+   "session": 1,
+   "text": " următor: mi am"
+  },
+  {
+   "t": 54785,
+   "session": 1,
+   "text": " însemnat în Biblie de"
+  },
+  {
+   "t": 55854,
+   "session": 1,
+   "text": " mult și o țin tot"
+  },
+  {
+   "t": 56844,
+   "session": 1,
+   "text": " timpul,"
+  },
+  {
+   "t": 57731,
+   "session": 1,
+   "text": " cu"
+  },
+  {
+   "t": 58767,
+   "session": 1,
+   "text": " regret, de"
+  },
+  {
+   "t": 59802,
+   "session": 1,
+   "text": " multe ori cu"
+  },
+  {
+   "t": 60788,
+   "session": 1,
+   "text": " scăpări,"
+  },
+  {
+   "t": 61745,
+   "session": 1,
+   "text": " nu prea"
+  },
+  {
+   "t": 62777,
+   "session": 1,
+   "text": " împlinesc, spune"
+  },
+  {
+   "t": 63847,
+   "session": 1,
+   "text": " deschide"
+  },
+  {
+   "t": 64786,
+   "session": 1,
+   "text": " citește"
+  },
+  {
+   "t": 65766,
+   "session": 1,
+   "text": " închide,"
+  },
+  {
+   "t": 66769,
+   "session": 1,
+   "text": " împlinește."
+  },
+  {
+   "t": 67829,
+   "session": 1,
+   "text": " Cred că asta ne ar"
+  },
+  {
+   "t": 68802,
+   "session": 1,
+   "text": " fi cel mai"
+  },
+  {
+   "t": 69791,
+   "session": 1,
+   "text": " destul pentru toți"
+  },
+  {
+   "t": 70813,
+   "session": 1,
+   "text": " ca să putem spune"
+  },
+  {
+   "t": 71767,
+   "session": 1,
+   "text": " că"
+  },
+  {
+   "t": 72851,
+   "session": 1,
+   "text": " asta este cuvântul lui"
+  },
+  {
+   "t": 73813,
+   "session": 1,
+   "text": " Dumnezeu"
+  },
+  {
+   "t": 74851,
+   "session": 1,
+   "text": " și nu ne rămâne mai mult"
+  },
+  {
+   "t": 75834,
+   "session": 1,
+   "text": " nimic de atât decât"
+  },
+  {
+   "t": 76862,
+   "session": 1,
+   "text": " să plim voia"
+  },
+  {
+   "t": 77853,
+   "session": 1,
+   "text": " lui. Amin."
+  },
+  {
+   "t": 81799,
+   "session": 1,
+   "text": " Mesajul intitulat și îndemnul la"
+  },
+  {
+   "t": 82848,
+   "session": 1,
+   "text": " rugăciune care îl vom"
+  },
+  {
+   "t": 83879,
+   "session": 1,
+   "text": " avea în următoarele"
+  },
+  {
+   "t": 84844,
+   "session": 1,
+   "text": " clipe ca să ne"
+  },
+  {
+   "t": 85819,
+   "session": 1,
+   "text": " binecuvânteze"
+  },
+  {
+   "t": 86834,
+   "session": 1,
+   "text": " Duhul Sfânt ca"
+  },
+  {
+   "t": 87870,
+   "session": 1,
+   "text": " să ne cerceteze"
+  },
+  {
+   "t": 88806,
+   "session": 1,
+   "text": " să ne"
+  },
+  {
+   "t": 89812,
+   "session": 1,
+   "text": " motiveze și"
+  },
+  {
+   "t": 90833,
+   "session": 1,
+   "text": " să ne întărească, să ne"
+  },
+  {
+   "t": 91818,
+   "session": 1,
+   "text": " îmbărbăteze este"
+  },
+  {
+   "t": 92783,
+   "session": 1,
+   "text": " crucea"
+  },
+  {
+   "t": 93799,
+   "session": 1,
+   "text": " lui Iisus"
+  },
+  {
+   "t": 94795,
+   "session": 1,
+   "text": " Hristos."
+  },
+  {
+   "t": 95741,
+   "session": 1,
+   "text": " Așa"
+  },
+  {
+   "t": 96808,
+   "session": 1,
+   "text": " de multe ori cu"
+  },
+  {
+   "t": 97783,
+   "session": 1,
+   "text": " mulți"
+  },
+  {
+   "t": 98793,
+   "session": 1,
+   "text": " reflectă în"
+  },
+  {
+   "t": 99797,
+   "session": 1,
+   "text": " diferite lucrări, în"
+  },
+  {
+   "t": 100809,
+   "session": 1,
+   "text": " diferite"
+  },
+  {
+   "t": 101790,
+   "session": 1,
+   "text": " ritualuri, în diferite"
+  },
+  {
+   "t": 102810,
+   "session": 1,
+   "text": " modalități,"
+  },
+  {
+   "t": 103832,
+   "session": 1,
+   "text": " o arată,"
+  },
+  {
+   "t": 104800,
+   "session": 1,
+   "text": " o prezintă"
+  },
+  {
+   "t": 105775,
+   "session": 1,
+   "text": " dar mult"
+  },
+  {
+   "t": 106809,
+   "session": 1,
+   "text": " mai mult, cei"
+  },
+  {
+   "t": 107802,
+   "session": 1,
+   "text": " ce contează"
+  },
+  {
+   "t": 108787,
+   "session": 1,
+   "text": " ce"
+  },
+  {
+   "t": 109858,
+   "session": 1,
+   "text": " s a făcut pe"
+  },
+  {
+   "t": 110796,
+   "session": 1,
+   "text": " cruce și"
+  },
+  {
+   "t": 111862,
+   "session": 1,
+   "text": " cine a fost pe"
+  },
+  {
+   "t": 112756,
+   "session": 1,
+   "text": " cruce. Asta"
+  },
+  {
+   "t": 113786,
+   "session": 1,
+   "text": " este cel"
+  },
+  {
+   "t": 114766,
+   "session": 1,
+   "text": " cel mai"
+  },
+  {
+   "t": 115787,
+   "session": 1,
+   "text": " important pentru"
+  },
+  {
+   "t": 116796,
+   "session": 1,
+   "text": " mine și pentru"
+  },
+  {
+   "t": 117832,
+   "session": 1,
+   "text": " fiecare care l am primit"
+  },
+  {
+   "t": 118828,
+   "session": 1,
+   "text": " pe Iisus Hristos"
+  },
+  {
+   "t": 119800,
+   "session": 1,
+   "text": " și pentru cel care"
+  },
+  {
+   "t": 120769,
+   "session": 1,
+   "text": " aude"
+  },
+  {
+   "t": 121883,
+   "session": 1,
+   "text": " cuvântul despre Domnul"
+  },
+  {
+   "t": 122865,
+   "session": 1,
+   "text": " Iisus Hristos,"
+  },
+  {
+   "t": 123845,
+   "session": 1,
+   "text": " ce trebuie să facă."
+  },
+  {
+   "t": 124773,
+   "session": 1,
+   "text": " Trebuie să"
+  },
+  {
+   "t": 125835,
+   "session": 1,
+   "text": " l accepte pe Iisus"
+  },
+  {
+   "t": 126800,
+   "session": 1,
+   "text": " Hristos ca Domn și"
+  },
+  {
+   "t": 127884,
+   "session": 1,
+   "text": " mântuitor al lui"
+  },
+  {
+   "t": 128829,
+   "session": 1,
+   "text": " personal."
+  },
+  {
+   "t": 129798,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 130777,
+   "session": 1,
+   "text": " în ceea ce mi"
+  },
+  {
+   "t": 131876,
+   "session": 1,
+   "text": " spune cuvântul lui Dumnezeu"
+  },
+  {
+   "t": 132793,
+   "session": 1,
+   "text": " aici"
+  },
+  {
+   "t": 133831,
+   "session": 1,
+   "text": " înțelepciunea"
+  },
+  {
+   "t": 134828,
+   "session": 1,
+   "text": " vorbirii, de multe"
+  },
+  {
+   "t": 135799,
+   "session": 1,
+   "text": " ori"
+  },
+  {
+   "t": 136863,
+   "session": 1,
+   "text": " nu știu cum"
+  },
+  {
+   "t": 137856,
+   "session": 1,
+   "text": " dumneavoastră, dar eu mi am"
+  },
+  {
+   "t": 138850,
+   "session": 1,
+   "text": " luat din acest"
+  },
+  {
+   "t": 139739,
+   "session": 1,
+   "text": " lucru"
+  },
+  {
+   "t": 140770,
+   "session": 1,
+   "text": " vorbind pe"
+  },
+  {
+   "t": 141861,
+   "session": 1,
+   "text": " orice temă,"
+  },
+  {
+   "t": 142809,
+   "session": 1,
+   "text": " avem"
+  },
+  {
+   "t": 143801,
+   "session": 1,
+   "text": " o întâlnire"
+  },
+  {
+   "t": 144817,
+   "session": 1,
+   "text": " cu niște lucruri"
+  },
+  {
+   "t": 145762,
+   "session": 1,
+   "text": " foarte"
+  },
+  {
+   "t": 146761,
+   "session": 1,
+   "text": " importante și eu mi am"
+  },
+  {
+   "t": 147779,
+   "session": 1,
+   "text": " însemnat pentru mine"
+  },
+  {
+   "t": 148790,
+   "session": 1,
+   "text": " personal, am spus"
+  },
+  {
+   "t": 149771,
+   "session": 1,
+   "text": " că"
+  },
+  {
+   "t": 150796,
+   "session": 1,
+   "text": " sunt două"
+  },
+  {
+   "t": 151786,
+   "session": 1,
+   "text": " categorii de"
+  },
+  {
+   "t": 152809,
+   "session": 1,
+   "text": " oameni care"
+  },
+  {
+   "t": 153843,
+   "session": 1,
+   "text": " vorbesc."
+  },
+  {
+   "t": 155858,
+   "session": 1,
+   "text": " Eu cred că sunt"
+  },
+  {
+   "t": 156813,
+   "session": 1,
+   "text": " două."
+  },
+  {
+   "t": 160821,
+   "session": 1,
+   "text": " Și acele"
+  },
+  {
+   "t": 161780,
+   "session": 1,
+   "text": " categorii de oameni"
+  },
+  {
+   "t": 162756,
+   "session": 1,
+   "text": " prima"
+  },
+  {
+   "t": 163843,
+   "session": 1,
+   "text": " categorie ca să înțelegeți"
+  },
+  {
+   "t": 164869,
+   "session": 1,
+   "text": " corect, ea se"
+  },
+  {
+   "t": 165842,
+   "session": 1,
+   "text": " mai divide încă în"
+  },
+  {
+   "t": 166794,
+   "session": 1,
+   "text": " două. În"
+  },
+  {
+   "t": 167825,
+   "session": 1,
+   "text": " felul următor:"
+  },
+  {
+   "t": 168783,
+   "session": 1,
+   "text": " prima"
+  },
+  {
+   "t": 169853,
+   "session": 1,
+   "text": " persoană este care"
+  },
+  {
+   "t": 170928,
+   "session": 1,
+   "text": " vorbește mult."
+  },
+  {
+   "t": 171831,
+   "session": 1,
+   "text": " Vorbește"
+  },
+  {
+   "t": 172789,
+   "session": 1,
+   "text": " mult, dar"
+  },
+  {
+   "t": 173768,
+   "session": 1,
+   "text": " ce"
+  },
+  {
+   "t": 174836,
+   "session": 1,
+   "text": " vorbește cu"
+  },
+  {
+   "t": 175836,
+   "session": 1,
+   "text": " sens,"
+  },
+  {
+   "t": 176853,
+   "session": 1,
+   "text": " vorbește cu"
+  },
+  {
+   "t": 177885,
+   "session": 1,
+   "text": " tâlc, cum spunem noi"
+  },
+  {
+   "t": 178804,
+   "session": 1,
+   "text": " cu tâlc,"
+  },
+  {
+   "t": 179801,
+   "session": 1,
+   "text": " ce"
+  },
+  {
+   "t": 180789,
+   "session": 1,
+   "text": " și"
+  },
+  {
+   "t": 181783,
+   "session": 1,
+   "text": " vorbește"
+  },
+  {
+   "t": 182786,
+   "session": 1,
+   "text": " cu"
+  },
+  {
+   "t": 183767,
+   "session": 1,
+   "text": " înțelepciune."
+  },
+  {
+   "t": 184807,
+   "session": 1,
+   "text": " A doua persoană din"
+  },
+  {
+   "t": 185841,
+   "session": 1,
+   "text": " această categorie este"
+  },
+  {
+   "t": 186827,
+   "session": 1,
+   "text": " că vorbește"
+  },
+  {
+   "t": 187766,
+   "session": 1,
+   "text": " puțin."
+  },
+  {
+   "t": 188829,
+   "session": 1,
+   "text": " Și iarăși"
+  },
+  {
+   "t": 189822,
+   "session": 1,
+   "text": " aceleași"
+  },
+  {
+   "t": 190853,
+   "session": 1,
+   "text": " caracteristici le adaugă"
+  },
+  {
+   "t": 191874,
+   "session": 1,
+   "text": " iarăși la aceeași"
+  },
+  {
+   "t": 192813,
+   "session": 1,
+   "text": " persoană."
+  },
+  {
+   "t": 195068,
+   "session": 1,
+   "text": " Vorbește cu tâlc,"
+  },
+  {
+   "t": 195663,
+   "session": 1,
+   "text": " vorbește cu sens"
+  },
+  {
+   "t": 196250,
+   "session": 1,
+   "text": " și vorbește cu"
+  },
+  {
+   "t": 196875,
+   "session": 1,
+   "text": " înțelepciune."
+  },
+  {
+   "t": 197784,
+   "session": 1,
+   "text": " Și o"
+  },
+  {
+   "t": 198847,
+   "session": 1,
+   "text": " opusul a două"
+  },
+  {
+   "t": 199805,
+   "session": 1,
+   "text": " părți a persoanei"
+  },
+  {
+   "t": 200948,
+   "session": 1,
+   "text": " este, o știți,"
+  },
+  {
+   "t": 201835,
+   "session": 1,
+   "text": " nu mai repet,"
+  },
+  {
+   "t": 202837,
+   "session": 1,
+   "text": " o știm cu toții."
+  },
+  {
+   "t": 203761,
+   "session": 1,
+   "text": " Și de multe"
+  },
+  {
+   "t": 204904,
+   "session": 1,
+   "text": " ori mă tem atunci"
+  },
+  {
+   "t": 205836,
+   "session": 1,
+   "text": " când ies aici"
+  },
+  {
+   "t": 206842,
+   "session": 1,
+   "text": " ca să nu"
+  },
+  {
+   "t": 207818,
+   "session": 1,
+   "text": " fac, să nu"
+  },
+  {
+   "t": 208836,
+   "session": 1,
+   "text": " aduc"
+  },
+  {
+   "t": 209822,
+   "session": 1,
+   "text": " crucea"
+  },
+  {
+   "t": 210843,
+   "session": 1,
+   "text": " Domnului Iisus Hristos"
+  },
+  {
+   "t": 211806,
+   "session": 1,
+   "text": " și jertfei"
+  },
+  {
+   "t": 212810,
+   "session": 1,
+   "text": " lui, să nu fie în"
+  },
+  {
+   "t": 213816,
+   "session": 1,
+   "text": " zadarnic. Și mă"
+  },
+  {
+   "t": 214832,
+   "session": 1,
+   "text": " rog ca Domnul"
+  },
+  {
+   "t": 215873,
+   "session": 1,
+   "text": " să ne binecuvânteze pe"
+  },
+  {
+   "t": 216754,
+   "session": 1,
+   "text": " fiecare"
+  },
+  {
+   "t": 217848,
+   "session": 1,
+   "text": " ori de câte ori"
+  },
+  {
+   "t": 218903,
+   "session": 1,
+   "text": " deschidem gura, vorbim"
+  },
+  {
+   "t": 219834,
+   "session": 1,
+   "text": " ceva și"
+  },
+  {
+   "t": 220799,
+   "session": 1,
+   "text": " mai ales atingând"
+  },
+  {
+   "t": 221772,
+   "session": 1,
+   "text": " tema de"
+  },
+  {
+   "t": 222839,
+   "session": 1,
+   "text": " jertfa Domnului"
+  },
+  {
+   "t": 223826,
+   "session": 1,
+   "text": " Iisus Hristos, de"
+  },
+  {
+   "t": 224859,
+   "session": 1,
+   "text": " cuvântul lui Dumnezeu,"
+  },
+  {
+   "t": 225805,
+   "session": 1,
+   "text": " să fim foarte"
+  },
+  {
+   "t": 226847,
+   "session": 1,
+   "text": " atenți cu cei"
+  },
+  {
+   "t": 227809,
+   "session": 1,
+   "text": " ce vorbim și cum"
+  },
+  {
+   "t": 228760,
+   "session": 1,
+   "text": " vorbim."
+  },
+  {
+   "t": 229836,
+   "session": 1,
+   "text": " Domnul să ne binecuvânteze"
+  },
+  {
+   "t": 230792,
+   "session": 1,
+   "text": " la aceasta."
+  },
+  {
+   "t": 231757,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 235854,
+   "session": 1,
+   "text": " Mult mai mult în vorbirea noastră"
+  },
+  {
+   "t": 236883,
+   "session": 1,
+   "text": " zilnică, ce aș mai"
+  },
+  {
+   "t": 237809,
+   "session": 1,
+   "text": " adăuga o singură"
+  },
+  {
+   "t": 238830,
+   "session": 1,
+   "text": " paranteză mică,"
+  },
+  {
+   "t": 239770,
+   "session": 1,
+   "text": " nu doar să"
+  },
+  {
+   "t": 240863,
+   "session": 1,
+   "text": " vorbim, ci să"
+  },
+  {
+   "t": 241833,
+   "session": 1,
+   "text": " aplicăm și în viața"
+  },
+  {
+   "t": 242864,
+   "session": 1,
+   "text": " noastră, așa cum am spus,"
+  },
+  {
+   "t": 243777,
+   "session": 1,
+   "text": " deschide,"
+  },
+  {
+   "t": 244800,
+   "session": 1,
+   "text": " citește, închide"
+  },
+  {
+   "t": 245830,
+   "session": 1,
+   "text": " împlinește."
+  },
+  {
+   "t": 246902,
+   "session": 1,
+   "text": " Să ne ajute bunul"
+  },
+  {
+   "t": 247811,
+   "session": 1,
+   "text": " Dumnezeu ca"
+  },
+  {
+   "t": 248797,
+   "session": 1,
+   "text": " să"
+  },
+  {
+   "t": 249825,
+   "session": 1,
+   "text": " prețuim, să"
+  },
+  {
+   "t": 250871,
+   "session": 1,
+   "text": " recunoaștem, să înțelegem"
+  },
+  {
+   "t": 251781,
+   "session": 1,
+   "text": " și să trăim"
+  },
+  {
+   "t": 252818,
+   "session": 1,
+   "text": " ceea ce a făcut Domnul"
+  },
+  {
+   "t": 253854,
+   "session": 1,
+   "text": " Iisus Hristos pentru"
+  },
+  {
+   "t": 254781,
+   "session": 1,
+   "text": " noi."
+  },
+  {
+   "t": 255793,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 257781,
+   "session": 1,
+   "text": " În vorbirea"
+  },
+  {
+   "t": 258816,
+   "session": 1,
+   "text": " noastră, ceea ce ne"
+  },
+  {
+   "t": 259895,
+   "session": 1,
+   "text": " spune Apostolul"
+  },
+  {
+   "t": 260840,
+   "session": 1,
+   "text": " Pavel găsim la"
+  },
+  {
+   "t": 261837,
+   "session": 1,
+   "text": " Galateni 6:"
+  },
+  {
+   "t": 262782,
+   "session": 1,
+   "text": " 14,"
+  },
+  {
+   "t": 263952,
+   "session": 1,
+   "text": " și uitați vă ce fel"
+  },
+  {
+   "t": 264846,
+   "session": 1,
+   "text": " ne spune ca să"
+  },
+  {
+   "t": 265874,
+   "session": 1,
+   "text": " fim în vorbirea"
+  },
+  {
+   "t": 266802,
+   "session": 1,
+   "text": " noastră așa de"
+  },
+  {
+   "t": 267831,
+   "session": 1,
+   "text": " minunat. În"
+  },
+  {
+   "t": 268815,
+   "session": 1,
+   "text": " ce mă privește,"
+  },
+  {
+   "t": 269882,
+   "session": 1,
+   "text": " departe de"
+  },
+  {
+   "t": 270790,
+   "session": 1,
+   "text": " mine gândul să mă laud"
+  },
+  {
+   "t": 271850,
+   "session": 1,
+   "text": " cu altceva decât"
+  },
+  {
+   "t": 272865,
+   "session": 1,
+   "text": " cu crucea Domnului Iisus"
+  },
+  {
+   "t": 273777,
+   "session": 1,
+   "text": " nostru"
+  },
+  {
+   "t": 274801,
+   "session": 1,
+   "text": " Iisus Hristos,"
+  },
+  {
+   "t": 275806,
+   "session": 1,
+   "text": " prin care"
+  },
+  {
+   "t": 276805,
+   "session": 1,
+   "text": " lumea este"
+  },
+  {
+   "t": 277829,
+   "session": 1,
+   "text": " răstignită față de"
+  },
+  {
+   "t": 278792,
+   "session": 1,
+   "text": " mine și eu"
+  },
+  {
+   "t": 279853,
+   "session": 1,
+   "text": " față de lume."
+  },
+  {
+   "t": 280812,
+   "session": 1,
+   "text": " Aceasta"
+  },
+  {
+   "t": 281816,
+   "session": 1,
+   "text": " mă îndeamnă pe"
+  },
+  {
+   "t": 282804,
+   "session": 1,
+   "text": " mine și aceasta ne"
+  },
+  {
+   "t": 283777,
+   "session": 1,
+   "text": " îndeamnă pe fiecare"
+  },
+  {
+   "t": 284808,
+   "session": 1,
+   "text": " ca să"
+  },
+  {
+   "t": 285866,
+   "session": 1,
+   "text": " nu ne lăudăm cu alte"
+  },
+  {
+   "t": 286845,
+   "session": 1,
+   "text": " lucruri care noi le"
+  },
+  {
+   "t": 287828,
+   "session": 1,
+   "text": " avem,"
+  },
+  {
+   "t": 288844,
+   "session": 1,
+   "text": " părere de rău, eu recunosc"
+  },
+  {
+   "t": 289923,
+   "session": 1,
+   "text": " lucrul acesta că"
+  },
+  {
+   "t": 290770,
+   "session": 1,
+   "text": " firea"
+  },
+  {
+   "t": 291881,
+   "session": 1,
+   "text": " este în mine și"
+  },
+  {
+   "t": 292809,
+   "session": 1,
+   "text": " de multe ori mă"
+  },
+  {
+   "t": 293813,
+   "session": 1,
+   "text": " mai mult mă"
+  },
+  {
+   "t": 294745,
+   "session": 1,
+   "text": " laud"
+  },
+  {
+   "t": 295721,
+   "session": 1,
+   "text": " cu"
+  },
+  {
+   "t": 296821,
+   "session": 1,
+   "text": " realizările mele, ce am"
+  },
+  {
+   "t": 297878,
+   "session": 1,
+   "text": " făcut, cum am făcut și așa"
+  },
+  {
+   "t": 298902,
+   "session": 1,
+   "text": " mai departe."
+  },
+  {
+   "t": 300785,
+   "session": 1,
+   "text": " Dar Domnul"
+  },
+  {
+   "t": 301814,
+   "session": 1,
+   "text": " mă cercetat și"
+  },
+  {
+   "t": 302835,
+   "session": 1,
+   "text": " pune gândul"
+  },
+  {
+   "t": 303829,
+   "session": 1,
+   "text": " acesta și"
+  },
+  {
+   "t": 304868,
+   "session": 1,
+   "text": " este o întrebare pentru"
+  },
+  {
+   "t": 305843,
+   "session": 1,
+   "text": " fiecare personală."
+  },
+  {
+   "t": 306767,
+   "session": 1,
+   "text": " Zilnic"
+  },
+  {
+   "t": 307828,
+   "session": 1,
+   "text": " orice clipă"
+  },
+  {
+   "t": 308875,
+   "session": 1,
+   "text": " din viață."
+  },
+  {
+   "t": 309758,
+   "session": 1,
+   "text": " Cât de"
+  },
+  {
+   "t": 310786,
+   "session": 1,
+   "text": " mult eu"
+  },
+  {
+   "t": 311783,
+   "session": 1,
+   "text": " eu"
+  },
+  {
+   "t": 312794,
+   "session": 1,
+   "text": " personal"
+  },
+  {
+   "t": 313835,
+   "session": 1,
+   "text": " vestesc și mă"
+  },
+  {
+   "t": 314795,
+   "session": 1,
+   "text": " laud cu"
+  },
+  {
+   "t": 315908,
+   "session": 1,
+   "text": " jertfa Domnului Iisus"
+  },
+  {
+   "t": 316869,
+   "session": 1,
+   "text": " Hristos pe cruce,"
+  },
+  {
+   "t": 317885,
+   "session": 1,
+   "text": " unde și a dat viața"
+  },
+  {
+   "t": 318822,
+   "session": 1,
+   "text": " pentru mine și"
+  },
+  {
+   "t": 319857,
+   "session": 1,
+   "text": " pentru tine. Este o"
+  },
+  {
+   "t": 320874,
+   "session": 1,
+   "text": " întrebare personală"
+  },
+  {
+   "t": 321891,
+   "session": 1,
+   "text": " să ne"
+  },
+  {
+   "t": 322827,
+   "session": 1,
+   "text": " gândim și să ne"
+  },
+  {
+   "t": 323856,
+   "session": 1,
+   "text": " cercetăm înaintea lui"
+  },
+  {
+   "t": 324912,
+   "session": 1,
+   "text": " Dumnezeu pentru aceste"
+  },
+  {
+   "t": 325818,
+   "session": 1,
+   "text": " lucruri."
+  },
+  {
+   "t": 326823,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 330781,
+   "session": 1,
+   "text": " De"
+  },
+  {
+   "t": 331816,
+   "session": 1,
+   "text": " multe ori, așa cum am"
+  },
+  {
+   "t": 332818,
+   "session": 1,
+   "text": " menționat,"
+  },
+  {
+   "t": 333785,
+   "session": 1,
+   "text": " mult"
+  },
+  {
+   "t": 334804,
+   "session": 1,
+   "text": " mulți caută ca să"
+  },
+  {
+   "t": 335837,
+   "session": 1,
+   "text": " aducă acest simbol"
+  },
+  {
+   "t": 336750,
+   "session": 1,
+   "text": " de a"
+  },
+  {
+   "t": 337932,
+   "session": 1,
+   "text": " ușura, de a și ușura"
+  },
+  {
+   "t": 338823,
+   "session": 1,
+   "text": " viața"
+  },
+  {
+   "t": 339803,
+   "session": 1,
+   "text": " în felul"
+  },
+  {
+   "t": 340886,
+   "session": 1,
+   "text": " lor, reprezintă"
+  },
+  {
+   "t": 341814,
+   "session": 1,
+   "text": " în felul următor"
+  },
+  {
+   "t": 342774,
+   "session": 1,
+   "text": " că"
+  },
+  {
+   "t": 343777,
+   "session": 1,
+   "text": " care"
+  },
+  {
+   "t": 344834,
+   "session": 1,
+   "text": " ați fost la"
+  },
+  {
+   "t": 345803,
+   "session": 1,
+   "text": " ortodocși,"
+  },
+  {
+   "t": 346810,
+   "session": 1,
+   "text": " știți acolo este"
+  },
+  {
+   "t": 347825,
+   "session": 1,
+   "text": " acest semn și"
+  },
+  {
+   "t": 348828,
+   "session": 1,
+   "text": " catolici, repede"
+  },
+  {
+   "t": 349825,
+   "session": 1,
+   "text": " ca să scape și face"
+  },
+  {
+   "t": 350847,
+   "session": 1,
+   "text": " un semn cu mâna."
+  },
+  {
+   "t": 351837,
+   "session": 1,
+   "text": " Asta e"
+  },
+  {
+   "t": 352860,
+   "session": 1,
+   "text": " reprezentarea crucii Domnului Iisus"
+  },
+  {
+   "t": 353855,
+   "session": 1,
+   "text": " Hristos."
+  },
+  {
+   "t": 354816,
+   "session": 1,
+   "text": " Și mult mai"
+  },
+  {
+   "t": 355808,
+   "session": 1,
+   "text": " mult alții mai poartă"
+  },
+  {
+   "t": 356856,
+   "session": 1,
+   "text": " câte o cruciuliță."
+  },
+  {
+   "t": 357799,
+   "session": 1,
+   "text": " Da."
+  },
+  {
+   "t": 361867,
+   "session": 1,
+   "text": " Domnul să ne"
+  },
+  {
+   "t": 362860,
+   "session": 1,
+   "text": " cerceteze."
+  },
+  {
+   "t": 363864,
+   "session": 1,
+   "text": " Dacă e acela simbolul"
+  },
+  {
+   "t": 364865,
+   "session": 1,
+   "text": " care te a salvat pe"
+  },
+  {
+   "t": 365854,
+   "session": 1,
+   "text": " tine, eu cred că este"
+  },
+  {
+   "t": 367796,
+   "session": 1,
+   "text": " greșit. Dacă"
+  },
+  {
+   "t": 368366,
+   "session": 1,
+   "text": " este ceva o"
+  },
+  {
+   "t": 368951,
+   "session": 1,
+   "text": " ilustrație,"
+  },
+  {
+   "t": 369866,
+   "session": 1,
+   "text": " asta e altceva, dar să nu ne"
+  },
+  {
+   "t": 370798,
+   "session": 1,
+   "text": " bazăm"
+  },
+  {
+   "t": 371860,
+   "session": 1,
+   "text": " să nu ne amăgim"
+  },
+  {
+   "t": 372852,
+   "session": 1,
+   "text": " să nu ne lăsăm"
+  },
+  {
+   "t": 373852,
+   "session": 1,
+   "text": " copleșiți și"
+  },
+  {
+   "t": 374815,
+   "session": 1,
+   "text": " amăgiți de"
+  },
+  {
+   "t": 375806,
+   "session": 1,
+   "text": " multe ori, mulți"
+  },
+  {
+   "t": 376777,
+   "session": 1,
+   "text": " spre ritualuri"
+  },
+  {
+   "t": 377778,
+   "session": 1,
+   "text": " pe diferite lucruri"
+  },
+  {
+   "t": 378815,
+   "session": 1,
+   "text": " caută ca să"
+  },
+  {
+   "t": 379775,
+   "session": 1,
+   "text": " divieze"
+  },
+  {
+   "t": 380842,
+   "session": 1,
+   "text": " de la adevărul"
+  },
+  {
+   "t": 381769,
+   "session": 1,
+   "text": " pur,"
+  },
+  {
+   "t": 382856,
+   "session": 1,
+   "text": " curat și cu"
+  },
+  {
+   "t": 383790,
+   "session": 1,
+   "text": " sens"
+  },
+  {
+   "t": 384800,
+   "session": 1,
+   "text": " al dragostei lui"
+  },
+  {
+   "t": 385876,
+   "session": 1,
+   "text": " Dumnezeu care a dat pe"
+  },
+  {
+   "t": 386873,
+   "session": 1,
+   "text": " unicul fiu pe Iisus"
+  },
+  {
+   "t": 387847,
+   "session": 1,
+   "text": " Hristos ca să moară"
+  },
+  {
+   "t": 388907,
+   "session": 1,
+   "text": " pe cruce ca oricine"
+  },
+  {
+   "t": 389795,
+   "session": 1,
+   "text": " crede în el să"
+  },
+  {
+   "t": 390915,
+   "session": 1,
+   "text": " nu piară ci să aibă"
+  },
+  {
+   "t": 391831,
+   "session": 1,
+   "text": " viață veșnică."
+  },
+  {
+   "t": 392817,
+   "session": 1,
+   "text": " Asta să ne"
+  },
+  {
+   "t": 393786,
+   "session": 1,
+   "text": " ajute bunul"
+  },
+  {
+   "t": 394839,
+   "session": 1,
+   "text": " Dumnezeu ca să"
+  },
+  {
+   "t": 395799,
+   "session": 1,
+   "text": " avem lucrul"
+  },
+  {
+   "t": 396772,
+   "session": 1,
+   "text": " acesta și mult mai"
+  },
+  {
+   "t": 397812,
+   "session": 1,
+   "text": " mult dacă ne uităm"
+  },
+  {
+   "t": 398833,
+   "session": 1,
+   "text": " uitați ce minunat"
+  },
+  {
+   "t": 399750,
+   "session": 1,
+   "text": " ne spune"
+  },
+  {
+   "t": 400812,
+   "session": 1,
+   "text": " 1 Ioan capitolul"
+  },
+  {
+   "t": 401784,
+   "session": 1,
+   "text": " 2 și versetul"
+  },
+  {
+   "t": 402782,
+   "session": 1,
+   "text": " 1."
+  },
+  {
+   "t": 403727,
+   "session": 1,
+   "text": " Că de"
+  },
+  {
+   "t": 404823,
+   "session": 1,
+   "text": " multe ori cad"
+  },
+  {
+   "t": 405942,
+   "session": 1,
+   "text": " de multe ori"
+  },
+  {
+   "t": 406816,
+   "session": 1,
+   "text": " pe"
+  },
+  {
+   "t": 407802,
+   "session": 1,
+   "text": " păcătuiesc,"
+  },
+  {
+   "t": 408895,
+   "session": 1,
+   "text": " că nu pot să mă socot"
+  },
+  {
+   "t": 409838,
+   "session": 1,
+   "text": " cel mai perfect,"
+  },
+  {
+   "t": 410829,
+   "session": 1,
+   "text": " dar uitați ce"
+  },
+  {
+   "t": 411830,
+   "session": 1,
+   "text": " minunat este încurajarea"
+  },
+  {
+   "t": 412829,
+   "session": 1,
+   "text": " care o avem."
+  },
+  {
+   "t": 413819,
+   "session": 1,
+   "text": " La acest"
+  },
+  {
+   "t": 414888,
+   "session": 1,
+   "text": " verset, 1 Ioan"
+  },
+  {
+   "t": 415794,
+   "session": 1,
+   "text": " 2 cu 1."
+  },
+  {
+   "t": 416844,
+   "session": 1,
+   "text": " Copilașilor, vă"
+  },
+  {
+   "t": 417782,
+   "session": 1,
+   "text": " scriu aceste lucruri"
+  },
+  {
+   "t": 418829,
+   "session": 1,
+   "text": " ca să nu"
+  },
+  {
+   "t": 419853,
+   "session": 1,
+   "text": " păcătuiți, dar dacă"
+  },
+  {
+   "t": 420969,
+   "session": 1,
+   "text": " cineva a"
+  },
+  {
+   "t": 421886,
+   "session": 1,
+   "text": " păcătuit, avem la"
+  },
+  {
+   "t": 422826,
+   "session": 1,
+   "text": " Tatăl un"
+  },
+  {
+   "t": 423800,
+   "session": 1,
+   "text": " mijlocitor pe Iisus"
+  },
+  {
+   "t": 424840,
+   "session": 1,
+   "text": " Hristos cel"
+  },
+  {
+   "t": 425804,
+   "session": 1,
+   "text": " neprihănit. Nu"
+  },
+  {
+   "t": 426821,
+   "session": 1,
+   "text": " i se, nu?"
+  },
+  {
+   "t": 427823,
+   "session": 1,
+   "text": " Nu i crucea"
+  },
+  {
+   "t": 428945,
+   "session": 1,
+   "text": " la gât, nu i"
+  },
+  {
+   "t": 429794,
+   "session": 1,
+   "text": " alte lucruri,"
+  },
+  {
+   "t": 430823,
+   "session": 1,
+   "text": " frați și surori,"
+  },
+  {
+   "t": 431827,
+   "session": 1,
+   "text": " drag prieten, nu este"
+  },
+  {
+   "t": 432818,
+   "session": 1,
+   "text": " nimic."
+  },
+  {
+   "t": 433803,
+   "session": 1,
+   "text": " Nu te lăsa"
+  },
+  {
+   "t": 434792,
+   "session": 1,
+   "text": " nu te lăsa"
+  },
+  {
+   "t": 435837,
+   "session": 1,
+   "text": " amăgit. Nu te"
+  },
+  {
+   "t": 436804,
+   "session": 1,
+   "text": " lăsa convins"
+  },
+  {
+   "t": 437729,
+   "session": 1,
+   "text": " prin"
+  },
+  {
+   "t": 438864,
+   "session": 1,
+   "text": " măgulișul acesta a"
+  },
+  {
+   "t": 439843,
+   "session": 1,
+   "text": " diavolului care caută"
+  },
+  {
+   "t": 440845,
+   "session": 1,
+   "text": " să strecoare așa"
+  },
+  {
+   "t": 441738,
+   "session": 1,
+   "text": " de lent"
+  },
+  {
+   "t": 442798,
+   "session": 1,
+   "text": " învățături"
+  },
+  {
+   "t": 443760,
+   "session": 1,
+   "text": " erezie"
+  },
+  {
+   "t": 444826,
+   "session": 1,
+   "text": " le aș"
+  },
+  {
+   "t": 445866,
+   "session": 1,
+   "text": " spune mai direct."
+  },
+  {
+   "t": 446869,
+   "session": 1,
+   "text": " ca să te"
+  },
+  {
+   "t": 447850,
+   "session": 1,
+   "text": " amăgească, să te"
+  },
+  {
+   "t": 448811,
+   "session": 1,
+   "text": " calmeze"
+  },
+  {
+   "t": 449826,
+   "session": 1,
+   "text": " ușurel, să te așezi"
+  },
+  {
+   "t": 450831,
+   "session": 1,
+   "text": " acolo, aia"
+  },
+  {
+   "t": 451811,
+   "session": 1,
+   "text": " corect, asta e mai"
+  },
+  {
+   "t": 452875,
+   "session": 1,
+   "text": " bine, asta e mai ușor."
+  },
+  {
+   "t": 453869,
+   "session": 1,
+   "text": " Nu vă lăsați amăgiți,"
+  },
+  {
+   "t": 454875,
+   "session": 1,
+   "text": " frați și surori."
+  },
+  {
+   "t": 455817,
+   "session": 1,
+   "text": " Dragi tineri,"
+  },
+  {
+   "t": 456788,
+   "session": 1,
+   "text": " sunteți"
+  },
+  {
+   "t": 457798,
+   "session": 1,
+   "text": " de"
+  },
+  {
+   "t": 458847,
+   "session": 1,
+   "text": " multe ori așa avem"
+  },
+  {
+   "t": 459814,
+   "session": 1,
+   "text": " expresia că doar"
+  },
+  {
+   "t": 460902,
+   "session": 1,
+   "text": " tinerii sunt tentați la"
+  },
+  {
+   "t": 461844,
+   "session": 1,
+   "text": " aceasta, dar și noi"
+  },
+  {
+   "t": 462907,
+   "session": 1,
+   "text": " maturi tot."
+  },
+  {
+   "t": 463846,
+   "session": 1,
+   "text": " Fiecare, orice"
+  },
+  {
+   "t": 464773,
+   "session": 1,
+   "text": " orice"
+  },
+  {
+   "t": 465869,
+   "session": 1,
+   "text": " suflet este tentat ca să"
+  },
+  {
+   "t": 466853,
+   "session": 1,
+   "text": " fie amăgit de cel"
+  },
+  {
+   "t": 467861,
+   "session": 1,
+   "text": " rău, pentru că el nu"
+  },
+  {
+   "t": 468914,
+   "session": 1,
+   "text": " caută vârstă, nu caută"
+  },
+  {
+   "t": 469971,
+   "session": 1,
+   "text": " nimic."
+  },
+  {
+   "t": 470803,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 472780,
+   "session": 1,
+   "text": " Dacă ne vom"
+  },
+  {
+   "t": 473951,
+   "session": 1,
+   "text": " uita la Efeseni 2 cu"
+  },
+  {
+   "t": 474896,
+   "session": 1,
+   "text": " 16,"
+  },
+  {
+   "t": 476757,
+   "session": 1,
+   "text": " spune"
+  },
+  {
+   "t": 477828,
+   "session": 1,
+   "text": " crucea lui Hristos a"
+  },
+  {
+   "t": 478830,
+   "session": 1,
+   "text": " adus împăcare"
+  },
+  {
+   "t": 479885,
+   "session": 1,
+   "text": " cu Dumnezeu"
+  },
+  {
+   "t": 480885,
+   "session": 1,
+   "text": " și uitați ce minunat"
+  },
+  {
+   "t": 481861,
+   "session": 1,
+   "text": " ne spune."
+  },
+  {
+   "t": 482855,
+   "session": 1,
+   "text": " Efeseni 2 cu"
+  },
+  {
+   "t": 483815,
+   "session": 1,
+   "text": " 16. Și a"
+  },
+  {
+   "t": 484908,
+   "session": 1,
+   "text": " împăcat pe cei doi cu"
+  },
+  {
+   "t": 485824,
+   "session": 1,
+   "text": " Dumnezeu într un"
+  },
+  {
+   "t": 486789,
+   "session": 1,
+   "text": " singur trup"
+  },
+  {
+   "t": 487850,
+   "session": 1,
+   "text": " prin cruce,"
+  },
+  {
+   "t": 488760,
+   "session": 1,
+   "text": " prin"
+  },
+  {
+   "t": 489820,
+   "session": 1,
+   "text": " care a"
+  },
+  {
+   "t": 490788,
+   "session": 1,
+   "text": " nimicit"
+  },
+  {
+   "t": 491828,
+   "session": 1,
+   "text": " vrăjmășia."
+  },
+  {
+   "t": 492799,
+   "session": 1,
+   "text": " Știți"
+  },
+  {
+   "t": 493840,
+   "session": 1,
+   "text": " de multe ori noi"
+  },
+  {
+   "t": 494879,
+   "session": 1,
+   "text": " avem tentația asta de a"
+  },
+  {
+   "t": 495850,
+   "session": 1,
+   "text": " ne certa, de a"
+  },
+  {
+   "t": 496847,
+   "session": 1,
+   "text": " lucruri"
+  },
+  {
+   "t": 497870,
+   "session": 1,
+   "text": " neînțelese,"
+  },
+  {
+   "t": 498782,
+   "session": 1,
+   "text": " dar Dumnezeu"
+  },
+  {
+   "t": 499844,
+   "session": 1,
+   "text": " în dragostea lui"
+  },
+  {
+   "t": 500818,
+   "session": 1,
+   "text": " suverană"
+  },
+  {
+   "t": 501769,
+   "session": 1,
+   "text": " în"
+  },
+  {
+   "t": 502805,
+   "session": 1,
+   "text": " dragostea lui"
+  },
+  {
+   "t": 503829,
+   "session": 1,
+   "text": " nemărginită"
+  },
+  {
+   "t": 504841,
+   "session": 1,
+   "text": " în care"
+  },
+  {
+   "t": 505832,
+   "session": 1,
+   "text": " noi o"
+  },
+  {
+   "t": 506914,
+   "session": 1,
+   "text": " limităm de multe ori. De"
+  },
+  {
+   "t": 507857,
+   "session": 1,
+   "text": " multe ori ca oameni căutăm"
+  },
+  {
+   "t": 508880,
+   "session": 1,
+   "text": " să mărginim anumite"
+  },
+  {
+   "t": 509782,
+   "session": 1,
+   "text": " lucruri"
+  },
+  {
+   "t": 510860,
+   "session": 1,
+   "text": " puterea lui Dumnezeu."
+  },
+  {
+   "t": 512859,
+   "session": 1,
+   "text": " Și"
+  },
+  {
+   "t": 516897,
+   "session": 1,
+   "text": " Mi a plăcut un gând. Este așa"
+  },
+  {
+   "t": 517876,
+   "session": 1,
+   "text": " ca o glumă, aș"
+  },
+  {
+   "t": 518844,
+   "session": 1,
+   "text": " spune o, dar"
+  },
+  {
+   "t": 519874,
+   "session": 1,
+   "text": " are un sens."
+  },
+  {
+   "t": 520797,
+   "session": 1,
+   "text": " Spune că"
+  },
+  {
+   "t": 521871,
+   "session": 1,
+   "text": " într o familie, soțul și"
+  },
+  {
+   "t": 522842,
+   "session": 1,
+   "text": " soția spune că"
+  },
+  {
+   "t": 523859,
+   "session": 1,
+   "text": " au făcut o"
+  },
+  {
+   "t": 524793,
+   "session": 1,
+   "text": " înțelegere."
+  },
+  {
+   "t": 525861,
+   "session": 1,
+   "text": " Înainte ca să meargă la"
+  },
+  {
+   "t": 526867,
+   "session": 1,
+   "text": " culcare și au"
+  },
+  {
+   "t": 527940,
+   "session": 1,
+   "text": " promis că nu se vor"
+  },
+  {
+   "t": 528806,
+   "session": 1,
+   "text": " culca"
+  },
+  {
+   "t": 529886,
+   "session": 1,
+   "text": " certați unul cu altul. Nu"
+  },
+  {
+   "t": 530861,
+   "session": 1,
+   "text": " se vor certa, dar"
+  },
+  {
+   "t": 531864,
+   "session": 1,
+   "text": " nu se vor culca"
+  },
+  {
+   "t": 532825,
+   "session": 1,
+   "text": " supărați."
+  },
+  {
+   "t": 533797,
+   "session": 1,
+   "text": " Și acela care"
+  },
+  {
+   "t": 534890,
+   "session": 1,
+   "text": " asculta îi spune:"
+  },
+  {
+   "t": 535840,
+   "session": 1,
+   "text": " se primește la"
+  },
+  {
+   "t": 537837,
+   "session": 1,
+   "text": " voi."
+  },
+  {
+   "t": 538460,
+   "session": 1,
+   "text": " Dar cel care"
+  },
+  {
+   "t": 539047,
+   "session": 1,
+   "text": " povestea a"
+  },
+  {
+   "t": 539969,
+   "session": 1,
+   "text": " oftat și a spus: eu de o lună"
+  },
+  {
+   "t": 540848,
+   "session": 1,
+   "text": " de zile încă n am"
+  },
+  {
+   "t": 543310,
+   "session": 2,
+   "text": "oftat."
+  },
+  {
+   "t": 544118,
+   "session": 2,
+   "text": " Este așa parcă"
+  },
+  {
+   "t": 545164,
+   "session": 2,
+   "text": " o glumă, dar știți"
+  },
+  {
+   "t": 546151,
+   "session": 2,
+   "text": " este un"
+  },
+  {
+   "t": 547105,
+   "session": 2,
+   "text": " un"
+  },
+  {
+   "t": 548119,
+   "session": 2,
+   "text": " înțeles care"
+  },
+  {
+   "t": 549153,
+   "session": 2,
+   "text": " Dumnezeu nu este"
+  },
+  {
+   "t": 550137,
+   "session": 2,
+   "text": " limitat și la"
+  },
+  {
+   "t": 551153,
+   "session": 2,
+   "text": " ceea ce ne îndeamnă și"
+  },
+  {
+   "t": 552151,
+   "session": 2,
+   "text": " pe noi, ca"
+  },
+  {
+   "t": 553116,
+   "session": 2,
+   "text": " orice lucru să"
+  },
+  {
+   "t": 554135,
+   "session": 2,
+   "text": " căutăm"
+  },
+  {
+   "t": 555129,
+   "session": 2,
+   "text": " să ne"
+  },
+  {
+   "t": 556185,
+   "session": 2,
+   "text": " încredem în el și să"
+  },
+  {
+   "t": 557147,
+   "session": 2,
+   "text": " cerem putere de la"
+  },
+  {
+   "t": 558147,
+   "session": 2,
+   "text": " el, să avem"
+  },
+  {
+   "t": 559173,
+   "session": 2,
+   "text": " puterea de a ierta și de"
+  },
+  {
+   "t": 560167,
+   "session": 2,
+   "text": " a merge mai departe."
+  },
+  {
+   "t": 561147,
+   "session": 2,
+   "text": " Și slăvit să"
+  },
+  {
+   "t": 562139,
+   "session": 2,
+   "text": " fie Domnul că"
+  },
+  {
+   "t": 563204,
+   "session": 2,
+   "text": " ne a arătat că el"
+  },
+  {
+   "t": 564137,
+   "session": 2,
+   "text": " a făcut deja"
+  },
+  {
+   "t": 565152,
+   "session": 2,
+   "text": " lucrul acesta."
+  },
+  {
+   "t": 566174,
+   "session": 2,
+   "text": " Nu ne rămâne nimic"
+  },
+  {
+   "t": 567511,
+   "session": 2,
+   "text": " nou altceva să"
+  },
+  {
+   "t": 568264,
+   "session": 2,
+   "text": " mai adăugăm, să mai"
+  },
+  {
+   "t": 569147,
+   "session": 2,
+   "text": " completăm,"
+  },
+  {
+   "t": 570136,
+   "session": 2,
+   "text": " să mai"
+  },
+  {
+   "t": 571154,
+   "session": 2,
+   "text": " ridicăm. Dumnezeu a"
+  },
+  {
+   "t": 572162,
+   "session": 2,
+   "text": " făcut tot perfect."
+  },
+  {
+   "t": 573118,
+   "session": 2,
+   "text": " Noi este"
+  },
+  {
+   "t": 574176,
+   "session": 2,
+   "text": " doar să credem,"
+  },
+  {
+   "t": 575149,
+   "session": 2,
+   "text": " ceea ce vedem"
+  },
+  {
+   "t": 576150,
+   "session": 2,
+   "text": " în fața noastră"
+  },
+  {
+   "t": 577154,
+   "session": 2,
+   "text": " este simbolul"
+  },
+  {
+   "t": 578187,
+   "session": 2,
+   "text": " dragostei lui Dumnezeu."
+  },
+  {
+   "t": 579136,
+   "session": 2,
+   "text": " Și mila lui"
+  },
+  {
+   "t": 580169,
+   "session": 2,
+   "text": " Hristos este cea care"
+  },
+  {
+   "t": 581135,
+   "session": 2,
+   "text": " ne a adus"
+  },
+  {
+   "t": 582152,
+   "session": 2,
+   "text": " aici și putem sta"
+  },
+  {
+   "t": 583148,
+   "session": 2,
+   "text": " în fața lui"
+  },
+  {
+   "t": 584169,
+   "session": 2,
+   "text": " și dacă ne vom uita"
+  },
+  {
+   "t": 585094,
+   "session": 2,
+   "text": " la"
+  },
+  {
+   "t": 586088,
+   "session": 2,
+   "text": " De"
+  },
+  {
+   "t": 587175,
+   "session": 2,
+   "text": " multe ori toți care am"
+  },
+  {
+   "t": 588146,
+   "session": 2,
+   "text": " primit"
+  },
+  {
+   "t": 589157,
+   "session": 2,
+   "text": " această dragoste a lui"
+  },
+  {
+   "t": 590149,
+   "session": 2,
+   "text": " Dumnezeu, am"
+  },
+  {
+   "t": 591160,
+   "session": 2,
+   "text": " acceptat, am făcut acest"
+  },
+  {
+   "t": 592136,
+   "session": 2,
+   "text": " legământ"
+  },
+  {
+   "t": 593136,
+   "session": 2,
+   "text": " de multe ori"
+  },
+  {
+   "t": 594166,
+   "session": 2,
+   "text": " mulți cred că gata din"
+  },
+  {
+   "t": 595170,
+   "session": 2,
+   "text": " momentul ce te ai"
+  },
+  {
+   "t": 596165,
+   "session": 2,
+   "text": " botezat, ai primit"
+  },
+  {
+   "t": 597163,
+   "session": 2,
+   "text": " botezul, gata"
+  },
+  {
+   "t": 598151,
+   "session": 2,
+   "text": " ești"
+  },
+  {
+   "t": 599158,
+   "session": 2,
+   "text": " eliberat de toate"
+  },
+  {
+   "t": 600203,
+   "session": 2,
+   "text": " încercările. Nu."
+  },
+  {
+   "t": 601176,
+   "session": 2,
+   "text": " Orișicine încă"
+  },
+  {
+   "t": 602159,
+   "session": 2,
+   "text": " merge și merge prin"
+  },
+  {
+   "t": 603161,
+   "session": 2,
+   "text": " încercări"
+  },
+  {
+   "t": 604184,
+   "session": 2,
+   "text": " și uitați vă un lucru"
+  },
+  {
+   "t": 605163,
+   "session": 2,
+   "text": " care ne spune de"
+  },
+  {
+   "t": 606101,
+   "session": 2,
+   "text": " la"
+  },
+  {
+   "t": 607154,
+   "session": 2,
+   "text": " Filipeni 3:"
+  },
+  {
+   "t": 608142,
+   "session": 2,
+   "text": " 18."
+  },
+  {
+   "t": 609144,
+   "session": 2,
+   "text": " Căci"
+  },
+  {
+   "t": 610169,
+   "session": 2,
+   "text": " v am spus de"
+  },
+  {
+   "t": 611188,
+   "session": 2,
+   "text": " multe ori și vă"
+  },
+  {
+   "t": 612133,
+   "session": 2,
+   "text": " mai spun"
+  },
+  {
+   "t": 613148,
+   "session": 2,
+   "text": " și acum,"
+  },
+  {
+   "t": 614155,
+   "session": 2,
+   "text": " plângând,"
+  },
+  {
+   "t": 615176,
+   "session": 2,
+   "text": " sunt mulți care"
+  },
+  {
+   "t": 616177,
+   "session": 2,
+   "text": " se poartă ca"
+  },
+  {
+   "t": 617190,
+   "session": 2,
+   "text": " vrăjmași ai"
+  },
+  {
+   "t": 618153,
+   "session": 2,
+   "text": " crucii lui"
+  },
+  {
+   "t": 619140,
+   "session": 2,
+   "text": " Hristos."
+  },
+  {
+   "t": 620180,
+   "session": 2,
+   "text": " Ceea ce vreau ca să vă"
+  },
+  {
+   "t": 621197,
+   "session": 2,
+   "text": " aduc în fața"
+  },
+  {
+   "t": 622180,
+   "session": 2,
+   "text": " dumneavoastră"
+  },
+  {
+   "t": 623237,
+   "session": 2,
+   "text": " dacă ne vom uita"
+  },
+  {
+   "t": 624156,
+   "session": 2,
+   "text": " la ilustrația"
+  },
+  {
+   "t": 625152,
+   "session": 2,
+   "text": " acum,"
+  },
+  {
+   "t": 626189,
+   "session": 2,
+   "text": " noi facem o listă așa"
+  },
+  {
+   "t": 627176,
+   "session": 2,
+   "text": " de mare și"
+  },
+  {
+   "t": 628165,
+   "session": 2,
+   "text": " lungă și un"
+  },
+  {
+   "t": 629141,
+   "session": 2,
+   "text": " determinat acolo"
+  },
+  {
+   "t": 630150,
+   "session": 2,
+   "text": " foarte multe"
+  },
+  {
+   "t": 631139,
+   "session": 2,
+   "text": " denumiri care"
+  },
+  {
+   "t": 632218,
+   "session": 2,
+   "text": " sunt vrăjmașii crucii"
+  },
+  {
+   "t": 633238,
+   "session": 2,
+   "text": " Domnului Iisus Hristos."
+  },
+  {
+   "t": 634149,
+   "session": 2,
+   "text": " La rând"
+  },
+  {
+   "t": 635134,
+   "session": 2,
+   "text": " care și"
+  },
+  {
+   "t": 636201,
+   "session": 2,
+   "text": " urmașii Domnului Iisus"
+  },
+  {
+   "t": 637172,
+   "session": 2,
+   "text": " Hristos, toți"
+  },
+  {
+   "t": 638197,
+   "session": 2,
+   "text": " suntem chemați ca să"
+  },
+  {
+   "t": 639136,
+   "session": 2,
+   "text": " fie să"
+  },
+  {
+   "t": 640138,
+   "session": 2,
+   "text": " fie"
+  },
+  {
+   "t": 641168,
+   "session": 2,
+   "text": " urâți, să fie"
+  },
+  {
+   "t": 642192,
+   "session": 2,
+   "text": " pedepsiți. Și eu fac o"
+  },
+  {
+   "t": 643165,
+   "session": 2,
+   "text": " listă foarte mare"
+  },
+  {
+   "t": 644160,
+   "session": 2,
+   "text": " așa începând"
+  },
+  {
+   "t": 645150,
+   "session": 2,
+   "text": " lucrurile"
+  },
+  {
+   "t": 646183,
+   "session": 2,
+   "text": " elementare ca atei și"
+  },
+  {
+   "t": 647210,
+   "session": 2,
+   "text": " musulmani, budiști și așa"
+  },
+  {
+   "t": 648154,
+   "session": 2,
+   "text": " mai departe."
+  },
+  {
+   "t": 649141,
+   "session": 2,
+   "text": " Dar"
+  },
+  {
+   "t": 650174,
+   "session": 2,
+   "text": " întrebare vine"
+  },
+  {
+   "t": 651180,
+   "session": 2,
+   "text": " găsim"
+  },
+  {
+   "t": 652224,
+   "session": 2,
+   "text": " în cuvântul lui Dumnezeu"
+  },
+  {
+   "t": 653141,
+   "session": 2,
+   "text": " că și"
+  },
+  {
+   "t": 654153,
+   "session": 2,
+   "text": " unii care l au"
+  },
+  {
+   "t": 655157,
+   "session": 2,
+   "text": " răstignit din"
+  },
+  {
+   "t": 656153,
+   "session": 2,
+   "text": " nou iarăși pe"
+  },
+  {
+   "t": 657182,
+   "session": 2,
+   "text": " Iisus Hristos."
+  },
+  {
+   "t": 658177,
+   "session": 2,
+   "text": " Iar ceea ce vreau"
+  },
+  {
+   "t": 659137,
+   "session": 2,
+   "text": " ca să"
+  },
+  {
+   "t": 660146,
+   "session": 2,
+   "text": " vă îndemn"
+  },
+  {
+   "t": 661127,
+   "session": 2,
+   "text": " să"
+  },
+  {
+   "t": 662163,
+   "session": 2,
+   "text": " fugiți de"
+  },
+  {
+   "t": 663190,
+   "session": 2,
+   "text": " lucrurile astea ca să"
+  },
+  {
+   "t": 664182,
+   "session": 2,
+   "text": " nu ne facem"
+  },
+  {
+   "t": 665227,
+   "session": 2,
+   "text": " vrăjmași."
+  },
+  {
+   "t": 666144,
+   "session": 2,
+   "text": " crezându ne"
+  },
+  {
+   "t": 667154,
+   "session": 2,
+   "text": " că suntem"
+  },
+  {
+   "t": 668164,
+   "session": 2,
+   "text": " perfecți,"
+  },
+  {
+   "t": 669193,
+   "session": 2,
+   "text": " amăgindu ne că suntem"
+  },
+  {
+   "t": 670158,
+   "session": 2,
+   "text": " ideali sau de"
+  },
+  {
+   "t": 671156,
+   "session": 2,
+   "text": " felul acesta"
+  },
+  {
+   "t": 672177,
+   "session": 2,
+   "text": " să nu ne credem"
+  },
+  {
+   "t": 673208,
+   "session": 2,
+   "text": " așa, să ne credem"
+  },
+  {
+   "t": 674179,
+   "session": 2,
+   "text": " în puterea Domnului"
+  },
+  {
+   "t": 675193,
+   "session": 2,
+   "text": " Iisus Hristos, că"
+  },
+  {
+   "t": 676179,
+   "session": 2,
+   "text": " doar prin el"
+  },
+  {
+   "t": 677159,
+   "session": 2,
+   "text": " noi am primit"
+  },
+  {
+   "t": 678165,
+   "session": 2,
+   "text": " salvarea și"
+  },
+  {
+   "t": 679158,
+   "session": 2,
+   "text": " vrăjmași"
+  },
+  {
+   "t": 680182,
+   "session": 2,
+   "text": " așa cum știm"
+  },
+  {
+   "t": 681183,
+   "session": 2,
+   "text": " foarte bine."
+  },
+  {
+   "t": 682163,
+   "session": 2,
+   "text": " Știm cine"
+  },
+  {
+   "t": 683186,
+   "session": 2,
+   "text": " este vrăjmașul,"
+  },
+  {
+   "t": 684160,
+   "session": 2,
+   "text": " știm cine este"
+  },
+  {
+   "t": 685166,
+   "session": 2,
+   "text": " potrivnicul,"
+  },
+  {
+   "t": 686156,
+   "session": 2,
+   "text": " potrivnici și așa mai"
+  },
+  {
+   "t": 687173,
+   "session": 2,
+   "text": " departe, dar"
+  },
+  {
+   "t": 688185,
+   "session": 2,
+   "text": " o știm foarte bine cu"
+  },
+  {
+   "t": 689160,
+   "session": 2,
+   "text": " toții."
+  },
+  {
+   "t": 690128,
+   "session": 2,
+   "text": " Dar"
+  },
+  {
+   "t": 691162,
+   "session": 2,
+   "text": " mi a plăcut"
+  },
+  {
+   "t": 692159,
+   "session": 2,
+   "text": " un lucru care spune"
+  },
+  {
+   "t": 693122,
+   "session": 2,
+   "text": " că"
+  },
+  {
+   "t": 699177,
+   "session": 2,
+   "text": " Timpul este unul"
+  },
+  {
+   "t": 700207,
+   "session": 2,
+   "text": " dintre vrăjmașii"
+  },
+  {
+   "t": 701201,
+   "session": 2,
+   "text": " noștri. Este așa o"
+  },
+  {
+   "t": 702112,
+   "session": 2,
+   "text": " ilustrație să"
+  },
+  {
+   "t": 703139,
+   "session": 2,
+   "text": " spunem"
+  },
+  {
+   "t": 704161,
+   "session": 2,
+   "text": " figurativ,"
+  },
+  {
+   "t": 705206,
+   "session": 2,
+   "text": " așa să spunem așa."
+  },
+  {
+   "t": 709188,
+   "session": 2,
+   "text": " El pleacă înainte, nu se mai"
+  },
+  {
+   "t": 710221,
+   "session": 2,
+   "text": " întoarce înapoi,"
+  },
+  {
+   "t": 711135,
+   "session": 2,
+   "text": " fără milă, fără"
+  },
+  {
+   "t": 712120,
+   "session": 2,
+   "text": " nimic, nu mai"
+  },
+  {
+   "t": 713162,
+   "session": 2,
+   "text": " întoarce nimic."
+  },
+  {
+   "t": 714140,
+   "session": 2,
+   "text": " Așa că de multe ori"
+  },
+  {
+   "t": 716444,
+   "session": 2,
+   "text": " contează mult"
+  },
+  {
+   "t": 717208,
+   "session": 2,
+   "text": " ceea ce am"
+  },
+  {
+   "t": 717942,
+   "session": 2,
+   "text": " crezut, ceea ce am"
+  },
+  {
+   "t": 718668,
+   "session": 2,
+   "text": " redat, ceea ce am"
+  },
+  {
+   "t": 719364,
+   "session": 2,
+   "text": " vorbit"
+  },
+  {
+   "t": 720222,
+   "session": 2,
+   "text": " totalmente"
+  },
+  {
+   "t": 721308,
+   "session": 2,
+   "text": " înapoi nu îl mai"
+  },
+  {
+   "t": 722253,
+   "session": 2,
+   "text": " întorci. Mergi înainte."
+  },
+  {
+   "t": 723226,
+   "session": 2,
+   "text": " Așa că să fim"
+  },
+  {
+   "t": 724197,
+   "session": 2,
+   "text": " atenți la vorbirea"
+  },
+  {
+   "t": 725178,
+   "session": 2,
+   "text": " noastră ca să"
+  },
+  {
+   "t": 726221,
+   "session": 2,
+   "text": " nu fie zadarnică"
+  },
+  {
+   "t": 727216,
+   "session": 2,
+   "text": " crucea lui"
+  },
+  {
+   "t": 728163,
+   "session": 2,
+   "text": " Hristos în"
+  },
+  {
+   "t": 729229,
+   "session": 2,
+   "text": " urma trăirii noastre"
+  },
+  {
+   "t": 730239,
+   "session": 2,
+   "text": " pe acest pământ."
+  },
+  {
+   "t": 731166,
+   "session": 2,
+   "text": " Și"
+  },
+  {
+   "t": 732195,
+   "session": 2,
+   "text": " spunea un"
+  },
+  {
+   "t": 733187,
+   "session": 2,
+   "text": " un"
+  },
+  {
+   "t": 734252,
+   "session": 2,
+   "text": " învățat, spunea în felul"
+  },
+  {
+   "t": 735167,
+   "session": 2,
+   "text": " următor,"
+  },
+  {
+   "t": 736133,
+   "session": 2,
+   "text": " că"
+  },
+  {
+   "t": 737170,
+   "session": 2,
+   "text": " leagă"
+  },
+  {
+   "t": 738175,
+   "session": 2,
+   "text": " nu,"
+  },
+  {
+   "t": 739179,
+   "session": 2,
+   "text": " leagă nu."
+  },
+  {
+   "t": 740205,
+   "session": 2,
+   "text": " Diavolului."
+  },
+  {
+   "t": 741157,
+   "session": 2,
+   "text": " a"
+  },
+  {
+   "t": 742241,
+   "session": 2,
+   "text": " vrăjmașului nostru"
+  },
+  {
+   "t": 743215,
+   "session": 2,
+   "text": " celui care ne caută"
+  },
+  {
+   "t": 744225,
+   "session": 2,
+   "text": " pe noi să ne"
+  },
+  {
+   "t": 745228,
+   "session": 2,
+   "text": " distragă de la"
+  },
+  {
+   "t": 746159,
+   "session": 2,
+   "text": " adevăr,"
+  },
+  {
+   "t": 747247,
+   "session": 2,
+   "text": " leagă nu lui"
+  },
+  {
+   "t": 748193,
+   "session": 2,
+   "text": " are"
+  },
+  {
+   "t": 749196,
+   "session": 2,
+   "text": " două, două"
+  },
+  {
+   "t": 750236,
+   "session": 2,
+   "text": " magneți, așa le aș"
+  },
+  {
+   "t": 751262,
+   "session": 2,
+   "text": " numi eu,"
+  },
+  {
+   "t": 752193,
+   "session": 2,
+   "text": " și știți"
+  },
+  {
+   "t": 753190,
+   "session": 2,
+   "text": " care sunt ele?"
+  },
+  {
+   "t": 755163,
+   "session": 2,
+   "text": " amânarea"
+  },
+  {
+   "t": 756179,
+   "session": 2,
+   "text": " și scuzarea."
+  },
+  {
+   "t": 758198,
+   "session": 2,
+   "text": " Amânarea"
+  },
+  {
+   "t": 759192,
+   "session": 2,
+   "text": " și scuzarea."
+  },
+  {
+   "t": 760191,
+   "session": 2,
+   "text": " Ceea ce noi de"
+  },
+  {
+   "t": 761247,
+   "session": 2,
+   "text": " multe ori suntem"
+  },
+  {
+   "t": 762168,
+   "session": 2,
+   "text": " foarte,"
+  },
+  {
+   "t": 763253,
+   "session": 2,
+   "text": " foarte meșteri așa să"
+  },
+  {
+   "t": 764237,
+   "session": 2,
+   "text": " spunem și"
+  },
+  {
+   "t": 765193,
+   "session": 2,
+   "text": " orice om este"
+  },
+  {
+   "t": 766220,
+   "session": 2,
+   "text": " este tentat"
+  },
+  {
+   "t": 767242,
+   "session": 2,
+   "text": " mai ușurel"
+  },
+  {
+   "t": 768184,
+   "session": 2,
+   "text": " să amâne orice"
+  },
+  {
+   "t": 769232,
+   "session": 2,
+   "text": " lucru, cum"
+  },
+  {
+   "t": 770196,
+   "session": 2,
+   "text": " este una ce mai"
+  },
+  {
+   "t": 771189,
+   "session": 2,
+   "text": " importantă în lumea"
+  },
+  {
+   "t": 772160,
+   "session": 2,
+   "text": " aceasta"
+  },
+  {
+   "t": 773170,
+   "session": 2,
+   "text": " să amâne"
+  },
+  {
+   "t": 774235,
+   "session": 2,
+   "text": " chemarea Domnului Iisus"
+  },
+  {
+   "t": 775246,
+   "session": 2,
+   "text": " Hristos, ca să vie la"
+  },
+  {
+   "t": 776198,
+   "session": 2,
+   "text": " el, să"
+  },
+  {
+   "t": 777237,
+   "session": 2,
+   "text": " pocăiască, să accepte"
+  },
+  {
+   "t": 778199,
+   "session": 2,
+   "text": " pe Domnul Iisus"
+  },
+  {
+   "t": 779245,
+   "session": 2,
+   "text": " Hristos ca Domn și"
+  },
+  {
+   "t": 780276,
+   "session": 2,
+   "text": " mântuitor și la"
+  },
+  {
+   "t": 781204,
+   "session": 2,
+   "text": " fel iarăși ni se"
+  },
+  {
+   "t": 782170,
+   "session": 2,
+   "text": " vine așa de"
+  },
+  {
+   "t": 783154,
+   "session": 2,
+   "text": " multe scuzări"
+  },
+  {
+   "t": 784119,
+   "session": 2,
+   "text": " tu"
+  },
+  {
+   "t": 785246,
+   "session": 2,
+   "text": " ești prea tânăr,"
+  },
+  {
+   "t": 786166,
+   "session": 2,
+   "text": " tu ai de"
+  },
+  {
+   "t": 787257,
+   "session": 2,
+   "text": " alte lucruri de"
+  },
+  {
+   "t": 788174,
+   "session": 2,
+   "text": " ocupat și le știm"
+  },
+  {
+   "t": 789187,
+   "session": 2,
+   "text": " cu toții lista"
+  },
+  {
+   "t": 790191,
+   "session": 2,
+   "text": " foarte bine."
+  },
+  {
+   "t": 791205,
+   "session": 2,
+   "text": " Așa că Domnul să"
+  },
+  {
+   "t": 792196,
+   "session": 2,
+   "text": " dea"
+  },
+  {
+   "t": 793272,
+   "session": 2,
+   "text": " înțelepciune așa cum stăm și în"
+  },
+  {
+   "t": 794222,
+   "session": 2,
+   "text": " fața"
+  },
+  {
+   "t": 795213,
+   "session": 2,
+   "text": " aceste lucrări"
+  },
+  {
+   "t": 796191,
+   "session": 2,
+   "text": " minunate"
+  },
+  {
+   "t": 797205,
+   "session": 2,
+   "text": " să nu ne căutăm"
+  },
+  {
+   "t": 798147,
+   "session": 2,
+   "text": " scuzări"
+  },
+  {
+   "t": 799195,
+   "session": 2,
+   "text": " ieftine și"
+  },
+  {
+   "t": 800132,
+   "session": 2,
+   "text": " mici."
+  },
+  {
+   "t": 801176,
+   "session": 2,
+   "text": " care ne"
+  },
+  {
+   "t": 802221,
+   "session": 2,
+   "text": " depărtează de o lucrare"
+  },
+  {
+   "t": 803184,
+   "session": 2,
+   "text": " așa de"
+  },
+  {
+   "t": 804205,
+   "session": 2,
+   "text": " suverană, așa de"
+  },
+  {
+   "t": 805190,
+   "session": 2,
+   "text": " puternică și așa de"
+  },
+  {
+   "t": 806182,
+   "session": 2,
+   "text": " frumoasă."
+  },
+  {
+   "t": 808272,
+   "session": 2,
+   "text": " Să nu căutăm"
+  },
+  {
+   "t": 809283,
+   "session": 2,
+   "text": " să amânăm lucrurile"
+  },
+  {
+   "t": 810266,
+   "session": 2,
+   "text": " acestea, de a ne"
+  },
+  {
+   "t": 811206,
+   "session": 2,
+   "text": " duce și a face lucrurile"
+  },
+  {
+   "t": 812285,
+   "session": 2,
+   "text": " care ne învață"
+  },
+  {
+   "t": 813150,
+   "session": 2,
+   "text": " cuvântul."
+  },
+  {
+   "t": 814149,
+   "session": 2,
+   "text": " Și"
+  },
+  {
+   "t": 816196,
+   "session": 2,
+   "text": " Vreau ca"
+  },
+  {
+   "t": 817240,
+   "session": 2,
+   "text": " să îți"
+  },
+  {
+   "t": 818305,
+   "session": 2,
+   "text": " spun suflete, care"
+  },
+  {
+   "t": 819273,
+   "session": 2,
+   "text": " ești aici, care"
+  },
+  {
+   "t": 820246,
+   "session": 2,
+   "text": " încă nu l ai acceptat"
+  },
+  {
+   "t": 821252,
+   "session": 2,
+   "text": " pe Iisus Hristos,"
+  },
+  {
+   "t": 822245,
+   "session": 2,
+   "text": " încă n ai făcut"
+  },
+  {
+   "t": 823262,
+   "session": 2,
+   "text": " legământ cu el."
+  },
+  {
+   "t": 824231,
+   "session": 2,
+   "text": " Acceptă l. Este"
+  },
+  {
+   "t": 825211,
+   "session": 2,
+   "text": " un moment"
+  },
+  {
+   "t": 826196,
+   "session": 2,
+   "text": " mai mult"
+  },
+  {
+   "t": 827230,
+   "session": 2,
+   "text": " ca perfect și mai mult ca"
+  },
+  {
+   "t": 828171,
+   "session": 2,
+   "text": " ideal."
+  },
+  {
+   "t": 829270,
+   "session": 2,
+   "text": " Acceptă l pentru că el"
+  },
+  {
+   "t": 830178,
+   "session": 2,
+   "text": " este care"
+  },
+  {
+   "t": 831263,
+   "session": 2,
+   "text": " va fi cu el în"
+  },
+  {
+   "t": 832305,
+   "session": 2,
+   "text": " veci, în veșnicie."
+  },
+  {
+   "t": 833274,
+   "session": 2,
+   "text": " Și"
+  },
+  {
+   "t": 834197,
+   "session": 2,
+   "text": " la"
+  },
+  {
+   "t": 835224,
+   "session": 2,
+   "text": " urmă"
+  },
+  {
+   "t": 837208,
+   "session": 2,
+   "text": " Coloseni 1"
+  },
+  {
+   "t": 838220,
+   "session": 2,
+   "text": " cu 20"
+  },
+  {
+   "t": 839235,
+   "session": 2,
+   "text": " spune în felul"
+  },
+  {
+   "t": 840288,
+   "session": 2,
+   "text": " următor,"
+  },
+  {
+   "t": 842163,
+   "session": 2,
+   "text": " și să"
+  },
+  {
+   "t": 843206,
+   "session": 2,
+   "text": " împace tot cu sine"
+  },
+  {
+   "t": 844215,
+   "session": 2,
+   "text": " prin el,"
+  },
+  {
+   "t": 845233,
+   "session": 2,
+   "text": " atât ce este pe"
+  },
+  {
+   "t": 846194,
+   "session": 2,
+   "text": " pământ, cât și ce"
+  },
+  {
+   "t": 847162,
+   "session": 2,
+   "text": " este în"
+  },
+  {
+   "t": 848235,
+   "session": 2,
+   "text": " ceruri, făcând"
+  },
+  {
+   "t": 849238,
+   "session": 2,
+   "text": " pace prin"
+  },
+  {
+   "t": 850208,
+   "session": 2,
+   "text": " sângele crucii"
+  },
+  {
+   "t": 851174,
+   "session": 2,
+   "text": " lui,"
+  },
+  {
+   "t": 852173,
+   "session": 2,
+   "text": " crucea lui"
+  },
+  {
+   "t": 853164,
+   "session": 2,
+   "text": " Hristos"
+  },
+  {
+   "t": 854258,
+   "session": 2,
+   "text": " dăruiește pace, dăruiește"
+  },
+  {
+   "t": 855336,
+   "session": 2,
+   "text": " nădejde, dăruiește"
+  },
+  {
+   "t": 856180,
+   "session": 2,
+   "text": " biruință"
+  },
+  {
+   "t": 857261,
+   "session": 2,
+   "text": " cu Domnul Iisus"
+  },
+  {
+   "t": 858168,
+   "session": 2,
+   "text": " Hristos."
+  },
+  {
+   "t": 859164,
+   "session": 2,
+   "text": " Și"
+  },
+  {
+   "t": 863403,
+   "session": 2,
+   "text": " Să nu lăsăm nimic absolut"
+  },
+  {
+   "t": 864236,
+   "session": 2,
+   "text": " care să ne împiedice ca"
+  },
+  {
+   "t": 865236,
+   "session": 2,
+   "text": " să fim"
+  },
+  {
+   "t": 866216,
+   "session": 2,
+   "text": " credincioși lui,"
+  },
+  {
+   "t": 867263,
+   "session": 2,
+   "text": " să nu lăsăm să fim"
+  },
+  {
+   "t": 868264,
+   "session": 2,
+   "text": " copleșiți de alte"
+  },
+  {
+   "t": 869264,
+   "session": 2,
+   "text": " lucrări care"
+  },
+  {
+   "t": 870177,
+   "session": 2,
+   "text": " îmi"
+  },
+  {
+   "t": 871288,
+   "session": 2,
+   "text": " interesant. Nu știu dacă ați"
+  },
+  {
+   "t": 872258,
+   "session": 2,
+   "text": " experimentat acest"
+  },
+  {
+   "t": 873254,
+   "session": 2,
+   "text": " lucru, dar eu l am"
+  },
+  {
+   "t": 874280,
+   "session": 2,
+   "text": " experimentat și"
+  },
+  {
+   "t": 875406,
+   "session": 2,
+   "text": " încât să învețe"
+  },
+  {
+   "t": 876266,
+   "session": 2,
+   "text": " cred că încă o să l mai"
+  },
+  {
+   "t": 877347,
+   "session": 2,
+   "text": " experimentez."
+  },
+  {
+   "t": 878573,
+   "session": 2,
+   "text": " De"
+  },
+  {
+   "t": 879764,
+   "session": 2,
+   "text": " multe ori"
+  },
+  {
+   "t": 880832,
+   "session": 2,
+   "text": " așa de greu e să"
+  },
+  {
+   "t": 881761,
+   "session": 2,
+   "text": " te încurajezi"
+  },
+  {
+   "t": 882460,
+   "session": 2,
+   "text": " singur, să"
+  },
+  {
+   "t": 883225,
+   "session": 2,
+   "text": " te ridici de"
+  },
+  {
+   "t": 884202,
+   "session": 2,
+   "text": " undeva și să te"
+  },
+  {
+   "t": 885199,
+   "session": 2,
+   "text": " pornești."
+  },
+  {
+   "t": 887270,
+   "session": 2,
+   "text": " Așa e ușor să"
+  },
+  {
+   "t": 887913,
+   "session": 2,
+   "text": " ca"
+  },
+  {
+   "t": 888489,
+   "session": 2,
+   "text": " să"
+  },
+  {
+   "t": 889132,
+   "session": 2,
+   "text": " să"
+  },
+  {
+   "t": 890167,
+   "session": 2,
+   "text": " în deznădejde"
+  },
+  {
+   "t": 891136,
+   "session": 2,
+   "text": " aceasta."
+  },
+  {
+   "t": 892247,
+   "session": 2,
+   "text": " Dar este greu ca să"
+  },
+  {
+   "t": 893211,
+   "session": 2,
+   "text": " te ridici."
+  },
+  {
+   "t": 894215,
+   "session": 2,
+   "text": " Cu Domnul Iisus"
+  },
+  {
+   "t": 895195,
+   "session": 2,
+   "text": " Hristos pot"
+  },
+  {
+   "t": 896175,
+   "session": 2,
+   "text": " totul,"
+  },
+  {
+   "t": 897176,
+   "session": 2,
+   "text": " în Hristos"
+  },
+  {
+   "t": 898181,
+   "session": 2,
+   "text": " Amin."
+  },
+  {
+   "t": 899205,
+   "session": 2,
+   "text": " Amin, fraților. Îmi"
+  },
+  {
+   "t": 900247,
+   "session": 2,
+   "text": " place că sunteți"
+  },
+  {
+   "t": 901140,
+   "session": 2,
+   "text": " atenți."
+  }
+ ]
+}

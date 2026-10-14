@@ -244,6 +244,346 @@
       display: none !important;
     }
 
+    /* ---- Message notes: verse pop-ups, summary, points, verses read ---- */
+    .section {
+      position: relative;
+    }
+    .message-panel {
+      --mp-scale: 1;
+      --scripture: #e8bd62;
+      --scripture-soft: rgba(232, 189, 98, 0.32);
+      flex: 1 1 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      align-items: start;
+      align-content: start;
+      gap: clamp(1rem, 3.2vw, 4rem);
+      padding: clamp(0.9rem, 2.6vh, 2.2rem) clamp(0.5rem, 5vw, 6rem) max(var(--subtitle-bottom-safe), env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      overflow: hidden;
+      font-size: calc(min(1.42vw, 2.7vh) * var(--mp-scale));
+      color: #d6dee2;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent) top / 100% 1px no-repeat;
+    }
+    .message-panel[hidden],
+    .message-panel [hidden],
+    .verse-float[hidden],
+    .verse-float [hidden],
+    .recap-overlay[hidden] {
+      display: none !important;
+    }
+    .message-panel[data-columns="notes"],
+    .message-panel[data-columns="scripture"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .message-panel[data-columns="scripture"] {
+      font-size: calc(min(1.75vw, 3.2vh) * var(--mp-scale));
+      justify-items: center;
+      align-content: center;
+    }
+    .message-panel[data-columns="scripture"] .mp-scripture {
+      width: min(100%, 58em);
+    }
+    body.qr-on .message-panel {
+      padding-right: calc(148px + 3rem);
+    }
+    .mp-notes,
+    .mp-scripture {
+      min-width: 0;
+    }
+    .mp-title {
+      margin: 0 0 0.3em;
+      font-size: 1.32em;
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: 0.005em;
+      color: #ffffff;
+    }
+    .mp-summary {
+      margin: 0 0 0.75em;
+      max-width: 62ch;
+      font-size: 0.98em;
+      font-weight: 400;
+      line-height: 1.42;
+      color: #b4c1c8;
+    }
+    .mp-points {
+      list-style: none;
+      counter-reset: point;
+      display: grid;
+      gap: 0.42em;
+      margin: 0;
+      padding: 0;
+    }
+    .mp-points li {
+      counter-increment: point;
+      display: grid;
+      grid-template-columns: 1.55em minmax(0, 1fr);
+      gap: 0.6em;
+      align-items: start;
+      font-size: 1.02em;
+      font-weight: 600;
+      line-height: 1.3;
+      color: #eef2f4;
+    }
+    .mp-points li::before {
+      content: counter(point);
+      display: grid;
+      place-items: center;
+      width: 1.55em;
+      height: 1.55em;
+      margin-top: -0.06em;
+      border-radius: 50%;
+      font-size: 0.74em;
+      font-weight: 800;
+      line-height: 1;
+      color: #1a1f23;
+      background: #f0785e;
+      box-shadow: 0 0 14px rgba(240, 120, 94, 0.28);
+    }
+    .mp-points li.mp-new {
+      animation: mpRise 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .mp-verse {
+      position: relative;
+      padding: 0.15em 0 0 1em;
+      border-left: 3px solid var(--scripture);
+    }
+    .mp-verse-head {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.25em 0.75em;
+    }
+    .mp-verse-ref {
+      font-size: 1.28em;
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--scripture);
+    }
+    .mp-verse-version {
+      font-size: 0.6em;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #87959d;
+    }
+    .mp-verse-text,
+    .vf-text {
+      font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+      color: #f7f2e7;
+    }
+    .mp-verse-text {
+      margin: 0.4em 0 0;
+      font-size: 1.12em;
+      line-height: 1.46;
+    }
+    .verse-num {
+      margin-right: 0.18em;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.58em;
+      font-weight: 800;
+      color: var(--scripture);
+    }
+    .verse-timer {
+      display: block;
+      height: 2px;
+      margin-top: 0.85em;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgba(232, 189, 98, 0.16);
+    }
+    .verse-timer > span {
+      display: block;
+      height: 100%;
+      background: var(--scripture);
+      transform-origin: left center;
+    }
+    @keyframes verseTimer {
+      to { transform: scaleX(0); }
+    }
+    .mp-verse-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4em 0.45em;
+      margin: 0.9em 0 0;
+      padding: 0;
+    }
+    .mp-verse[hidden] + .mp-verse-list {
+      margin-top: 0;
+    }
+    .mp-verse-list li {
+      padding: 0.24em 0.72em 0.28em;
+      border: 1px solid var(--scripture-soft);
+      border-radius: 999px;
+      font-size: 0.76em;
+      font-weight: 600;
+      line-height: 1.2;
+      color: #cfd8dc;
+      background: rgba(232, 189, 98, 0.05);
+    }
+    .mp-verse-list li.current {
+      color: #1a1f23;
+      background: var(--scripture);
+      border-color: var(--scripture);
+    }
+
+    /* Two languages: the verse sits in the space above each language's lines. */
+    .verse-float {
+      --scripture: #e8bd62;
+      position: absolute;
+      top: clamp(0.35rem, 1.3vh, 1rem);
+      left: 50%;
+      z-index: 5;
+      width: min(82%, 74rem);
+      box-sizing: border-box;
+      transform: translateX(-50%);
+      padding: 0.5em 1.05em 0.55em;
+      border: 1px solid rgba(232, 189, 98, 0.34);
+      border-radius: 12px;
+      background: rgba(15, 19, 23, 0.9);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      font-size: min(1.3vw, 2.35vh);
+      color: #f7f2e7;
+    }
+    .vf-ref {
+      font-weight: 800;
+      color: var(--scripture);
+      white-space: nowrap;
+    }
+    .vf-text {
+      display: -webkit-box;
+      margin: 0.18em 0 0;
+      overflow: hidden;
+      line-height: 1.34;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .verse-float .verse-timer {
+      margin-top: 0.45em;
+    }
+
+    /* Recap: the whole message over the subtitles, when the operator asks. */
+    .recap-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      padding: 4vh 4vw;
+      background: rgba(0, 0, 0, 0.74);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+    .recap-card {
+      --recap-scale: 1;
+      --scripture: #e8bd62;
+      --scripture-soft: rgba(232, 189, 98, 0.32);
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: 3.5vw;
+      width: min(92vw, 120rem);
+      max-height: 88vh;
+      box-sizing: border-box;
+      overflow: hidden;
+      padding: 4.5vh 3.6vw;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 22px;
+      background: linear-gradient(180deg, #161c21 0%, #0e1317 100%);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+      font-size: calc(min(1.55vw, 2.8vh) * var(--recap-scale));
+      color: #d6dee2;
+    }
+    .recap-column + .recap-column {
+      padding-left: 3.5vw;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .recap-card .mp-title {
+      font-size: 1.6em;
+    }
+
+    .mp-fresh {
+      animation: mpFade 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .verse-float.mp-fresh {
+      animation: floatIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @keyframes mpFade {
+      from { opacity: 0; transform: translateY(0.35em); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes mpRise {
+      from { opacity: 0; transform: translateY(0.5em); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes floatIn {
+      from { opacity: 0; transform: translate(-50%, -0.5em); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* The spoken language: the same look as the subtitles, newest line at the
+       bottom, older lines scrolling off the top. */
+    #sec-src[hidden],
+    .control-btn[hidden] {
+      display: none !important;
+    }
+    .src-window {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      max-height: calc(var(--subtitle-font-size) * var(--subtitle-line-height) * var(--src-lines, 3));
+      overflow: hidden;
+      /* Hides the edge of the line that just scrolled off the top. */
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 0.3em);
+      mask-image: linear-gradient(to bottom, transparent 0, #000 0.3em);
+    }
+    .src-lines {
+      margin: 0;
+      font-size: var(--subtitle-font-size);
+      font-weight: 800;
+      line-height: var(--subtitle-line-height);
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Following a reading: the verse being read, then the next one, dimmed. */
+    .verse-next {
+      opacity: 0.42;
+    }
+    .mp-advance {
+      animation: mpAdvance 420ms ease both;
+    }
+    @keyframes mpAdvance {
+      from { opacity: 0.35; }
+      to { opacity: 1; }
+    }
+    /* The verse also in the spoken language's Bible, under the screen's own. */
+    .mp-verse-spoken {
+      margin-top: 0.75em;
+      padding-top: 0.6em;
+      border-top: 1px solid rgba(232, 189, 98, 0.18);
+    }
+    .mp-verse-spoken .mp-verse-head {
+      font-size: 0.78em;
+    }
+    .mp-verse-spoken .mp-verse-ref {
+      font-size: 1em;
+      color: #d9b46a;
+    }
+    .mp-verse-spoken .mp-verse-text {
+      font-size: 0.84em;
+      color: #d8d2c6;
+    }
+
+    body.obs-mode .message-panel,
+    body.obs-mode .verse-float,
+    body.obs-mode .recap-overlay {
+      display: none !important;
+    }
+
     .control-btn:focus-visible {
       outline: 3px solid #ffffff;
       outline-offset: 2px;
@@ -294,6 +634,36 @@
         width: 112px;
         height: 112px;
       }
+      .message-panel,
+      .message-panel[data-columns="scripture"] {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.9rem;
+        padding: 0.8rem 0.25rem max(1rem, env(safe-area-inset-bottom));
+        overflow-y: auto;
+        font-size: calc(clamp(0.82rem, 3.7vw, 1.05rem) * var(--mp-scale));
+      }
+      .message-panel .mp-scripture {
+        order: -1;
+      }
+      body.qr-on .message-panel {
+        padding-right: 0.25rem;
+      }
+      .verse-float {
+        width: calc(100% - 0.5rem);
+        font-size: clamp(0.78rem, 3.4vw, 0.95rem);
+      }
+      .recap-card {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+        font-size: calc(clamp(0.85rem, 3.8vw, 1.05rem) * var(--recap-scale));
+        overflow-y: auto;
+      }
+      .recap-column + .recap-column {
+        padding-left: 0;
+        padding-top: 1.2rem;
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
     }
 
     @media (max-height: 650px) {
@@ -339,6 +709,7 @@
       <button class="control-btn active" id="btn-view-both" aria-pressed="true">Both</button>
       <button class="control-btn" id="btn-view-lang1" aria-pressed="false">Language 1</button>
       <button class="control-btn" id="btn-view-lang2" aria-pressed="false" style="display: none;">Language 2</button>
+      <button class="control-btn" id="btn-view-src" type="button" aria-pressed="false" title="The preacher's own language, as Google hears it." hidden>Original</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group" aria-label="Subtitle display settings">
@@ -367,16 +738,65 @@
       <button class="control-btn" id="btn-qr-toggle" type="button" aria-pressed="false">QR Off</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.3.36</span>
+    <div class="control-group">
+      <span class="control-label">Notes:</span>
+      <button class="control-btn active" id="btn-notes-toggle" type="button" aria-pressed="true">On</button>
+    </div>
+    <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.0</span>
   </div>
 
   <div class="container" id="subtitles-container">
     <div class="section" id="sec-lang1">
       <div class="text" id="sub-lang1">-</div>
+      <aside class="verse-float" id="verse-float-lang1" hidden>
+        <span class="vf-ref" data-part="ref" dir="auto"></span>
+        <p class="vf-text" data-part="text" dir="auto"></p>
+        <span class="verse-timer"><span data-part="timer"></span></span>
+      </aside>
     </div>
     <div class="section" id="sec-lang2" style="display: none;">
       <div class="text" id="sub-lang2">-</div>
+      <aside class="verse-float" id="verse-float-lang2" hidden>
+        <span class="vf-ref" data-part="ref" dir="auto"></span>
+        <p class="vf-text" data-part="text" dir="auto"></p>
+        <span class="verse-timer"><span data-part="timer"></span></span>
+      </aside>
     </div>
+    <div class="section" id="sec-src" hidden>
+      <div class="text">
+        <div class="src-window"><p class="src-lines" id="sub-src" dir="auto"></p></div>
+      </div>
+    </div>
+    <section class="message-panel" id="message-panel" aria-live="polite" hidden>
+      <div class="mp-notes" data-part="notes" dir="auto">
+        <h2 class="mp-title" data-part="title"></h2>
+        <p class="mp-summary" data-part="summary"></p>
+        <ol class="mp-points" data-part="points"></ol>
+      </div>
+      <div class="mp-scripture" data-part="scripture">
+        <article class="mp-verse" data-part="verse" hidden>
+          <div class="mp-verse-head">
+            <span class="mp-verse-ref" data-part="verse-ref" dir="auto"></span>
+            <span class="mp-verse-version" data-part="verse-version"></span>
+          </div>
+          <p class="mp-verse-text" data-part="verse-text" dir="auto"></p>
+          <div class="mp-verse-spoken" data-part="spoken" hidden>
+            <div class="mp-verse-head">
+              <span class="mp-verse-ref" data-part="spoken-ref" dir="auto"></span>
+              <span class="mp-verse-version" data-part="spoken-version"></span>
+            </div>
+            <p class="mp-verse-text" data-part="spoken-text" dir="auto"></p>
+          </div>
+          <span class="verse-timer" data-part="verse-timer-track"><span data-part="verse-timer"></span></span>
+        </article>
+        <ul class="mp-verse-list" data-part="list"></ul>
+      </div>
+    </section>
+  </div>
+
+  <div class="recap-overlay" id="recap-overlay" hidden>
+    <div class="recap-card" data-part="recap"></div>
   </div>
 
   <aside class="qr-float hidden" id="qr-float" aria-hidden="true">

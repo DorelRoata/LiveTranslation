@@ -12,6 +12,8 @@ import { buildSystemSetup, countWords, getLanguageName } from './system-setup.js
 import { appendLaneText, emptyLaneState, endsSentence, pieceToAppend } from './caption-stream.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
+import { DEFAULT_NOTES_SETTINGS } from './message-notes.js';
+import { createNotesConsole } from './notes-console.js';
 import {
   AudioDeliveryMonitor,
   decodePcm16Base64,
@@ -37,7 +39,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.3.36';
+const APP_VERSION = '1.5.0';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -521,6 +523,7 @@ resetSettingsBtn.addEventListener('click', () => {
   applyOperatorSettings(DEFAULT_OPERATOR_SETTINGS);
   saveOperatorSettings();
   syncSongDetectorPreference();
+  sendToRelay({ type: 'notes-settings', settings: DEFAULT_NOTES_SETTINGS });
   setDiagnostic('Operator settings restored to defaults. Play on this Mac, target-language repeat, and automatic song filtering are off.', 'good');
 });
 
@@ -901,6 +904,7 @@ async function copyDiagnostics() {
     `Last heard language: ${lastHeardInputLanguage || 'none'}`,
     `OBS language: ${obsLanguageSelect.selectedOptions[0]?.textContent || 'Both Languages'}`,
     `Automatic song filter: ${ignoreSongsToggle.checked ? songFilterStatus.textContent : 'Off'}`,
+    `Message notes: ${notesConsole.describe()}`,
     ...statusLines,
     ...audioLossSummary(),
     proxyLine,
@@ -1713,9 +1717,18 @@ function deliverOutputPiece(channelId, text, session = {}) {
   }
 }
 
-function deliverInputPiece(text, session = {}) {
+// The preacher's own words also go to the host, which finds Bible references
+// in them and writes the message notes. sourceTail keeps the spacing right
+// across Gemini sessions; the transcript panel above is unchanged.
+let sourceTail = '';
+function deliverInputPiece(text, session = {}, language = '') {
   const addition = pieceToAppend(inputStream.text, text, session);
   if (addition) appendTranscriptPiece(inputStream, addition);
+  const sourceAddition = pieceToAppend(sourceTail, text, session);
+  if (sourceAddition) {
+    sourceTail = (sourceTail + sourceAddition).slice(-200);
+    sendToRelay({ type: 'source-append', text: sourceAddition, language });
+  }
 }
 
 // --- WebSocket Handlers ---
@@ -2173,7 +2186,7 @@ function setupSocket(ws, channelId, targetLanguage, echoTargetLanguage, sourceLa
           if (inputTx.text) {
             const session = { sessionStart: ws.firstInputPending !== false, resumed: Boolean(ws.resumed) };
             ws.firstInputPending = false;
-            deliverInputPiece(inputTx.text, session);
+            deliverInputPiece(inputTx.text, session, inputTx.languageCode || '');
           }
         }
 
@@ -2330,6 +2343,12 @@ if (streamerBtn) {
 }
 
 // --- Local Subtitles WebSocket Broadcasting ---
+function sendToRelay(message) {
+  if (!isSocketOpen(localSubtitlesWS)) return false;
+  localSubtitlesWS.send(JSON.stringify(message));
+  return true;
+}
+
 function initLocalSubtitlesWS() {
   clearTimeout(localReconnectTimeout);
   setHealthItem('local', 'connecting', 'Connecting');
@@ -2342,6 +2361,7 @@ function initLocalSubtitlesWS() {
     if (localSubtitlesWS !== ws) return;
     localReconnectAttempt = 0;
     setHealthItem('local', 'good', 'Connected');
+    notesConsole.setConnected(true);
     logDebug("Connected to local subtitles broadcast server.", "info");
     syncLocalSubtitlesSetup();
     if (isRunning && translationSocketsReady()) {
@@ -2352,6 +2372,7 @@ function initLocalSubtitlesWS() {
   ws.onclose = () => {
     if (localSubtitlesWS !== ws) return;
     localSubtitlesWS = null;
+    notesConsole.setConnected(false);
     const delay = Math.min(1000 * (2 ** localReconnectAttempt), 8000);
     localReconnectAttempt++;
     logDebug(`Disconnected from local subtitles server. Reconnecting in ${Math.round(delay / 1000)}s...`, "info");
@@ -2370,7 +2391,12 @@ function initLocalSubtitlesWS() {
     if (localSubtitlesWS !== ws) return;
     try {
       const data = JSON.parse(event.data);
-      if (data.type === 'sync') {
+      if (data.type === 'message-notes') {
+        notesConsole.update(data.state);
+      } else if (data.type === 'notes-error') {
+        notesConsole.showError(data.error);
+      } else if (data.type === 'sync') {
+        if (data.messageNotes) notesConsole.update(data.messageNotes);
         remoteAudioStreaming = Boolean(data.state?.audioSenderStreaming);
         if (audioSourceSelect.value === 'network') {
           setHealthItem('audio', remoteAudioStreaming ? 'good' : 'warning', networkAudioHealthDetail(remoteAudioStreaming));
@@ -2472,6 +2498,9 @@ function syncLocalSubtitlesSetup() {
   }));
   syncLocalSubtitleSnapshot();
 }
+
+// Message notes card: switches, buttons, and a preview of the screens.
+const notesConsole = createNotesConsole({ send: sendToRelay, log: logDebug });
 
 // Initialize local WebSocket connection on page load
 initLocalSubtitlesWS();

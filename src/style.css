@@ -1458,6 +1458,310 @@ canvas {
   height: 100%;
 }
 
+/* ---------- Message notes ---------- */
+.notes-console {
+  --scripture: #e8bd62;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.notes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.notes-title-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+}
+
+.notes-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--scripture);
+}
+
+.notes-head h3 {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.notes-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.notes-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6c7a83;
+}
+
+.notes-status[data-state="ready"]::before {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
+}
+
+.notes-status[data-state="updating"]::before {
+  background: var(--accent-amber);
+  animation: notes-pulse 1s ease-in-out infinite;
+}
+
+.notes-status[data-state="error"] {
+  border-color: rgba(239, 83, 80, 0.4);
+  color: #ffb3a8;
+}
+
+.notes-status[data-state="error"]::before {
+  background: var(--accent-red);
+}
+
+@keyframes notes-pulse {
+  50% { opacity: 0.3; }
+}
+
+.notes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.notes-actions .health-btn {
+  height: var(--pill-h);
+}
+
+.notes-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 1.6rem;
+}
+
+.notes-field {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.notes-field label {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.notes-field select {
+  width: auto;
+  min-height: var(--pill-h);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.notes-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.notes-preview,
+.notes-scripture {
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel-inset);
+}
+
+.notes-empty,
+.notes-verses-empty {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.notes-preview-title {
+  margin-bottom: 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.notes-preview-summary {
+  margin-bottom: 0.7rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.notes-preview-points {
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 1.3rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.notes-preview-points li::marker {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent-coral);
+}
+
+.notes-scripture {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notes-onscreen {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(232, 189, 98, 0.35);
+  border-left: 3px solid var(--scripture);
+  border-radius: var(--radius-sm);
+  background: rgba(232, 189, 98, 0.06);
+}
+
+.notes-onscreen-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--scripture);
+}
+
+.notes-onscreen-left {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.notes-onscreen-ref {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.notes-onscreen-text {
+  display: -webkit-box;
+  margin: 0.25rem 0 0.4rem;
+  overflow: hidden;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.notes-show-verse {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.notes-show-verse label,
+.notes-verses-label {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.notes-show-verse-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notes-show-verse-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--pill-h);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.notes-show-verse-row .share-link-btn {
+  min-height: var(--pill-h);
+  padding: 0 1rem;
+}
+
+.notes-verses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.notes-verse-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+}
+
+.notes-chip {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(232, 189, 98, 0.3);
+  border-radius: 999px;
+  background: rgba(232, 189, 98, 0.05);
+  color: #e9dcc0;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.notes-chip:hover {
+  border-color: rgba(232, 189, 98, 0.6);
+  background: rgba(232, 189, 98, 0.14);
+  color: var(--text-primary);
+}
+
+.notes-chip.current {
+  border-color: var(--scripture);
+  background: var(--scripture);
+  color: #1d1810;
+}
+
 .transcript-controls-bar {
   display: flex;
   align-items: center;
@@ -1774,6 +2078,10 @@ summary:focus-visible {
 }
 
 @media (max-width: 1100px) {
+  .notes-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .live-bar {
     grid-template-columns: 1fr auto;
     grid-template-areas:

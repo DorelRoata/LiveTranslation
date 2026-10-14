@@ -256,7 +256,68 @@ Live retains the original `350 ms` normal line-break pause and `150 ms` catch-up
 
 Both modes use sentence punctuation for semantic line breaks and a 60-character fallback for long lines. The built-in Gemini prompt requests short complete phrases, natural cadence, no repetition or revision of already emitted text, and no long response pauses. This prompt can improve structure, while the client queue remains responsible for deterministic screen timing. Neither mode changes the translated audio playback speed.
 
-## 13. Recovery and diagnostics
+## 13. Bible verses and message notes
+
+The **Message notes** card on the dashboard sits between the audio meters and the transcripts. Its settings are kept on the host Mac, so the Mac and a laptop dashboard always show the same switches.
+
+### Verse pop-ups
+
+When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default):
+
+- With **one language** on a screen, the verse appears in the bottom half, beside the notes.
+- With **two languages**, a slim card appears at the top of each language's half.
+- Each language gets its own Bible and numbering: English uses the **English Bible** setting (KJV by default), Romanian uses Cornilescu, Russian the Synodal translation (Psalm 23 shows as Псалом 22:1).
+- If the preacher repeats the same verse, the card stays up instead of flashing again. A new verse replaces the old one.
+- Hindi and Bulgarian have no Bible on the verse service, so those screens show the reference without text. A screen also shows the reference alone if the network is down and that chapter was never shown before.
+
+References are recognized from the preacher's words and the English translation, in forms such as:
+
+| Said | Shown |
+| --- | --- |
+| "Efeseni 2 cu 16", "John 3:16" | Ephesians 2:16, John 3:16 |
+| "1 Corinteni, capitolul 1 de la versetul 17" | 1 Corinthians 1:17 |
+| "Psalm 5, 1 through 6", "Psalmul 5, de la 1 la 6" | Psalm 5:1–6 |
+| "Psalms 1 through 4", "Psalmii 1 până la 4" | Psalms 1–4 (reference; the reading is then followed) |
+| "Romans 8:28, 31 and 38" | those three verses on one card |
+| "John 3:16 and 4:1" | John 3:16, then John 4:1 |
+| "capitolul 3 din Ioan", "chapter 3 of the Gospel of John" | John 3 |
+| "verse 28" right after a chapter | that verse of that chapter |
+
+Names that are also ordinary words (Mark, John, Job, Acts) need a verse number or the word "chapter". A long passage shows its first six verses until the reading starts; then the card follows the reader.
+
+### Following the reading
+
+When a passage is read aloud, the verse card follows the reader: it shows the verse being read now and, dimmed, the next one, and moves on with each verse. It works for a passage that was announced, for one whose announcement Google misheard (Mark 15 heard as "Marcu 13"), and for a reading nobody announced, such as the Romanian school reciting a Psalm. A reading nobody announced appears after a few words, once two moments of the reading agree. The card stays while the reading continues and then times out as usual. **Reading now** in the dashboard card shows the verse being followed.
+
+The words heard are compared with Cornilescu, so this works when the reader uses Cornilescu (or close to it) and speaks Romanian. Turn **Follow the reading** off to show only named references.
+
+### Romanian on screen
+
+- With **Verses also in Romanian** on, screens showing English (or Russian) also show the same verse from Cornilescu under it.
+- Each projector and phone has a **Română** button among its layouts once the preacher has started speaking. It shows the preacher's own words as captions, as Google hears them (expect an occasional misheard word), with the verse and the notes in Romanian. Translated audio does not play in this layout.
+
+### Which Bible
+
+English uses the **English Bible** setting: King James (KJV, the default), World English (WEB) or American Standard (ASV). The New King James and the NIV are copyrighted and have no free source the app can use, so they are not offered. The ESV could be added: Crossway gives churches a free key at api.esv.org. Romanian uses Cornilescu and Russian the Synodal translation, the Bibles of Romanian and Russian-speaking evangelical churches.
+
+**Clear screens** also removes the current verse and the recap. The summary stays until you turn it off or choose **New message**.
+
+If a verse was missed, type it in **Show a verse** (for example `John 3:16`, `Romani 8:28`, `Psalm 23`) and choose **Show**. Click any verse under **Verses read** to show it again. **Hide verse now** removes the current card.
+
+### Summary and points
+
+About a minute into the sermon, screens that show **one language** fill the bottom half with the message's title, a two-sentence summary, the main points in order, and the verses read. The notes are written by Gemini from the transcript in every screen language, and they update about every minute and a half while the preacher speaks, and once more when the preacher pauses. The preview in the card shows exactly what the screens show.
+
+- **Update now** rewrites the notes immediately.
+- **Show recap** puts the whole message over the subtitles on every screen, both languages side by side, for up to two minutes. Use it at the end of the sermon. Choose **Hide recap** to remove it sooner.
+- **New message** clears the notes and the verses list. Use it when the next preacher starts. Notes also start fresh by themselves after 30 minutes of silence.
+- Turn **Summary & points on screens** off during announcements or when it is not wanted; no notes are written while it is off, and verse pop-ups keep working. Turn **Bible verse pop-ups** off to stop verses appearing by themselves.
+
+### On one screen only
+
+Each projector and phone has **Notes: On/Off** in its control bar. It hides verses and notes on that screen only and is remembered by that device. The OBS overlay never shows notes or verses.
+
+## 14. Recovery and diagnostics
 
 The dashboard provides:
 
@@ -270,7 +331,7 @@ The dashboard provides:
 
 Live audio is not queued while connections are unavailable. This prevents stale speech from being translated after a recovery.
 
-## 14. Logs
+## 15. Logs
 
 The macOS launcher writes to:
 
@@ -286,7 +347,7 @@ tail -100 "$HOME/Library/Logs/LiveTranslate.log"
 
 The browser dashboard also includes System Status Logs and a Copy Diagnostics control.
 
-## 15. Common problems
+## 16. Common problems
 
 ### Clicking the Dock app resets the dashboard
 
@@ -311,6 +372,14 @@ This is expected for the local self-signed certificate. Confirm that the IP belo
 ### The Dock app reports that Node.js is missing
 
 Install Node.js 22 LTS or another version allowed by `package.json`: Node 20.19+ or Node 22.12+.
+
+### Verses or notes do not appear
+
+- Check the status beside **Message notes** on the dashboard. An error there (for example a Gemini quota message) affects only the notes; subtitles keep running.
+- Notes appear only on screens showing one language. On two-language screens, use **Show recap**.
+- A reading is followed only while the words heard match the Bible text; if the reader uses another translation or paraphrases, the card keeps the last verse matched. If the card ever shows the wrong verse, choose **Hide verse now** or turn **Follow the reading** off.
+- Check that **Notes** is **On** in that screen's control bar.
+- A verse shows without its text when that language has no Bible on the verse service, or when the network is down and the chapter was never loaded before.
 
 ### Port already in use
 

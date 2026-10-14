@@ -1,0 +1,2878 @@
+{
+ "description": "Bible readings from the 2026-10-04 service, as Google Live Translate heard them (inputTranscription, app setup, source ro), with the Cornilescu text of the chapters read (getBible). Used to test following a reading verse by verse.",
+ "readings": [
+  {
+   "name": "Mark 15:22-26, announced but heard as \"Marcu 13\"",
+   "service": "22:05",
+   "mention": {
+    "book": 41,
+    "chapter": 13
+   },
+   "expected": [
+    "15:22",
+    "15:23",
+    "15:24",
+    "15:25",
+    "15:26"
+   ],
+   "pieces": [
+    {
+     "t": 38400,
+     "text": "Marcu",
+     "language": "ro"
+    },
+    {
+     "t": 39469,
+     "text": " 13.",
+     "language": "ro"
+    },
+    {
+     "t": 40490,
+     "text": " Și au adus",
+     "language": "ro"
+    },
+    {
+     "t": 41450,
+     "text": " pe Iisus la",
+     "language": "ro"
+    },
+    {
+     "t": 42508,
+     "text": " locul numit",
+     "language": "ro"
+    },
+    {
+     "t": 43493,
+     "text": " Golgota, care",
+     "language": "ro"
+    },
+    {
+     "t": 44448,
+     "text": " înseamnă",
+     "language": "ro"
+    },
+    {
+     "t": 45464,
+     "text": " tălmăcit înseamnă",
+     "language": "ro"
+    },
+    {
+     "t": 46510,
+     "text": " locul căpățânii.",
+     "language": "ro"
+    },
+    {
+     "t": 47458,
+     "text": " I au",
+     "language": "ro"
+    },
+    {
+     "t": 48536,
+     "text": " dat să bea vin",
+     "language": "ro"
+    },
+    {
+     "t": 49463,
+     "text": " amestecat cu",
+     "language": "ro"
+    },
+    {
+     "t": 50544,
+     "text": " smirnă, dar el",
+     "language": "ro"
+    },
+    {
+     "t": 51476,
+     "text": " nu l a luat.",
+     "language": "ro"
+    },
+    {
+     "t": 52470,
+     "text": " După ce l au",
+     "language": "ro"
+    },
+    {
+     "t": 53537,
+     "text": " răstignit, i au",
+     "language": "ro"
+    },
+    {
+     "t": 54498,
+     "text": " împărțit hainele între",
+     "language": "ro"
+    },
+    {
+     "t": 55529,
+     "text": " ei, trăgând la",
+     "language": "ro"
+    },
+    {
+     "t": 56496,
+     "text": " sorți, ca să",
+     "language": "ro"
+    },
+    {
+     "t": 57478,
+     "text": " știe ce",
+     "language": "ro"
+    },
+    {
+     "t": 58500,
+     "text": " să ia",
+     "language": "ro"
+    },
+    {
+     "t": 59504,
+     "text": " fiecare. Când l au",
+     "language": "ro"
+    },
+    {
+     "t": 60498,
+     "text": " răstignit,",
+     "language": "ro"
+    },
+    {
+     "t": 61463,
+     "text": " era ceasul al",
+     "language": "ro"
+    },
+    {
+     "t": 62546,
+     "text": " treilea. Deasupra",
+     "language": "ro"
+    },
+    {
+     "t": 63447,
+     "text": " lui era",
+     "language": "ro"
+    },
+    {
+     "t": 64530,
+     "text": " scrisă vina",
+     "language": "ro"
+    },
+    {
+     "t": 65392,
+     "text": " lui:",
+     "language": "ro"
+    },
+    {
+     "t": 66472,
+     "text": " Împăratul",
+     "language": "ro"
+    },
+    {
+     "t": 67467,
+     "text": " Iudeilor.",
+     "language": "ro"
+    },
+    {
+     "t": 85557,
+     "text": " Regele",
+     "language": "ro"
+    },
+    {
+     "t": 86495,
+     "text": " vieții",
+     "language": "ro"
+    }
+   ]
+  },
+  {
+   "name": "1 Corinthians 11:23-29, announced as 1 Corinteni 11:23",
+   "service": "1:28:30",
+   "expected": [
+    "11:23",
+    "11:24",
+    "11:25",
+    "11:26",
+    "11:27",
+    "11:28",
+    "11:29"
+   ],
+   "pieces": [
+    {
+     "t": 3532,
+     "text": "împreună cu tine, Doamne, de",
+     "language": "ro"
+    },
+    {
+     "t": 4250,
+     "text": " a te, Doamne, a fi în",
+     "language": "ro"
+    },
+    {
+     "t": 4891,
+     "text": " casa de rugăciune,",
+     "language": "ro"
+    },
+    {
+     "t": 5677,
+     "text": " Doamne, de a ți sluji",
+     "language": "ro"
+    },
+    {
+     "t": 6659,
+     "text": " ție cu niște",
+     "language": "ro"
+    },
+    {
+     "t": 7651,
+     "text": " niște",
+     "language": "ro"
+    },
+    {
+     "t": 8743,
+     "text": " copii adevărați ai",
+     "language": "ro"
+    },
+    {
+     "t": 9797,
+     "text": " tăi. Doamne,",
+     "language": "ro"
+    },
+    {
+     "t": 10712,
+     "text": " rog să i binecuvântezi,",
+     "language": "ro"
+    },
+    {
+     "t": 11836,
+     "text": " Doamne, pe ei, pe",
+     "language": "ro"
+    },
+    {
+     "t": 12731,
+     "text": " familiile lor, Doamne,",
+     "language": "ro"
+    },
+    {
+     "t": 13699,
+     "text": " în toate tu fii",
+     "language": "ro"
+    },
+    {
+     "t": 14679,
+     "text": " slăvit. Amin.",
+     "language": "ro"
+    },
+    {
+     "t": 15610,
+     "text": " Amin.",
+     "language": "ro"
+    },
+    {
+     "t": 19693,
+     "text": " Dragi mei, cum stați în",
+     "language": "ro"
+    },
+    {
+     "t": 20769,
+     "text": " picioare, haideți să deschidem",
+     "language": "ro"
+    },
+    {
+     "t": 21739,
+     "text": " textul care îl vom",
+     "language": "ro"
+    },
+    {
+     "t": 22741,
+     "text": " citi și ne rugăm ca",
+     "language": "ro"
+    },
+    {
+     "t": 23745,
+     "text": " Bunul Dumnezeu să ne",
+     "language": "ro"
+    },
+    {
+     "t": 24717,
+     "text": " binecuvânteze de la",
+     "language": "ro"
+    },
+    {
+     "t": 25633,
+     "text": " 1",
+     "language": "ro"
+    },
+    {
+     "t": 26708,
+     "text": " Corinteni, capitolul",
+     "language": "ro"
+    },
+    {
+     "t": 27640,
+     "text": " 11",
+     "language": "ro"
+    },
+    {
+     "t": 28662,
+     "text": " de la versetul",
+     "language": "ro"
+    },
+    {
+     "t": 29715,
+     "text": " 23, un text",
+     "language": "ro"
+    },
+    {
+     "t": 30654,
+     "text": " bine cunoscut",
+     "language": "ro"
+    },
+    {
+     "t": 31694,
+     "text": " astăzi, uitându",
+     "language": "ro"
+    },
+    {
+     "t": 32705,
+     "text": " ne ce este în față,",
+     "language": "ro"
+    },
+    {
+     "t": 33678,
+     "text": " ne dăm seama",
+     "language": "ro"
+    },
+    {
+     "t": 34751,
+     "text": " 1",
+     "language": "ro"
+    },
+    {
+     "t": 35706,
+     "text": " Corinteni 11",
+     "language": "ro"
+    },
+    {
+     "t": 36668,
+     "text": " versetul",
+     "language": "ro"
+    },
+    {
+     "t": 37686,
+     "text": " 23,",
+     "language": "ro"
+    },
+    {
+     "t": 38722,
+     "text": " Apostolul Pavel spune",
+     "language": "ro"
+    },
+    {
+     "t": 39712,
+     "text": " căci am primit de",
+     "language": "ro"
+    },
+    {
+     "t": 40682,
+     "text": " la Domnul ce am",
+     "language": "ro"
+    },
+    {
+     "t": 41746,
+     "text": " învățat și anume că",
+     "language": "ro"
+    },
+    {
+     "t": 42775,
+     "text": " Domnul Iisus",
+     "language": "ro"
+    },
+    {
+     "t": 43736,
+     "text": " în noaptea în care a",
+     "language": "ro"
+    },
+    {
+     "t": 44704,
+     "text": " fost vândut a luat o",
+     "language": "ro"
+    },
+    {
+     "t": 45722,
+     "text": " pâine și după",
+     "language": "ro"
+    },
+    {
+     "t": 46720,
+     "text": " ce a mulțumit lui",
+     "language": "ro"
+    },
+    {
+     "t": 47784,
+     "text": " Dumnezeu a frânt o și a",
+     "language": "ro"
+    },
+    {
+     "t": 48814,
+     "text": " zis: luați,",
+     "language": "ro"
+    },
+    {
+     "t": 49710,
+     "text": " mâncați,",
+     "language": "ro"
+    },
+    {
+     "t": 50678,
+     "text": " acesta este trupul",
+     "language": "ro"
+    },
+    {
+     "t": 51743,
+     "text": " meu care se frânge",
+     "language": "ro"
+    },
+    {
+     "t": 52679,
+     "text": " pentru voi.",
+     "language": "ro"
+    },
+    {
+     "t": 53634,
+     "text": " Să faceți",
+     "language": "ro"
+    },
+    {
+     "t": 54715,
+     "text": " lucrul acesta",
+     "language": "ro"
+    },
+    {
+     "t": 55678,
+     "text": " spre pomenirea mea.",
+     "language": "ro"
+    },
+    {
+     "t": 56663,
+     "text": " Tot",
+     "language": "ro"
+    },
+    {
+     "t": 57704,
+     "text": " astfel, după ce a luat",
+     "language": "ro"
+    },
+    {
+     "t": 58723,
+     "text": " paharul și a zis:",
+     "language": "ro"
+    },
+    {
+     "t": 59739,
+     "text": " acest pahar este",
+     "language": "ro"
+    },
+    {
+     "t": 60716,
+     "text": " legământul cel",
+     "language": "ro"
+    },
+    {
+     "t": 61766,
+     "text": " nou în sângele",
+     "language": "ro"
+    },
+    {
+     "t": 62645,
+     "text": " meu.",
+     "language": "ro"
+    },
+    {
+     "t": 63740,
+     "text": " Să faceți lucrul",
+     "language": "ro"
+    },
+    {
+     "t": 64682,
+     "text": " acesta spre pomenirea",
+     "language": "ro"
+    },
+    {
+     "t": 65748,
+     "text": " mea.",
+     "language": "ro"
+    },
+    {
+     "t": 66738,
+     "text": " Ori de câte ori beți",
+     "language": "ro"
+    },
+    {
+     "t": 67652,
+     "text": " veți",
+     "language": "ro"
+    },
+    {
+     "t": 68685,
+     "text": " bea din el.",
+     "language": "ro"
+    },
+    {
+     "t": 69760,
+     "text": " Pentru că de câte ori",
+     "language": "ro"
+    },
+    {
+     "t": 70835,
+     "text": " mâncați din pâinea",
+     "language": "ro"
+    },
+    {
+     "t": 71796,
+     "text": " aceasta și beți din paharul",
+     "language": "ro"
+    },
+    {
+     "t": 72757,
+     "text": " acesta, vestiți",
+     "language": "ro"
+    },
+    {
+     "t": 73688,
+     "text": " moartea",
+     "language": "ro"
+    },
+    {
+     "t": 74700,
+     "text": " Domnului până va veni",
+     "language": "ro"
+    },
+    {
+     "t": 75731,
+     "text": " el. De",
+     "language": "ro"
+    },
+    {
+     "t": 76720,
+     "text": " aceea, oricine",
+     "language": "ro"
+    },
+    {
+     "t": 77747,
+     "text": " mănâncă pâinea",
+     "language": "ro"
+    },
+    {
+     "t": 78714,
+     "text": " aceasta sau bea",
+     "language": "ro"
+    },
+    {
+     "t": 79737,
+     "text": " paharul Domnului",
+     "language": "ro"
+    },
+    {
+     "t": 80679,
+     "text": " în chip",
+     "language": "ro"
+    },
+    {
+     "t": 81710,
+     "text": " nevrednic, va fi",
+     "language": "ro"
+    },
+    {
+     "t": 82805,
+     "text": " vinovat de trupul și",
+     "language": "ro"
+    },
+    {
+     "t": 83743,
+     "text": " sângele Domnului.",
+     "language": "ro"
+    },
+    {
+     "t": 84676,
+     "text": " Fiecare",
+     "language": "ro"
+    },
+    {
+     "t": 85701,
+     "text": " să se",
+     "language": "ro"
+    },
+    {
+     "t": 86692,
+     "text": " cerceteze, dar",
+     "language": "ro"
+    },
+    {
+     "t": 87745,
+     "text": " pe sine însuși așa",
+     "language": "ro"
+    },
+    {
+     "t": 88767,
+     "text": " să mănânce din pâinea",
+     "language": "ro"
+    },
+    {
+     "t": 89694,
+     "text": " aceasta și să bea din",
+     "language": "ro"
+    },
+    {
+     "t": 90672,
+     "text": " paharul acesta,",
+     "language": "ro"
+    },
+    {
+     "t": 91673,
+     "text": " căci cine",
+     "language": "ro"
+    },
+    {
+     "t": 92710,
+     "text": " mănâncă și",
+     "language": "ro"
+    },
+    {
+     "t": 93726,
+     "text": " bea își mănâncă",
+     "language": "ro"
+    },
+    {
+     "t": 94779,
+     "text": " și își bea osânda lui",
+     "language": "ro"
+    },
+    {
+     "t": 95732,
+     "text": " însuși, dacă nu",
+     "language": "ro"
+    },
+    {
+     "t": 96751,
+     "text": " deosebește",
+     "language": "ro"
+    },
+    {
+     "t": 97737,
+     "text": " trupul Domnului.",
+     "language": "ro"
+    },
+    {
+     "t": 98726,
+     "text": " Amin. Vă",
+     "language": "ro"
+    },
+    {
+     "t": 99691,
+     "text": " rog ca să ocupați",
+     "language": "ro"
+    },
+    {
+     "t": 100673,
+     "text": " locurile.",
+     "language": "ro"
+    },
+    {
+     "t": 101735,
+     "text": " Dragi mei,",
+     "language": "ro"
+    },
+    {
+     "t": 103705,
+     "text": " Mulțumim Domnului",
+     "language": "ro"
+    },
+    {
+     "t": 104710,
+     "text": " pentru ziua",
+     "language": "ro"
+    },
+    {
+     "t": 105761,
+     "text": " aceasta, mulțumim pentru",
+     "language": "ro"
+    },
+    {
+     "t": 106751,
+     "text": " binecuvântările lui.",
+     "language": "ro"
+    },
+    {
+     "t": 107735,
+     "text": " Timpul",
+     "language": "ro"
+    },
+    {
+     "t": 108791,
+     "text": " zboară repede, mai",
+     "language": "ro"
+    },
+    {
+     "t": 109711,
+     "text": " trecut o lună, suntem",
+     "language": "ro"
+    },
+    {
+     "t": 110776,
+     "text": " iarăși în casa lui",
+     "language": "ro"
+    }
+   ]
+  },
+  {
+   "name": "Psalms 50-51, read by the Romanian school, not announced",
+   "service": "1:00:30",
+   "pieces": [
+    {
+     "t": 32526,
+     "text": "Dumnezeu,",
+     "language": "ro"
+    },
+    {
+     "t": 33623,
+     "text": " da, Dumnezeu",
+     "language": "ro"
+    },
+    {
+     "t": 34510,
+     "text": " Domnul",
+     "language": "ro"
+    },
+    {
+     "t": 35663,
+     "text": " vorbește și cheamă",
+     "language": "ro"
+    },
+    {
+     "t": 36557,
+     "text": " pământul, de",
+     "language": "ro"
+    },
+    {
+     "t": 37618,
+     "text": " la răsăritul",
+     "language": "ro"
+    },
+    {
+     "t": 38548,
+     "text": " soarelui",
+     "language": "ro"
+    },
+    {
+     "t": 39618,
+     "text": " până la",
+     "language": "ro"
+    },
+    {
+     "t": 40536,
+     "text": " asfințitul lui.",
+     "language": "ro"
+    },
+    {
+     "t": 41576,
+     "text": " Din Sion, care",
+     "language": "ro"
+    },
+    {
+     "t": 42499,
+     "text": " este întru",
+     "language": "ro"
+    },
+    {
+     "t": 43592,
+     "text": " podoabă",
+     "language": "ro"
+    },
+    {
+     "t": 44519,
+     "text": " frumusețe de",
+     "language": "ro"
+    },
+    {
+     "t": 45537,
+     "text": " desăvârșite,",
+     "language": "ro"
+    },
+    {
+     "t": 46492,
+     "text": " Te a colo",
+     "language": "ro"
+    },
+    {
+     "t": 47631,
+     "text": " strălucește",
+     "language": "ro"
+    },
+    {
+     "t": 48530,
+     "text": " Dumnezeu.",
+     "language": "ro"
+    },
+    {
+     "t": 49537,
+     "text": " Dumnezeul nostru",
+     "language": "ro"
+    },
+    {
+     "t": 50512,
+     "text": " vine și nu",
+     "language": "ro"
+    },
+    {
+     "t": 51580,
+     "text": " tace. Înaintea",
+     "language": "ro"
+    },
+    {
+     "t": 52520,
+     "text": " lui merge un",
+     "language": "ro"
+    },
+    {
+     "t": 53542,
+     "text": " foc",
+     "language": "ro"
+    },
+    {
+     "t": 54566,
+     "text": " mistuitor și",
+     "language": "ro"
+    },
+    {
+     "t": 55550,
+     "text": " împrejurul lui",
+     "language": "ro"
+    },
+    {
+     "t": 56525,
+     "text": " o furtună",
+     "language": "ro"
+    },
+    {
+     "t": 57578,
+     "text": " puternică.",
+     "language": "ro"
+    },
+    {
+     "t": 58473,
+     "text": " El",
+     "language": "ro"
+    },
+    {
+     "t": 59612,
+     "text": " strigă spre cerul",
+     "language": "ro"
+    },
+    {
+     "t": 60584,
+     "text": " sus și spre",
+     "language": "ro"
+    },
+    {
+     "t": 61580,
+     "text": " pământ, ca să",
+     "language": "ro"
+    },
+    {
+     "t": 62581,
+     "text": " judece pe",
+     "language": "ro"
+    },
+    {
+     "t": 63536,
+     "text": " poporul său.",
+     "language": "ro"
+    },
+    {
+     "t": 64474,
+     "text": " Strângeți în",
+     "language": "ro"
+    },
+    {
+     "t": 65513,
+     "text": " credincioșii",
+     "language": "ro"
+    },
+    {
+     "t": 66523,
+     "text": " mei, care au",
+     "language": "ro"
+    },
+    {
+     "t": 67526,
+     "text": " făcut",
+     "language": "ro"
+    },
+    {
+     "t": 68572,
+     "text": " legământ cu mine prin",
+     "language": "ro"
+    },
+    {
+     "t": 69559,
+     "text": " jertfă.",
+     "language": "ro"
+    },
+    {
+     "t": 70527,
+     "text": " Atunci",
+     "language": "ro"
+    },
+    {
+     "t": 71499,
+     "text": " cerurile vor",
+     "language": "ro"
+    },
+    {
+     "t": 72570,
+     "text": " vesti dreptatea",
+     "language": "ro"
+    },
+    {
+     "t": 73500,
+     "text": " lui, căci",
+     "language": "ro"
+    },
+    {
+     "t": 74559,
+     "text": " Dumnezeu este cel",
+     "language": "ro"
+    },
+    {
+     "t": 75519,
+     "text": " ce judecă.",
+     "language": "ro"
+    },
+    {
+     "t": 76498,
+     "text": " Ascultă,",
+     "language": "ro"
+    },
+    {
+     "t": 77519,
+     "text": " poporul meu",
+     "language": "ro"
+    },
+    {
+     "t": 78529,
+     "text": " și voi vorbi,",
+     "language": "ro"
+    },
+    {
+     "t": 79560,
+     "text": " ascultă,",
+     "language": "ro"
+    },
+    {
+     "t": 80511,
+     "text": " Israele,",
+     "language": "ro"
+    },
+    {
+     "t": 81524,
+     "text": " și te voi",
+     "language": "ro"
+    },
+    {
+     "t": 82525,
+     "text": " înștiința.",
+     "language": "ro"
+    },
+    {
+     "t": 83570,
+     "text": " Eu sunt",
+     "language": "ro"
+    },
+    {
+     "t": 84546,
+     "text": " Dumnezeu,",
+     "language": "ro"
+    },
+    {
+     "t": 85547,
+     "text": " Dumnezeul tău.",
+     "language": "ro"
+    },
+    {
+     "t": 86495,
+     "text": " Nu pentru",
+     "language": "ro"
+    },
+    {
+     "t": 87535,
+     "text": " jertfele tale te",
+     "language": "ro"
+    },
+    {
+     "t": 88640,
+     "text": " mustru, căci",
+     "language": "ro"
+    },
+    {
+     "t": 89567,
+     "text": " arderile tale",
+     "language": "ro"
+    },
+    {
+     "t": 90513,
+     "text": " de tot",
+     "language": "ro"
+    },
+    {
+     "t": 91525,
+     "text": " sunt necurmat",
+     "language": "ro"
+    },
+    {
+     "t": 92551,
+     "text": " înaintea mea.",
+     "language": "ro"
+    },
+    {
+     "t": 93522,
+     "text": " Nu voi",
+     "language": "ro"
+    },
+    {
+     "t": 94536,
+     "text": " lua tauri",
+     "language": "ro"
+    },
+    {
+     "t": 95560,
+     "text": " din casa ta,",
+     "language": "ro"
+    },
+    {
+     "t": 96578,
+     "text": " nici țapi",
+     "language": "ro"
+    },
+    {
+     "t": 97608,
+     "text": " din staulul",
+     "language": "ro"
+    },
+    {
+     "t": 98664,
+     "text": " tău.",
+     "language": "ro"
+    },
+    {
+     "t": 99489,
+     "text": " Căci ale mele",
+     "language": "ro"
+    },
+    {
+     "t": 100638,
+     "text": " sunt toate",
+     "language": "ro"
+    },
+    {
+     "t": 101504,
+     "text": " dobitoacele",
+     "language": "ro"
+    },
+    {
+     "t": 102539,
+     "text": " pădurilor, toate",
+     "language": "ro"
+    },
+    {
+     "t": 103532,
+     "text": " fiarele",
+     "language": "ro"
+    },
+    {
+     "t": 104518,
+     "text": " munților, cu",
+     "language": "ro"
+    },
+    {
+     "t": 105504,
+     "text": " mile lor. Eu",
+     "language": "ro"
+    },
+    {
+     "t": 106501,
+     "text": " cunosc toate",
+     "language": "ro"
+    },
+    {
+     "t": 107545,
+     "text": " păsările de",
+     "language": "ro"
+    },
+    {
+     "t": 108529,
+     "text": " pe munți și",
+     "language": "ro"
+    },
+    {
+     "t": 109571,
+     "text": " tot ce se",
+     "language": "ro"
+    },
+    {
+     "t": 110583,
+     "text": " mișcă pe câmp",
+     "language": "ro"
+    },
+    {
+     "t": 111522,
+     "text": " este al meu.",
+     "language": "ro"
+    },
+    {
+     "t": 112482,
+     "text": " Dacă,",
+     "language": "ro"
+    },
+    {
+     "t": 113547,
+     "text": " dacă mi ar fi",
+     "language": "ro"
+    },
+    {
+     "t": 114561,
+     "text": " foame, nu ți aș",
+     "language": "ro"
+    },
+    {
+     "t": 115574,
+     "text": " spune ție, căci",
+     "language": "ro"
+    },
+    {
+     "t": 116573,
+     "text": " a mea este",
+     "language": "ro"
+    },
+    {
+     "t": 117581,
+     "text": " lumea și tot",
+     "language": "ro"
+    },
+    {
+     "t": 118531,
+     "text": " ce cuprinde ea.",
+     "language": "ro"
+    },
+    {
+     "t": 119554,
+     "text": " Oare",
+     "language": "ro"
+    },
+    {
+     "t": 120538,
+     "text": " mănânc eu",
+     "language": "ro"
+    },
+    {
+     "t": 121523,
+     "text": " carne de",
+     "language": "ro"
+    },
+    {
+     "t": 122587,
+     "text": " tauri? Oare",
+     "language": "ro"
+    },
+    {
+     "t": 123648,
+     "text": " beau eu sângele",
+     "language": "ro"
+    },
+    {
+     "t": 124529,
+     "text": " țapilor?",
+     "language": "ro"
+    },
+    {
+     "t": 125556,
+     "text": " Adu jertfă lui",
+     "language": "ro"
+    },
+    {
+     "t": 126536,
+     "text": " Dumnezeu",
+     "language": "ro"
+    },
+    {
+     "t": 127675,
+     "text": " mulțumire și",
+     "language": "ro"
+    },
+    {
+     "t": 128535,
+     "text": " împlinește",
+     "language": "ro"
+    },
+    {
+     "t": 129587,
+     "text": " juruințele",
+     "language": "ro"
+    },
+    {
+     "t": 130595,
+     "text": " făcute celui",
+     "language": "ro"
+    },
+    {
+     "t": 131654,
+     "text": " Preaînalt.",
+     "language": "ro"
+    },
+    {
+     "t": 132522,
+     "text": " Cheamă mă în",
+     "language": "ro"
+    },
+    {
+     "t": 133559,
+     "text": " ziua necazului",
+     "language": "ro"
+    },
+    {
+     "t": 134461,
+     "text": " și",
+     "language": "ro"
+    },
+    {
+     "t": 135611,
+     "text": " te voi",
+     "language": "ro"
+    },
+    {
+     "t": 136526,
+     "text": " izbăvi, iar",
+     "language": "ro"
+    },
+    {
+     "t": 137514,
+     "text": " tu mă vei",
+     "language": "ro"
+    },
+    {
+     "t": 138516,
+     "text": " proslăvi.",
+     "language": "ro"
+    },
+    {
+     "t": 139596,
+     "text": " Dumnezeu",
+     "language": "ro"
+    },
+    {
+     "t": 140537,
+     "text": " zice, însă",
+     "language": "ro"
+    },
+    {
+     "t": 141557,
+     "text": " celui rău,",
+     "language": "ro"
+    },
+    {
+     "t": 142562,
+     "text": " ce tot înșir",
+     "language": "ro"
+    },
+    {
+     "t": 143567,
+     "text": " legile mele",
+     "language": "ro"
+    },
+    {
+     "t": 144578,
+     "text": " și ai în gură",
+     "language": "ro"
+    },
+    {
+     "t": 145583,
+     "text": " legământul meu?",
+     "language": "ro"
+    },
+    {
+     "t": 147488,
+     "text": " Când tu",
+     "language": "ro"
+    },
+    {
+     "t": 148537,
+     "text": " urăști mustrările",
+     "language": "ro"
+    },
+    {
+     "t": 149530,
+     "text": " și arunci",
+     "language": "ro"
+    },
+    {
+     "t": 150522,
+     "text": " cuvintele mele",
+     "language": "ro"
+    },
+    {
+     "t": 151527,
+     "text": " înapoi ta,",
+     "language": "ro"
+    },
+    {
+     "t": 152560,
+     "text": " dacă vezi un",
+     "language": "ro"
+    },
+    {
+     "t": 153575,
+     "text": " hoț, te unești",
+     "language": "ro"
+    },
+    {
+     "t": 154634,
+     "text": " cu el să te",
+     "language": "ro"
+    },
+    {
+     "t": 155577,
+     "text": " însoțești cu",
+     "language": "ro"
+    },
+    {
+     "t": 156527,
+     "text": " preacurvarii.",
+     "language": "ro"
+    },
+    {
+     "t": 158490,
+     "text": " Da,",
+     "language": "ro"
+    },
+    {
+     "t": 159574,
+     "text": " drumul gurii la",
+     "language": "ro"
+    },
+    {
+     "t": 160511,
+     "text": " rău, să",
+     "language": "ro"
+    },
+    {
+     "t": 161565,
+     "text": " limba te",
+     "language": "ro"
+    },
+    {
+     "t": 162522,
+     "text": " urzești",
+     "language": "ro"
+    },
+    {
+     "t": 163548,
+     "text": " vicleșuguri.",
+     "language": "ro"
+    },
+    {
+     "t": 164827,
+     "text": " Stai să",
+     "language": "ro"
+    },
+    {
+     "t": 165547,
+     "text": " vorbești împotriva",
+     "language": "ro"
+    },
+    {
+     "t": 166532,
+     "text": " fratelui",
+     "language": "ro"
+    },
+    {
+     "t": 167523,
+     "text": " tău,",
+     "language": "ro"
+    },
+    {
+     "t": 168554,
+     "text": " tău.",
+     "language": "ro"
+    },
+    {
+     "t": 169543,
+     "text": " Clevezi",
+     "language": "ro"
+    },
+    {
+     "t": 170543,
+     "text": " pe",
+     "language": "ro"
+    },
+    {
+     "t": 171556,
+     "text": " fiul mamei",
+     "language": "ro"
+    },
+    {
+     "t": 172551,
+     "text": " tale. Iată",
+     "language": "ro"
+    },
+    {
+     "t": 173578,
+     "text": " ce ai făcut și",
+     "language": "ro"
+    },
+    {
+     "t": 174599,
+     "text": " eu am tăcut.",
+     "language": "ro"
+    },
+    {
+     "t": 175493,
+     "text": " Ce ai",
+     "language": "ro"
+    },
+    {
+     "t": 176556,
+     "text": " închipuit că",
+     "language": "ro"
+    },
+    {
+     "t": 177500,
+     "text": " eu sunt ca",
+     "language": "ro"
+    },
+    {
+     "t": 178516,
+     "text": " tine?",
+     "language": "ro"
+    },
+    {
+     "t": 179488,
+     "text": " Dar te",
+     "language": "ro"
+    },
+    {
+     "t": 180671,
+     "text": " voi mustra",
+     "language": "ro"
+    },
+    {
+     "t": 181693,
+     "text": " și îți voi pune",
+     "language": "ro"
+    },
+    {
+     "t": 182523,
+     "text": " totul sub",
+     "language": "ro"
+    },
+    {
+     "t": 183506,
+     "text": " ochi.",
+     "language": "ro"
+    },
+    {
+     "t": 184516,
+     "text": " Luați seama, dar",
+     "language": "ro"
+    },
+    {
+     "t": 185559,
+     "text": " voi care uitați",
+     "language": "ro"
+    },
+    {
+     "t": 186590,
+     "text": " pe Dumnezeu, că nu",
+     "language": "ro"
+    },
+    {
+     "t": 187573,
+     "text": " cumva să vă",
+     "language": "ro"
+    },
+    {
+     "t": 188544,
+     "text": " sfâșie și să",
+     "language": "ro"
+    },
+    {
+     "t": 189512,
+     "text": " nu fie",
+     "language": "ro"
+    },
+    {
+     "t": 190562,
+     "text": " nimeni să vă",
+     "language": "ro"
+    },
+    {
+     "t": 191521,
+     "text": " scape.",
+     "language": "ro"
+    },
+    {
+     "t": 192533,
+     "text": " Căci aduce",
+     "language": "ro"
+    },
+    {
+     "t": 193570,
+     "text": " mulțumire ca jertfă",
+     "language": "ro"
+    },
+    {
+     "t": 194521,
+     "text": " acela mă",
+     "language": "ro"
+    },
+    {
+     "t": 195575,
+     "text": " proslăvește.",
+     "language": "ro"
+    },
+    {
+     "t": 197564,
+     "text": " Ai milă de",
+     "language": "ro"
+    },
+    {
+     "t": 198622,
+     "text": " mine, Dumnezeule,",
+     "language": "ro"
+    },
+    {
+     "t": 199590,
+     "text": " în bunătatea",
+     "language": "ro"
+    },
+    {
+     "t": 200524,
+     "text": " ta, după",
+     "language": "ro"
+    },
+    {
+     "t": 201597,
+     "text": " îndurarea ta cea",
+     "language": "ro"
+    },
+    {
+     "t": 203700,
+     "text": " mare, șterge",
+     "language": "ro"
+    },
+    {
+     "t": 204325,
+     "text": " fărădelegile mele.",
+     "language": "ro"
+    },
+    {
+     "t": 205011,
+     "text": " Spală-mă",
+     "language": "ro"
+    },
+    {
+     "t": 205630,
+     "text": " cu desăvârșire",
+     "language": "ro"
+    },
+    {
+     "t": 206544,
+     "text": " de nelegiuirea",
+     "language": "ro"
+    },
+    {
+     "t": 207504,
+     "text": " mea și",
+     "language": "ro"
+    },
+    {
+     "t": 208603,
+     "text": " curățește mă de păcatul",
+     "language": "ro"
+    },
+    {
+     "t": 209521,
+     "text": " meu. Căci îmi",
+     "language": "ro"
+    },
+    {
+     "t": 210519,
+     "text": " cunosc bine",
+     "language": "ro"
+    },
+    {
+     "t": 211508,
+     "text": " fărădelegile și",
+     "language": "ro"
+    },
+    {
+     "t": 212567,
+     "text": " păcatul meu stă",
+     "language": "ro"
+    },
+    {
+     "t": 213528,
+     "text": " necurmat înaintea",
+     "language": "ro"
+    },
+    {
+     "t": 214588,
+     "text": " mea.",
+     "language": "ro"
+    },
+    {
+     "t": 215542,
+     "text": " Împotriva ta numai",
+     "language": "ro"
+    },
+    {
+     "t": 216557,
+     "text": " împotriva ta am",
+     "language": "ro"
+    },
+    {
+     "t": 217629,
+     "text": " păcătuit și am",
+     "language": "ro"
+    },
+    {
+     "t": 218559,
+     "text": " făcut ce este",
+     "language": "ro"
+    },
+    {
+     "t": 219578,
+     "text": " rău înaintea ta.",
+     "language": "ro"
+    },
+    {
+     "t": 220655,
+     "text": " Așa",
+     "language": "ro"
+    },
+    {
+     "t": 221555,
+     "text": " că vei fi",
+     "language": "ro"
+    },
+    {
+     "t": 222622,
+     "text": " drept în hotărârea",
+     "language": "ro"
+    },
+    {
+     "t": 223588,
+     "text": " ta și fără vină în",
+     "language": "ro"
+    },
+    {
+     "t": 224548,
+     "text": " judecata ta.",
+     "language": "ro"
+    },
+    {
+     "t": 225601,
+     "text": " Iată că",
+     "language": "ro"
+    },
+    {
+     "t": 226547,
+     "text": " sunt născut în",
+     "language": "ro"
+    },
+    {
+     "t": 227598,
+     "text": " nelegiuire și în",
+     "language": "ro"
+    },
+    {
+     "t": 228615,
+     "text": " păcat m a zămislit mama",
+     "language": "ro"
+    },
+    {
+     "t": 229530,
+     "text": " mea.",
+     "language": "ro"
+    },
+    {
+     "t": 230536,
+     "text": " Dar tu, ceri ca",
+     "language": "ro"
+    },
+    {
+     "t": 231567,
+     "text": " adevărul să fie în",
+     "language": "ro"
+    },
+    {
+     "t": 232590,
+     "text": " adâncul inimii,",
+     "language": "ro"
+    },
+    {
+     "t": 233533,
+     "text": " fă dar să",
+     "language": "ro"
+    },
+    {
+     "t": 234636,
+     "text": " pătrundă înțelepciunea",
+     "language": "ro"
+    },
+    {
+     "t": 235565,
+     "text": " în lăuntrul meu.",
+     "language": "ro"
+    },
+    {
+     "t": 236560,
+     "text": " Curățește mă cu",
+     "language": "ro"
+    },
+    {
+     "t": 237679,
+     "text": " isop și voi fi",
+     "language": "ro"
+    },
+    {
+     "t": 238643,
+     "text": " curat. Spală mă",
+     "language": "ro"
+    },
+    {
+     "t": 239600,
+     "text": " și voi fi mai alb",
+     "language": "ro"
+    },
+    {
+     "t": 240552,
+     "text": " decât zăpada.",
+     "language": "ro"
+    },
+    {
+     "t": 241519,
+     "text": " Fă mă să aud",
+     "language": "ro"
+    },
+    {
+     "t": 242487,
+     "text": " veselie și",
+     "language": "ro"
+    },
+    {
+     "t": 243525,
+     "text": " bucurie și",
+     "language": "ro"
+    },
+    {
+     "t": 244530,
+     "text": " oasele pe care le ai",
+     "language": "ro"
+    },
+    {
+     "t": 245555,
+     "text": " zdrobit tu se vor",
+     "language": "ro"
+    },
+    {
+     "t": 246545,
+     "text": " bucura.",
+     "language": "ro"
+    },
+    {
+     "t": 247570,
+     "text": " Întoarce ți privirea",
+     "language": "ro"
+    },
+    {
+     "t": 248605,
+     "text": " de la păcatele",
+     "language": "ro"
+    },
+    {
+     "t": 249545,
+     "text": " mele, șterge",
+     "language": "ro"
+    },
+    {
+     "t": 250514,
+     "text": " toate",
+     "language": "ro"
+    },
+    {
+     "t": 251586,
+     "text": " nelegiuirile mele.",
+     "language": "ro"
+    },
+    {
+     "t": 252524,
+     "text": " Zidește în mine o",
+     "language": "ro"
+    },
+    {
+     "t": 253576,
+     "text": " inimă curată,",
+     "language": "ro"
+    },
+    {
+     "t": 254506,
+     "text": " Dumnezeule,",
+     "language": "ro"
+    },
+    {
+     "t": 255540,
+     "text": " pune în mine un duh",
+     "language": "ro"
+    },
+    {
+     "t": 256501,
+     "text": " nou și",
+     "language": "ro"
+    },
+    {
+     "t": 257530,
+     "text": " statornic. Nu mă",
+     "language": "ro"
+    },
+    {
+     "t": 258545,
+     "text": " lepăda de la fața",
+     "language": "ro"
+    },
+    {
+     "t": 259565,
+     "text": " ta și nu lua",
+     "language": "ro"
+    },
+    {
+     "t": 260523,
+     "text": " de la mine duhul",
+     "language": "ro"
+    },
+    {
+     "t": 261516,
+     "text": " tău cel sfânt.",
+     "language": "ro"
+    },
+    {
+     "t": 262555,
+     "text": " Dă mi iarăși",
+     "language": "ro"
+    },
+    {
+     "t": 263660,
+     "text": " bucuria mântuirii",
+     "language": "ro"
+    },
+    {
+     "t": 264530,
+     "text": " tale,",
+     "language": "ro"
+    },
+    {
+     "t": 265570,
+     "text": " sprijinește mă cu un",
+     "language": "ro"
+    },
+    {
+     "t": 266569,
+     "text": " duh de bună",
+     "language": "ro"
+    },
+    {
+     "t": 267556,
+     "text": " voință.",
+     "language": "ro"
+    },
+    {
+     "t": 268542,
+     "text": " Atunci voi învăța",
+     "language": "ro"
+    },
+    {
+     "t": 269547,
+     "text": " căile tale pe cei",
+     "language": "ro"
+    },
+    {
+     "t": 270496,
+     "text": " ce calcă.",
+     "language": "ro"
+    },
+    {
+     "t": 271560,
+     "text": " Păcătoșii se vor",
+     "language": "ro"
+    },
+    {
+     "t": 272623,
+     "text": " întoarce la tine.",
+     "language": "ro"
+    },
+    {
+     "t": 273537,
+     "text": " Dumnezeule,",
+     "language": "ro"
+    },
+    {
+     "t": 274480,
+     "text": " Dumnezeul",
+     "language": "ro"
+    },
+    {
+     "t": 275528,
+     "text": " mântuirii mele,",
+     "language": "ro"
+    },
+    {
+     "t": 276553,
+     "text": " izbăvește mă",
+     "language": "ro"
+    },
+    {
+     "t": 277517,
+     "text": " de vina",
+     "language": "ro"
+    },
+    {
+     "t": 278613,
+     "text": " sângelui vărsat.",
+     "language": "ro"
+    },
+    {
+     "t": 279540,
+     "text": " Și limba mea va",
+     "language": "ro"
+    },
+    {
+     "t": 280566,
+     "text": " lăuda îndurarea",
+     "language": "ro"
+    },
+    {
+     "t": 281476,
+     "text": " ta.",
+     "language": "ro"
+    },
+    {
+     "t": 282499,
+     "text": " Doamne,",
+     "language": "ro"
+    },
+    {
+     "t": 283525,
+     "text": " deschide mi buzele",
+     "language": "ro"
+    },
+    {
+     "t": 284517,
+     "text": " și gura mea va",
+     "language": "ro"
+    },
+    {
+     "t": 285495,
+     "text": " vesti lauda ta.",
+     "language": "ro"
+    },
+    {
+     "t": 287531,
+     "text": " Dacă ai fi voit",
+     "language": "ro"
+    },
+    {
+     "t": 288540,
+     "text": " jertfe,",
+     "language": "ro"
+    },
+    {
+     "t": 289542,
+     "text": " ți aș fi adus,",
+     "language": "ro"
+    },
+    {
+     "t": 290593,
+     "text": " dar ție nu ți",
+     "language": "ro"
+    },
+    {
+     "t": 291513,
+     "text": " plac arderile",
+     "language": "ro"
+    },
+    {
+     "t": 292485,
+     "text": " de tot.",
+     "language": "ro"
+    },
+    {
+     "t": 293541,
+     "text": " Jertfele plăcute lui",
+     "language": "ro"
+    },
+    {
+     "t": 294501,
+     "text": " Dumnezeu",
+     "language": "ro"
+    },
+    {
+     "t": 295508,
+     "text": " sunt un duh",
+     "language": "ro"
+    },
+    {
+     "t": 296489,
+     "text": " zdrobit.",
+     "language": "ro"
+    },
+    {
+     "t": 297517,
+     "text": " Dumnezeule,",
+     "language": "ro"
+    },
+    {
+     "t": 298579,
+     "text": " tu nu disprețuiești",
+     "language": "ro"
+    },
+    {
+     "t": 299548,
+     "text": " o inimă zdrobită și",
+     "language": "ro"
+    },
+    {
+     "t": 300531,
+     "text": " smerită.",
+     "language": "ro"
+    },
+    {
+     "t": 301528,
+     "text": " În îndurarea",
+     "language": "ro"
+    },
+    {
+     "t": 302546,
+     "text": " ta, varsă ți",
+     "language": "ro"
+    },
+    {
+     "t": 303530,
+     "text": " binefacerile asupra",
+     "language": "ro"
+    },
+    {
+     "t": 304574,
+     "text": " Sionului.",
+     "language": "ro"
+    },
+    {
+     "t": 305559,
+     "text": " Zidește zidurile",
+     "language": "ro"
+    },
+    {
+     "t": 306520,
+     "text": " Ierusalimului.",
+     "language": "ro"
+    },
+    {
+     "t": 307512,
+     "text": " Atunci vei",
+     "language": "ro"
+    },
+    {
+     "t": 308531,
+     "text": " primi jertfe",
+     "language": "ro"
+    },
+    {
+     "t": 309530,
+     "text": " neprihănite,",
+     "language": "ro"
+    },
+    {
+     "t": 310473,
+     "text": " atunci",
+     "language": "ro"
+    },
+    {
+     "t": 311488,
+     "text": " ardele",
+     "language": "ro"
+    },
+    {
+     "t": 313481,
+     "text": " de tot și jertfe",
+     "language": "ro"
+    },
+    {
+     "t": 314527,
+     "text": " întregi.",
+     "language": "ro"
+    },
+    {
+     "t": 315511,
+     "text": " Atunci se vor aduce",
+     "language": "ro"
+    },
+    {
+     "t": 316545,
+     "text": " pe altarul tău",
+     "language": "ro"
+    },
+    {
+     "t": 317536,
+     "text": " viței. Amin.",
+     "language": "ro"
+    },
+    {
+     "t": 318536,
+     "text": " Amin.",
+     "language": "ro"
+    }
+   ]
+  }
+ ],
+ "bible": [
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 1,
+   "text": "Dimineaţa, preoţii cei mai de seamă au făcut îndată sfat cu bătrânii, cărturarii şi tot soborul. După ce au legat pe Isus, L-au dus şi L-au dat în mâinile lui Pilat."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 2,
+   "text": "Pilat L-a întrebat: „Eşti Tu Împăratul iudeilor?” „Da, sunt”, i-a răspuns Isus."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 3,
+   "text": "Preoţii cei mai de seamă Îl învinuiau de multe lucruri."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 4,
+   "text": "Pilat L-a întrebat din nou: „Nu răspunzi nimic? Uite de câte lucruri Te învinuiesc ei!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 5,
+   "text": "Isus n-a mai dat niciun răspuns, lucru care a mirat pe Pilat."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 6,
+   "text": "La fiecare Praznic al Paştelor, Pilat le slobozea un întemniţat, pe care-l cereau ei."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 7,
+   "text": "În temniţă era unul numit Baraba, închis împreună cu tovarăşii lui din pricina unui omor pe care-l săvârşiseră într-o răscoală."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 8,
+   "text": "Norodul s-a suit şi a început să ceară lui Pilat să le dea ce avea obicei să le dea totdeauna."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 9,
+   "text": "Pilat le-a răspuns: „Voiţi să vă slobod pe Împăratul iudeilor?”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 10,
+   "text": "Căci pricepuse că preoţii cei mai de seamă din pizmă Îl dăduseră în mâna lui."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 11,
+   "text": "Dar preoţii cei mai de seamă au aţâţat norodul să ceară lui Pilat să le sloboadă mai bine pe Baraba."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 12,
+   "text": "Pilat a luat din nou cuvântul şi le-a zis: „Dar ce voiţi să fac cu Acela, pe care-L numiţi Împăratul iudeilor?”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 13,
+   "text": "Ei au strigat din nou: „Răstigneşte-L!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 14,
+   "text": "„Dar ce rău a făcut?” le-a zis Pilat. Însă ei au început să strige şi mai tare: „Răstigneşte-L!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 15,
+   "text": "Pilat a vrut să facă pe placul norodului şi le-a slobozit pe Baraba, iar pe Isus, după ce a pus să-L bată cu nuiele, L-a dat să fie răstignit."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 16,
+   "text": "Ostaşii au adus pe Isus în curte, adică în palat, şi au adunat toată ceata ostaşilor."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 17,
+   "text": "L-au îmbrăcat într-o haină de purpură, au împletit o cunună de spini şi I-au pus-o pe cap."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 18,
+   "text": "Apoi au început să-I ureze şi să zică: „Plecăciune, Împăratul iudeilor!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 19,
+   "text": "Şi-L loveau în cap cu o trestie, Îl scuipau, îngenuncheau şi I se închinau."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 20,
+   "text": "După ce şi-au bătut astfel joc de El, L-au dezbrăcat de haina de purpură, L-au îmbrăcat în hainele Lui şi L-au dus să-L răstignească."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 21,
+   "text": "Au silit să ducă crucea lui Isus pe un trecător care se întorcea de la câmp, numit Simon din Cirene, tatăl lui Alexandru şi al lui Rufus."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 22,
+   "text": "Şi au adus pe Isus la locul numit Golgota, care, tălmăcit, înseamnă: „Locul căpăţânii”."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 23,
+   "text": "I-au dat să bea vin amestecat cu smirnă, dar El nu l-a luat."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 24,
+   "text": "După ce L-au răstignit, I-au împărţit hainele între ei trăgând la sorţi, ca să ştie ce să ia fiecare."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 25,
+   "text": "Când L-au răstignit, era ceasul al treilea."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 26,
+   "text": "Deasupra Lui era scrisă vina Lui: „Împăratul iudeilor”."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 27,
+   "text": "Împreună cu El au răstignit doi tâlhari, unul la dreapta şi altul la stânga Lui."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 28,
+   "text": "Astfel s-a împlinit Scriptura, care zice: „A fost pus în numărul celor fărădelege”."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 29,
+   "text": "Trecătorii îşi băteau joc de El, dădeau din cap şi ziceau: „Uă! Tu, care strici Templul şi-l zideşti la loc în trei zile,"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 30,
+   "text": "mântuieşte-Te pe Tine Însuţi şi pogoară-Te de pe cruce!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 31,
+   "text": "Tot astfel şi preoţii cei mai de seamă, împreună cu cărturarii, îşi băteau joc de El între ei şi ziceau: „Pe alţii i-a mântuit, şi pe Sine Însuşi nu Se poate mântui!"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 32,
+   "text": "Hristosul, Împăratul lui Israel, să Se pogoare acum de pe cruce, ca să vedem şi să credem!” Cei răstigniţi împreună cu El, de asemenea, îşi băteau joc de El."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 33,
+   "text": "La ceasul al şaselea, s-a făcut întuneric peste toată ţara până la ceasul al nouălea."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 34,
+   "text": "Şi în ceasul al nouălea, Isus a strigat cu glas tare: „Eli, Eli, lama sabactani” care, tălmăcit, înseamnă: „Dumnezeul Meu, Dumnezeul Meu, pentru ce M-ai părăsit?”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 35,
+   "text": "Unii din cei ce stăteau acolo, când L-au auzit, ziceau: „Iată, cheamă pe Ilie!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 36,
+   "text": "Şi unul din ei a alergat de a umplut un burete cu oţet, l-a pus într-o trestie şi I-a dat să bea, zicând: „Lăsaţi să vedem dacă va veni Ilie să-L pogoare de pe cruce!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 37,
+   "text": "Dar Isus a scos un strigăt tare şi Şi-a dat duhul."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 38,
+   "text": "Perdeaua dinăuntrul Templului s-a rupt în două de sus până jos."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 39,
+   "text": "Sutaşul, care sta în faţa lui Isus, când a văzut că Şi-a dat astfel duhul, a zis: „Cu adevărat, Omul acesta era Fiul lui Dumnezeu!”"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 40,
+   "text": "Acolo erau şi nişte femei care priveau de departe. Printre ele erau Maria Magdalena, Maria, mama lui Iacov cel mic şi a lui Iose, şi Salome,"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 41,
+   "text": "care, pe când era El în Galileea, mergeau după El şi-I slujeau, şi multe alte femei care se suiseră împreună cu El în Ierusalim."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 42,
+   "text": "Când s-a înserat, fiindcă era Ziua Pregătirii, adică ziua dinaintea Sabatului,"
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 43,
+   "text": "a venit Iosif din Arimateea, un sfetnic cu vază al soborului, care şi el aştepta Împărăţia lui Dumnezeu. El a îndrăznit să se ducă la Pilat ca să ceară trupul lui Isus."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 44,
+   "text": "Pilat s-a mirat că murise aşa de curând. A chemat pe sutaş şi l-a întrebat dacă a murit de mult."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 45,
+   "text": "După ce s-a încredinţat de la sutaş că a murit, a dăruit lui Iosif trupul."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 46,
+   "text": "Şi Iosif a cumpărat o pânză subţire de in, a dat jos pe Isus de pe cruce, L-a înfăşurat în pânza de in şi L-a pus într-un mormânt săpat în stâncă. Apoi a prăvălit o piatră la uşa mormântului."
+  },
+  {
+   "book": 41,
+   "chapter": 15,
+   "verse": 47,
+   "text": "Maria Magdalena şi Maria mama lui Iose se uitau unde-L puneau."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 1,
+   "text": "Călcaţi pe urmele mele, întrucât şi eu calc pe urmele lui Hristos."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 2,
+   "text": "Vă laud că în toate privinţele vă aduceţi aminte de mine şi că ţineţi învăţăturile întocmai cum vi le-am dat."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 3,
+   "text": "Dar vreau să ştiţi că Hristos este Capul oricărui bărbat; că bărbatul este capul femeii şi că Dumnezeu este capul lui Hristos."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 4,
+   "text": "Orice bărbat care se roagă sau proroceşte cu capul acoperit îşi necinsteşte Capul său."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 5,
+   "text": "Dimpotrivă, orice femeie care se roagă sau proroceşte cu capul dezvelit îşi necinsteşte capul ei, pentru că este ca una care ar fi rasă."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 6,
+   "text": "Dacă o femeie nu se înveleşte, să se şi tundă! Iar dacă este ruşine pentru o femeie să fie tunsă ori rasă, să se învelească."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 7,
+   "text": "Bărbatul nu este dator să-şi acopere capul, pentru că el este chipul şi slava lui Dumnezeu, pe când femeia este slava bărbatului."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 8,
+   "text": "În adevăr, nu bărbatul a fost luat din femeie, ci femeia din bărbat,"
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 9,
+   "text": "şi nu bărbatul a fost făcut pentru femeie, ci femeia pentru bărbat."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 10,
+   "text": "De aceea, femeia, din pricina îngerilor, trebuie să aibă pe cap un semn al stăpânirii ei."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 11,
+   "text": "Totuşi, în Domnul, femeia nu este fără bărbat, nici bărbatul fără femeie."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 12,
+   "text": "Căci dacă femeia este din bărbat, tot aşa şi bărbatul, prin femeie, şi toate sunt de la Dumnezeu."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 13,
+   "text": "Judecaţi voi singuri: este cuviincios ca o femeie să se roage lui Dumnezeu dezvelită?"
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 14,
+   "text": "Nu vă învaţă chiar şi firea că este ruşine pentru un bărbat să poarte părul lung,"
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 15,
+   "text": "pe când pentru o femeie este o podoabă să poarte părul lung? Pentru că părul i-a fost dat ca învălitoare a capului."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 16,
+   "text": "Dacă iubeşte cineva cearta de vorbe, noi n-avem un astfel de obicei şi nici bisericile lui Dumnezeu."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 17,
+   "text": "Vă dau aceste învăţături, dar nu vă laud, pentru că vă adunaţi laolaltă nu ca să vă faceţi mai buni, ci ca să vă faceţi mai răi."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 18,
+   "text": "Mai întâi de toate, aud că, atunci când veniţi la adunare, între voi sunt dezbinări. Şi în parte o cred,"
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 19,
+   "text": "căci trebuie să fie şi partide între voi, ca să iasă la lumină cei găsiţi buni."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 20,
+   "text": "Când vă adunaţi dar în acelaşi loc, nu este cu putinţă să mâncaţi cina Domnului."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 21,
+   "text": "Fiindcă atunci când staţi la masă, fiecare se grăbeşte să-şi ia cina adusă de el înaintea altuia; aşa că unul este flămând, iar altul este beat."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 22,
+   "text": "Ce? N-aveţi case pentru ca să mâncaţi şi să beţi acolo? Sau dispreţuiţi Biserica lui Dumnezeu şi vreţi să faceţi de ruşine pe cei ce n-au nimic? Ce să vă zic? Să vă laud? În privinţa aceasta nu vă laud."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 23,
+   "text": "Căci am primit de la Domnul ce v-am învăţat, şi anume că Domnul Isus, în noaptea în care a fost vândut, a luat o pâine."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 24,
+   "text": "Şi, după ce a mulţumit lui Dumnezeu, a frânt-o şi a zis: „Luaţi, mâncaţi; acesta este trupul Meu care se frânge pentru voi; să faceţi lucrul acesta spre pomenirea Mea”."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 25,
+   "text": "Tot astfel, după cină, a luat paharul şi a zis: „Acest pahar este legământul cel nou în sângele Meu; să faceţi lucrul acesta spre pomenirea Mea, ori de câte ori veţi bea din el”."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 26,
+   "text": "Pentru că, ori de câte ori mâncaţi din pâinea aceasta şi beţi din paharul acesta, vestiţi moartea Domnului până va veni El."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 27,
+   "text": "De aceea, oricine mănâncă pâinea aceasta sau bea paharul Domnului în chip nevrednic va fi vinovat de trupul şi sângele Domnului."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 28,
+   "text": "Fiecare să se cerceteze dar pe sine însuşi, şi aşa să mănânce din pâinea aceasta şi să bea din paharul acesta."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 29,
+   "text": "Căci cine mănâncă şi bea îşi mănâncă şi bea osânda lui însuşi, dacă nu deosebeşte trupul Domnului."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 30,
+   "text": "Din pricina aceasta sunt între voi mulţi neputincioşi şi bolnavi şi nu puţini dorm."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 31,
+   "text": "Dacă ne-am judeca singuri, n-am fi judecaţi."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 32,
+   "text": "Dar când suntem judecaţi, suntem pedepsiţi de Domnul, ca să nu fim osândiţi odată cu lumea."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 33,
+   "text": "Astfel, fraţii mei, când vă adunaţi să mâncaţi, aşteptaţi-vă unii pe alţii."
+  },
+  {
+   "book": 46,
+   "chapter": 11,
+   "verse": 34,
+   "text": "Dacă-i este foame cuiva, să mănânce acasă, pentru ca să nu vă adunaţi spre osândă. Celelalte lucruri le voi rândui când voi veni."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 1,
+   "text": "Dumnezeu, da, Dumnezeu, Domnul, vorbeşte şi cheamă pământul, de la răsăritul soarelui până la asfinţitul lui."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 2,
+   "text": "Din Sion, care este întruparea frumuseţii desăvârşite, de acolo străluceşte Dumnezeu."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 3,
+   "text": "Dumnezeul nostru vine şi nu tace. Înaintea Lui merge un foc mistuitor şi împrejurul Lui, o furtună puternică."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 4,
+   "text": "El strigă spre ceruri sus şi spre pământ, ca să judece pe poporul Său:"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 5,
+   "text": "„Strângeţi-Mi pe credincioşii Mei, care au făcut legământ cu Mine prin jertfă!”"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 6,
+   "text": "Atunci, cerurile vor vesti dreptatea Lui, căci Dumnezeu este Cel ce judecă."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 7,
+   "text": "Ascultă, poporul Meu, şi voi vorbi; ascultă, Israele, şi te voi înştiinţa. Eu sunt Dumnezeu, Dumnezeul tău."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 8,
+   "text": "Nu pentru jertfele tale te mustru, căci arderile-de-tot ale tale sunt necurmat înaintea Mea."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 9,
+   "text": "Nu voi lua tauri din casa ta, nici ţapi din staulele tale."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 10,
+   "text": "Căci ale Mele sunt toate dobitoacele pădurilor, toate fiarele munţilor cu miile lor."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 11,
+   "text": "Eu cunosc toate păsările de pe munţi şi tot ce se mişcă pe câmp este al Meu."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 12,
+   "text": "Dacă Mi-ar fi foame, nu ţi-aş spune ţie, căci a mea este lumea şi tot ce cuprinde ea."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 13,
+   "text": "Oare mănânc Eu carnea taurilor? Oare beau Eu sângele ţapilor?"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 14,
+   "text": "Adu ca jertfă lui Dumnezeu mulţumiri şi împlineşte-ţi juruinţele făcute Celui Preaînalt."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 15,
+   "text": "Cheamă-Mă în ziua necazului, şi Eu te voi izbăvi, iar tu Mă vei proslăvi!"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 16,
+   "text": "Dumnezeu zice însă celui rău: „Ce tot înşiri tu legile Mele şi ai în gură legământul Meu,"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 17,
+   "text": "când tu urăşti mustrările şi arunci cuvintele Mele înapoia ta?"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 18,
+   "text": "Dacă vezi un hoţ, te uneşti cu el şi te însoţeşti cu preacurvarii."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 19,
+   "text": "Dai drumul gurii la rău şi limba ta urzeşte vicleşuguri."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 20,
+   "text": "Stai şi vorbeşti împotriva fratelui tău, cleveteşti pe fiul mamei tale."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 21,
+   "text": "Iată ce ai făcut, şi Eu am tăcut. Ţi-ai închipuit că Eu sunt ca tine. Dar te voi mustra şi îţi voi pune totul sub ochi!”"
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 22,
+   "text": "Luaţi seama dar, voi, care uitaţi pe Dumnezeu, ca nu cumva să vă sfâşii şi să nu fie nimeni să vă scape."
+  },
+  {
+   "book": 19,
+   "chapter": 50,
+   "verse": 23,
+   "text": "Cine aduce mulţumiri ca jertfă, acela Mă proslăveşte, şi celui ce veghează asupra căii lui, aceluia îi voi arăta mântuirea lui Dumnezeu."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 1,
+   "text": "Ai milă de mine, Dumnezeule, în bunătatea Ta! După îndurarea Ta cea mare, şterge fărădelegile mele!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 2,
+   "text": "Spală-mă cu desăvârşire de nelegiuirea mea şi curăţă-mă de păcatul meu!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 3,
+   "text": "Căci îmi cunosc bine fărădelegile şi păcatul meu stă necurmat înaintea mea."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 4,
+   "text": "Împotriva Ta, numai împotriva Ta, am păcătuit şi am făcut ce este rău înaintea Ta; aşa că vei fi drept în hotărârea Ta şi fără vină în judecata Ta."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 5,
+   "text": "Iată că sunt născut în nelegiuire şi în păcat m-a zămislit mama mea."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 6,
+   "text": "Dar Tu ceri ca adevărul să fie în adâncul inimii: fă dar să pătrundă înţelepciunea înăuntrul meu!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 7,
+   "text": "Curăţeşte-mă cu isop, şi voi fi curat; spală-mă, şi voi fi mai alb decât zăpada."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 8,
+   "text": "Fă-mă să aud veselie şi bucurie şi oasele pe care le-ai zdrobit Tu se vor bucura."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 9,
+   "text": "Întoarce-Ţi privirea de la păcatele mele, şterge toate nelegiuirile mele!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 10,
+   "text": "Zideşte în mine o inimă curată, Dumnezeule, pune în mine un duh nou şi statornic!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 11,
+   "text": "Nu mă lepăda de la Faţa Ta şi nu lua de la mine Duhul Tău cel Sfânt."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 12,
+   "text": "Dă-mi iarăşi bucuria mântuirii Tale, şi sprijină-mă cu un duh de bunăvoinţă!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 13,
+   "text": "Atunci voi învăţa căile Tale pe cei ce le calcă, şi păcătoşii se vor întoarce la Tine."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 14,
+   "text": "Dumnezeule, Dumnezeul mântuirii mele! Izbăveşte-mă de vina sângelui vărsat, şi limba mea va lăuda îndurarea Ta."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 15,
+   "text": "Doamne, deschide-mi buzele, şi gura mea va vesti lauda Ta."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 16,
+   "text": "Dacă ai fi voit jertfe, Ţi-aş fi adus, dar Ţie nu-Ţi plac arderile-de-tot."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 17,
+   "text": "Jertfele plăcute lui Dumnezeu sunt un duh zdrobit: Dumnezeule, Tu nu dispreţuieşti o inimă zdrobită şi mâhnită."
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 18,
+   "text": "În îndurarea Ta, varsă-Ţi binefacerile asupra Sionului şi zideşte zidurile Ierusalimului!"
+  },
+  {
+   "book": 19,
+   "chapter": 51,
+   "verse": 19,
+   "text": "Atunci vei primi jertfe neprihănite, arderi-de-tot şi jertfe întregi; atunci se vor aduce pe altarul Tău viţei."
+  }
+ ]
+}

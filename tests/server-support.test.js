@@ -44,9 +44,9 @@ function nextJson(socket) {
 
 // Runs `body` against a real relay on a random local port. `connect()` opens a
 // screen/dashboard socket and resolves with it and the relay's first message.
-async function withRelay(body) {
+async function withRelay(body, relayOptions = {}) {
   const server = http.createServer();
-  const relay = attachLocalRelay(server);
+  const relay = attachLocalRelay(server, null, relayOptions);
   await new Promise((resolve, reject) => {
     server.listen(0, '127.0.0.1', error => error ? reject(error) : resolve());
   });
@@ -191,6 +191,73 @@ test('an oversized message from one device does not stop the server', async () =
     dashboard.send(JSON.stringify({ type: 'append', lane: 'lang1', text: 'Still live.' }));
     assert.equal((await update).full, 'Still live.');
   });
+});
+
+test('a verse the preacher names reaches every screen, and a bad command only answers its sender', async () => {
+  const bible = {
+    async labelFor(ref) {
+      return `Ephesians ${ref.chapter}:${ref.verseStart}`;
+    },
+    async lookupPassage(ref) {
+      return { label: `Ephesians ${ref.chapter}:${ref.verseStart}`, version: 'KJV', verses: [{ n: 16, text: 'And that he might reconcile both unto God.' }], truncated: false };
+    }
+  };
+  const notesOptions = { bible, search: null, configDir: '', readApiKey: async () => '', logger: { warn() {} } };
+  await withRelay(async ({ connect }) => {
+    const { socket: viewer, hello } = await connect();
+    assert.equal(hello.messageNotes.settings.verses, true);
+    assert.equal(hello.messageNotes.verse, null);
+    const { socket: dashboard } = await connect();
+
+    const pending = nextJson(viewer);
+    dashboard.send(JSON.stringify({ type: 'source-append', text: ' Și dacă ne vom uita la Efeseni 2 cu 16. Spune' }));
+    let update = await pending;
+    while (!update.state?.verse) update = await nextJson(viewer);
+    assert.equal(update.type, 'message-notes');
+    assert.equal(update.state.verse.lanes.lang1.label, 'Ephesians 2:16');
+    assert.equal(update.state.verse.lanes.lang1.verses[0].text, 'And that he might reconcile both unto God.');
+
+    const reply = new Promise(resolve => {
+      const onMessage = raw => {
+        const data = JSON.parse(raw.toString());
+        if (data.type === 'message-notes') return;
+        dashboard.off('message', onMessage);
+        resolve(data);
+      };
+      dashboard.on('message', onMessage);
+    });
+    dashboard.send(JSON.stringify({ type: 'notes-command', action: 'show-verse', reference: 'not a verse' }));
+    const error = await reply;
+    assert.equal(error.type, 'notes-error');
+    assert.match(error.error, /not a Bible reference/);
+
+    // A screen that joins now gets the verse with its first message.
+    const { hello: late } = await connect();
+    assert.equal(late.messageNotes.verse.key, '49.2.16.0');
+  }, { notesOptions });
+});
+
+test("the preacher's own words reach only the screens showing them", async () => {
+  const notesOptions = { bible: { async labelFor() { return ''; }, async lookupPassage() { return { label: '', version: '', verses: [], truncated: false }; } }, search: null, configDir: '', readApiKey: async () => '', logger: { warn() {} } };
+  await withRelay(async ({ connect }) => {
+    const { socket: phone } = await connect();
+    const { socket: projector } = await connect();
+    const { socket: dashboard } = await connect();
+    const received = { phone: [], projector: [] };
+    phone.on('message', raw => received.phone.push(JSON.parse(raw.toString())));
+    projector.on('message', raw => received.projector.push(JSON.parse(raw.toString())));
+
+    phone.send(JSON.stringify({ type: 'source-subscribe', on: true }));
+    await new Promise(resolve => setTimeout(resolve, 50));
+    dashboard.send(JSON.stringify({ type: 'source-append', text: 'Amin.', language: 'ro' }));
+    dashboard.send(JSON.stringify({ type: 'source-append', text: ' Vă rog să luați loc.', language: 'ro' }));
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const sources = received.phone.filter(message => message.type === 'source');
+    assert.deepEqual(sources.map(message => message.seq), [0, 1, 2]);
+    assert.equal(sources[2].full, 'Amin. Vă rog să luați loc.');
+    assert.equal(received.projector.some(message => message.type === 'source'), false);
+  }, { notesOptions });
 });
 
 test('Gemini proxy allows this computer and private LAN clients, and hides the key from the dashboard URL', () => {

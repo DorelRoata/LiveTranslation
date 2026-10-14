@@ -4,6 +4,8 @@ import { emptyLaneState, laneUpdatePlan, normalizeLaneState } from './caption-st
 import { getLanguageName } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
+import { createMessageNotesView } from './message-notes-view.js';
+import { createOriginalView, nativeLanguageName } from './original-view.js';
 import {
   SMOOTH_START_BUFFER_MS,
   easeTickDelay,
@@ -90,11 +92,43 @@ const qrFloat = document.getElementById('qr-float');
 const qrCanvasProjector = document.getElementById('qr-canvas-projector');
 const PROJECTOR_QR_KEY = 'live_translate_projector_qr';
 
+// Message notes (Bible verses, summary, points). The operator turns them on
+// for every screen; this button hides them on this screen only.
+const btnNotesToggle = document.getElementById('btn-notes-toggle');
+const PROJECTOR_NOTES_KEY = 'live_translate_projector_notes';
+const notesView = createMessageNotesView({
+  panel: document.getElementById('message-panel'),
+  floats: {
+    lang1: document.getElementById('verse-float-lang1'),
+    lang2: document.getElementById('verse-float-lang2')
+  },
+  recapOverlay: document.getElementById('recap-overlay')
+});
+
+// The spoken language as captions, shown with the "Original" layout button.
+const btnViewSrc = document.getElementById('btn-view-src');
+const secSrc = document.getElementById('sec-src');
+const originalView = createOriginalView({
+  section: secSrc,
+  element: document.getElementById('sub-src'),
+  send: message => {
+    if (subtitleSocket?.readyState === WebSocket.OPEN) subtitleSocket.send(JSON.stringify(message));
+  }
+});
+
+// Shows the button once the host knows which language is being spoken.
+function updateSourceButton(source) {
+  if (!source?.code || obsMode) return;
+  btnViewSrc.hidden = false;
+  btnViewSrc.textContent = nativeLanguageName(source.code, source.name || 'Original');
+}
+
 // UI state configurations
 const urlParams = new URLSearchParams(window.location.search);
 const obsMode = urlParams.get('obs') === 'true';
 let viewMode = obsLanguageToViewMode(urlParams.get('lang')); // 'both', 'lang1', 'lang2'
 if (obsMode) document.body.classList.add('obs-mode');
+notesView.setView({ obs: obsMode });
 let audioEnabled = false;
 let visibleLineCount = 3;
 let subtitleTextSize = 'md';
@@ -188,6 +222,7 @@ function applySubtitleDisplaySettings(lineCount, textSize, persist = true) {
   visibleLineCount = Number(lineCount) === 2 ? 2 : 3;
   subtitleTextSize = ['sm', 'md', 'lg'].includes(textSize) ? textSize : 'md';
   document.body.dataset.subtitleSize = subtitleTextSize;
+  document.body.style.setProperty('--src-lines', String(visibleLineCount));
 
   subtitleLineButtons.forEach(button => {
     const active = Number(button.dataset.lines) === visibleLineCount;
@@ -252,6 +287,10 @@ btnViewLang2.addEventListener('click', () => {
   viewMode = 'lang2';
   updateUIElements();
   refreshVisibleLanes();
+});
+btnViewSrc.addEventListener('click', () => {
+  viewMode = 'src';
+  updateUIElements();
 });
 
 // Audio Playback context initialisation and toggling
@@ -645,7 +684,11 @@ function updateUIElements() {
   btnViewBoth.setAttribute('aria-pressed', String(viewMode === 'both'));
   btnViewLang1.setAttribute('aria-pressed', String(viewMode === 'lang1'));
   btnViewLang2.setAttribute('aria-pressed', String(viewMode === 'lang2'));
+  btnViewSrc.classList.toggle('active', viewMode === 'src');
+  btnViewSrc.setAttribute('aria-pressed', String(viewMode === 'src'));
   document.body.classList.toggle('single-language-layout', viewMode !== 'both');
+  notesView.setView({ mode: viewMode });
+  originalView.setEnabled(viewMode === 'src');
 
   // 3. Grid Columns Visibility
   if (viewMode === 'both') {
@@ -661,6 +704,9 @@ function updateUIElements() {
     secLang1.classList.add('hidden');
     secLang2.classList.remove('hidden');
     secLang2.style.display = 'flex';
+  } else if (viewMode === 'src') {
+    secLang1.classList.add('hidden');
+    secLang2.classList.add('hidden');
   }
 }
 
@@ -671,6 +717,7 @@ function playPCMChunk(base64Data, channelId) {
   if (!audioEnabled || !audioContext) return;
 
   // Drop audio playback if that language is currently hidden by View Mode
+  if (viewMode === 'src') return;
   if (viewMode === 'lang1' && channelId !== 1) return;
   if (viewMode === 'lang2' && channelId !== 2) return;
 
@@ -727,6 +774,7 @@ function connect() {
     statusIndicator.style.boxShadow = "0 0 8px #10b981";
     statusIndicator.title = "Connected to Host";
     statusIndicator.setAttribute('aria-label', 'Connected to host');
+    originalView.resubscribe();
   };
 
   socket.onmessage = (event) => {
@@ -747,6 +795,15 @@ function connect() {
         updateUIElements();
         renderSubtitleLane("lang1");
         renderSubtitleLane("lang2");
+        if (data.messageNotes) {
+          notesView.update(data.messageNotes);
+          updateSourceButton(data.messageNotes.source);
+        }
+      } else if (data.type === 'message-notes') {
+        notesView.update(data.state);
+        updateSourceButton(data.state?.source);
+      } else if (data.type === 'source') {
+        originalView.handle(data);
       } else if (data.type === 'append') {
         if ((data.lane === 'lang1' || data.lane === 'lang2') && typeof data.text === 'string') {
           subtitleState[data.lane] = normalizeLaneState({ text: data.full, seq: data.seq });
@@ -772,6 +829,7 @@ function connect() {
         if (sec1) sec1.innerHTML = "-";
         const sec2 = document.getElementById("sub-lang2");
         if (sec2) sec2.innerHTML = "-";
+        originalView.clear();
       }
     } catch (err) {
       console.error("Error parsing WebSocket message:", err);
@@ -825,6 +883,7 @@ function setQrFloat(enabled, persist = true) {
   btnQrToggle.classList.toggle('active', qrFloatEnabled);
   btnQrToggle.setAttribute('aria-pressed', String(qrFloatEnabled));
   btnQrToggle.textContent = qrFloatEnabled ? 'QR On' : 'QR Off';
+  document.body.classList.toggle('qr-on', qrFloatEnabled);
   btnQrToggle.title = qrFloatEnabled
     ? 'Hide the corner QR code.'
     : 'Show a QR code in the bottom-right so people can open subtitles on their phone.';
@@ -863,6 +922,34 @@ initProjectorSharingQR();
 
 btnQrToggle.addEventListener('click', () => {
   setQrFloat(!qrFloatEnabled);
+  resetControlsTimer();
+});
+
+function setNotesOnThisScreen(enabled, persist = true) {
+  btnNotesToggle.classList.toggle('active', enabled);
+  btnNotesToggle.setAttribute('aria-pressed', String(enabled));
+  btnNotesToggle.textContent = enabled ? 'On' : 'Off';
+  btnNotesToggle.title = enabled
+    ? 'Hide Bible verses and message notes on this screen only.'
+    : 'Show Bible verses and message notes on this screen.';
+  notesView.setView({ enabled });
+  if (persist) {
+    try {
+      localStorage.setItem(PROJECTOR_NOTES_KEY, enabled ? '1' : '0');
+    } catch (error) {
+      console.warn('Unable to save the notes setting:', error);
+    }
+  }
+}
+
+try {
+  setNotesOnThisScreen(localStorage.getItem(PROJECTOR_NOTES_KEY) !== '0', false);
+} catch (error) {
+  setNotesOnThisScreen(true, false);
+}
+
+btnNotesToggle.addEventListener('click', () => {
+  setNotesOnThisScreen(btnNotesToggle.getAttribute('aria-pressed') !== 'true');
   resetControlsTimer();
 });
 

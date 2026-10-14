@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
 import { appendLaneText, applyRelaySnapshot, emptyLaneState, laneDisplayText, pieceToAppend } from './src/caption-stream.js';
 import { buildSystemSetup } from './src/system-setup.js';
+import { createMessageNotes } from './server-message-notes.js';
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 const MAX_REQUEST_BYTES = 8 * 1024;
@@ -291,7 +292,8 @@ export async function getActivityInfo(relay = activeRelay) {
     previews: snapshot?.previews || {
       lang1: '',
       lang2: ''
-    }
+    },
+    messageNotes: snapshot?.messageNotes || null
   };
 }
 
@@ -404,7 +406,8 @@ export function getActiveRelay() {
   return activeRelay;
 }
 
-export function attachLocalRelay(httpServer, existingRelay = null) {
+// notesOptions: overrides for createMessageNotes (tests pass a fake fetch).
+export function attachLocalRelay(httpServer, existingRelay = null, { notesOptions = {} } = {}) {
   if (existingRelay) {
     if (httpServer) existingRelay.attach(httpServer);
     activeRelay = existingRelay;
@@ -419,6 +422,24 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
   };
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD_BYTES, perMessageDeflate: false });
   const attachedServers = new Set();
+  const notes = createMessageNotes({
+    broadcast: message => broadcast(JSON.stringify(message)),
+    readApiKey: readStoredApiKey,
+    configDir: getConfigDir(),
+    ...notesOptions
+  });
+  notes.setLanguages(subtitleState);
+  // The preacher's own words, for screens that chose the spoken language.
+  // Sent only to those screens, so the others carry no extra traffic.
+  let sourceLane = emptyLaneState();
+
+  function sendSource(client, addition = '') {
+    send(client, JSON.stringify({ type: 'source', text: addition, seq: sourceLane.seq, full: sourceLane.text }), true);
+  }
+
+  function syncMessage() {
+    return JSON.stringify({ type: 'sync', state: subtitleState, messageNotes: notes.snapshot() });
+  }
 
   function send(client, message, lossy = false) {
     if (client.readyState !== WebSocket.OPEN) return;
@@ -460,6 +481,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
       attachedServers.delete(server);
       if (attachedServers.size === 0) {
         clearInterval(heartbeat);
+        notes.dispose();
         if (activeRelay === relay) activeRelay = null;
       }
     });
@@ -475,6 +497,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
       seq: subtitleState[lane].seq,
       full: subtitleState[lane].text
     }), sender);
+    notes.addLane(lane, addition);
   }
 
   wss.on('connection', (ws) => {
@@ -487,7 +510,7 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     ws.on('error', error => {
       console.error('Local relay client error:', error.message);
     });
-    send(ws, JSON.stringify({ type: 'sync', state: subtitleState }));
+    send(ws, syncMessage());
 
     ws.on('message', (message) => {
       try {
@@ -504,14 +527,37 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
           appendToLane(data.lane, pieceToAppend(subtitleState[data.lane].text, data.text), ws);
         } else if (data.type === 'replace') {
           Object.assign(subtitleState, applyRelaySnapshot(subtitleState, data));
-          broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
+          broadcast(syncMessage());
         } else if (data.type === 'setup') {
           Object.assign(subtitleState, buildSystemSetup(data));
-          broadcast(JSON.stringify({ type: 'sync', state: subtitleState }));
+          notes.setLanguages(subtitleState);
+          broadcast(syncMessage());
+        } else if (data.type === 'source-append') {
+          // The preacher's own words, for Bible references and message notes.
+          if (typeof data.text !== 'string' || data.text.length > 4000) return;
+          notes.addSource(data.text, typeof data.language === 'string' ? data.language.slice(0, 16) : '');
+          const before = sourceLane.seq;
+          sourceLane = appendLaneText(sourceLane, data.text);
+          if (sourceLane.seq !== before) {
+            for (const client of wss.clients) if (client.wantsSource && client !== ws) sendSource(client, data.text);
+          }
+        } else if (data.type === 'source-subscribe') {
+          ws.wantsSource = Boolean(data.on);
+          if (ws.wantsSource) sendSource(ws);
+        } else if (data.type === 'notes-settings') {
+          if (data.settings && typeof data.settings === 'object') notes.applySettings(data.settings);
+        } else if (data.type === 'notes-command') {
+          const error = notes.command(String(data.action || ''), {
+            reference: typeof data.reference === 'string' ? data.reference.slice(0, 80) : '',
+            key: typeof data.key === 'string' ? data.key.slice(0, 40) : ''
+          });
+          if (error) send(ws, JSON.stringify({ type: 'notes-error', action: data.action, error }));
         } else if (data.type === 'clear') {
           subtitleState.lang1 = emptyLaneState();
           subtitleState.lang2 = emptyLaneState();
+          sourceLane = emptyLaneState();
           broadcast(JSON.stringify({ type: 'clear' }));
+          notes.clearScreens();
         } else if (data.type === 'audio' || data.type === 'input-audio') {
           broadcast(message.toString(), ws, true);
         } else if (data.type === 'audio-sender-hello') {
@@ -544,7 +590,10 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
     }
   }, 15_000);
   heartbeat.unref();
-  wss.on('close', () => clearInterval(heartbeat));
+  wss.on('close', () => {
+    clearInterval(heartbeat);
+    notes.dispose();
+  });
 
   function getSnapshot() {
     let clients = 0;
@@ -584,11 +633,12 @@ export function attachLocalRelay(httpServer, existingRelay = null) {
       previews: {
         lang1: trimPreview(laneDisplayText(subtitleState.lang1)),
         lang2: trimPreview(laneDisplayText(subtitleState.lang2))
-      }
+      },
+      messageNotes: notes.summary()
     };
   }
 
-  const relay = { attach, wss, getSnapshot };
+  const relay = { attach, wss, getSnapshot, notes };
   activeRelay = relay;
   if (httpServer) attach(httpServer);
   return relay;

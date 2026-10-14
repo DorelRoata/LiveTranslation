@@ -2,6 +2,28 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.0 — Following the Bible reading, and Romanian on screen
+
+**Why:** When a passage is read aloud, the congregation should see the verse being read, from a real Bible, not only the machine translation of it. Ranges such as "Psalms 1 through 4" showed only the first chapter, and the Romanian-speaking majority could not read the verse in their own Bible.
+
+**What changed:**
+- **Follow the reading.** While a passage is read, the verse card shows the verse being read now and, dimmed, the next one, moving on as the reader does. The app compares the Romanian it hears with Cornilescu, three words at a time, across the whole Bible. On the 2026-10-04 service it followed 1 Corinthians 11:23–29 and Mark 15:22–26 verse by verse, and the Romanian school's unannounced reading of Psalms 50 and 51 from the first verse to the last (42 verses, 5 minutes). It found Mark 15 although Google heard the announcement as "Marcu 13", and kept to 1 Corinthians 11 although Luke 22 and Matthew 26 use nearly the same words. During 15 minutes of preaching it showed nothing that was not read, except John 3:16 when the preacher quoted it.
+- **More ways to name passages:** "Psalm 5, 1 through 6", "Psalms 1 through 4" and "Psalmii 1 până la 4" (whole chapters), "Matthew chapters 5 to 7", "Romans 8:28, 31 and 38", "John 3:16 and 4:1", and the book after the chapter: "capitolul 3 din Ioan", "chapter 3 of the Gospel of John".
+- **Romanian on screen.** Screens showing one language also show the verse from Cornilescu under the English (or Russian) one; **Verses also in Romanian** turns this off. Projectors and phones have a new **Română** layout button: the preacher's own words as captions, with the verse and the notes in Romanian, for hard-of-hearing members and anyone reading along.
+- The subtitles, their pacing and the Live Translate connection are unchanged. Measured on a real-time replay, subtitle pieces reached the screens in 0.5 ms with these features on or off, and the projector never paused. The Bible is indexed in a separate thread (about 0.4 s, 6 MB) so the relay never waits for it.
+
+## v1.4.0 — Bible verses on screen and message notes
+
+**Why:** When the preacher names a verse, the congregation should be able to read it, and people following on one language should be able to see where the message is going.
+
+**What changed:**
+- **Verse pop-ups.** When the preacher names a passage ("Efeseni 2 cu 16", "1 John chapter 2 and verse 1"), the screens show it with its text for a minute: the reference in each language's own Bible and numbering (Psalm 23 is Псалом 22 in Russian), and the verse from KJV, Cornilescu, the Russian Synodal, or the Bible for that language. On the recorded 2026-10-04 sermon all 9 references were found, about a second after they were said, and nothing else was.
+- **Message notes.** Every screen that shows one language uses its empty bottom half for the message's title, a short summary, the main points, and the verses read so far. Gemini writes them from the sermon transcript about a minute into the sermon and updates them every minute and a half.
+- **Two languages on screen.** The verse appears at the top of each language's half instead. **Show recap** puts the whole message over both languages for up to two minutes.
+- **Operator control.** A new Message notes card on the dashboard turns the summary and the verse pop-ups on or off for every screen, sets how long a verse stays (30 s to 3 min), picks the English Bible (KJV, WEB, ASV), starts notes for the next preacher (**New message**), shows any verse by typing it, and shows a preview of what the screens show. Each projector or phone can also hide notes for itself only (**Notes: On/Off** in its control bar).
+- OBS is unchanged: the live-stream overlay never shows notes or verses.
+- The subtitles are untouched: same pieces, same order, same pacing.
+
 ## v1.3.36 — Accuracy audit: safe glossary, no silent audio loss
 
 **Why:** A review of the whole translation path on real sermon audio. Google's translation was accurate, but the app's glossary could replace correct English with wrong words ("we, the Romanians" became "we, Romans"; "stuck in a rut" became "Ruth"), and audio could be lost in three places without anyone being told.

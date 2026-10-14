@@ -436,6 +436,100 @@
             </div>
           </div>
 
+          <section class="notes-console glass-card" id="notes-console" aria-labelledby="notes-heading">
+            <header class="notes-head">
+              <div class="notes-title-area">
+                <svg class="notes-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3.5 5.5c0-.8.7-1.5 1.5-1.5h6v15.5H5a1.5 1.5 0 0 0-1.5 1.5zM20.5 5.5c0-.8-.7-1.5-1.5-1.5h-6v15.5h6c.8 0 1.5.7 1.5 1.5z"></path>
+                </svg>
+                <h3 id="notes-heading">Message notes</h3>
+                <span class="notes-status" id="notes-status" data-state="waiting" role="status" aria-live="polite">Waiting for about a minute of preaching</span>
+              </div>
+              <div class="notes-actions">
+                <button id="notes-new-message-btn" class="health-btn" type="button" title="Clear the summary and verses for the next preacher.">New message</button>
+                <button id="notes-update-btn" class="health-btn" type="button" title="Rewrite the summary and points from everything said so far.">Update now</button>
+                <button id="notes-recap-btn" class="health-btn primary" type="button" aria-pressed="false" title="Show the whole message over the subtitles on every screen, for up to 2 minutes.">Show recap</button>
+              </div>
+            </header>
+
+            <div class="notes-controls">
+              <label class="switch-container">
+                <input type="checkbox" id="notes-summary-toggle" checked />
+                <span class="switch-slider"></span>
+                <span class="switch-label">Summary &amp; points on screens</span>
+              </label>
+              <label class="switch-container">
+                <input type="checkbox" id="notes-verses-toggle" checked />
+                <span class="switch-slider"></span>
+                <span class="switch-label">Bible verse pop-ups</span>
+              </label>
+              <label class="switch-container" title="When a passage is read aloud, the verse card shows the verse being read, then the next.">
+                <input type="checkbox" id="notes-follow-toggle" checked />
+                <span class="switch-slider"></span>
+                <span class="switch-label">Follow the reading</span>
+              </label>
+              <label class="switch-container" title="Screens showing one language also show the verse from the spoken language's Bible.">
+                <input type="checkbox" id="notes-spoken-toggle" checked />
+                <span class="switch-slider"></span>
+                <span class="switch-label" id="notes-spoken-label">Verses also in the spoken language</span>
+              </label>
+              <div class="notes-field">
+                <label for="notes-verse-seconds">Verse stays</label>
+                <select id="notes-verse-seconds">
+                  <option value="30">30 seconds</option>
+                  <option value="60" selected>1 minute</option>
+                  <option value="90">1½ minutes</option>
+                  <option value="120">2 minutes</option>
+                  <option value="180">3 minutes</option>
+                </select>
+              </div>
+              <div class="notes-field">
+                <label for="notes-english-bible">English Bible</label>
+                <select id="notes-english-bible">
+                  <option value="kjv" selected>King James (KJV)</option>
+                  <option value="web">World English (WEB)</option>
+                  <option value="asv">American Standard (ASV)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="notes-body">
+              <div class="notes-preview" aria-label="Summary on the screens">
+                <p class="notes-empty" id="notes-empty">The title, a short summary and the main points appear here, and on every screen showing one language, about a minute into the sermon. They update every minute and a half.</p>
+                <h4 class="notes-preview-title" id="notes-preview-title" hidden></h4>
+                <p class="notes-preview-summary" id="notes-preview-summary" hidden></p>
+                <ol class="notes-preview-points" id="notes-preview-points" hidden></ol>
+              </div>
+
+              <div class="notes-scripture">
+                <div class="notes-onscreen" id="notes-onscreen" hidden>
+                  <div class="notes-onscreen-head">
+                    <span class="notes-onscreen-label">Verse on screens</span>
+                    <span class="notes-onscreen-left" id="notes-onscreen-left"></span>
+                  </div>
+                  <strong class="notes-onscreen-ref" id="notes-onscreen-ref"></strong>
+                  <p class="notes-onscreen-text" id="notes-onscreen-text"></p>
+                  <button id="notes-hide-verse-btn" class="text-btn" type="button">Hide verse now</button>
+                </div>
+
+                <form class="notes-show-verse" id="notes-show-verse-form" autocomplete="off">
+                  <label for="notes-verse-input">Show a verse</label>
+                  <div class="notes-show-verse-row">
+                    <input type="text" id="notes-verse-input" placeholder="John 3:16, Romani 8:28, Psalm 23" spellcheck="false" />
+                    <button type="submit" class="share-link-btn">Show</button>
+                  </div>
+                  <small class="input-hint" id="notes-verse-hint">Verses the preacher names show by themselves. Type one here if it was missed.</small>
+                </form>
+
+                <div class="notes-verses">
+                  <span class="notes-verses-label">Verses read</span>
+                  <p class="notes-verses-empty" id="notes-verses-empty">None yet. Click a verse to show it again.</p>
+                  <ul class="notes-verse-chips" id="notes-verse-chips"></ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <div class="transcript-controls-bar">
             <span class="transcript-heading">Live Transcripts</span>
             <div class="font-size-picker">
@@ -510,7 +604,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Live Translate v1.3.36 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
+        <p>Live Translate v1.5.0 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
       </footer>
     </div>
 

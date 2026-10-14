@@ -116,7 +116,38 @@ All on real sermon audio from the 2026-10-04 livestream, through the real dashbo
 
 ---
 
-## 7. Model Selection
+## 7. Bible Verses & Message Notes (v1.4.0)
+
+### ✅ Rule: References Are Found by Rules, Not AI
+* `src/bible-references.js` reads the preacher's words (`source-append`, the input transcription) and any English or Romanian subtitle lane on the host. A reference is reported once the following words show it is complete ("Romans 8" waits through ", verse" for "28"), or 1.8 s after the last piece.
+* Measured on the recorded 2026-10-04 sermon (`tests/fixtures/sermon-2026-10-04-ro.json` and `-en.json`): the Romanian input and the English output arrive within ~0.3 s of each other; all 9 references were found in both, about a second after the verse number, and nothing else. `tests/bible-references.test.js` replays both.
+* Books that are also names or words (Mark, John, Job, Acts, Ioan, Rut, Tit…) count only with a verse or "chapter"; every reference is checked against real chapter and verse counts. Do not loosen this: a false verse on the projector is worse than a missed one, and the operator can type a missed one.
+* The same verse from the other stream, or repeated by the preacher within 20 s, keeps the card up instead of showing it again.
+
+### ✅ Rule: Verse Text Comes From a Real Bible, in That Bible's Numbering
+* Text comes from `api.getbible.net` (chapter files, cached on disk in the config dir), never from a model.
+* References are kept in King James numbering and mapped per Bible (`src/bible-data.js`, generated from the Copenhagen Alliance versification files by `scripts/generate-bible-data.mjs`). The Russian Synodal shifts most Psalms (KJV 23:1 = Синодальный 22:1, 51:10 = 50:12, 10:1 = 9:22) and moves Romans 16:25–27 to 14:24–26; French and Hungarian count Psalm titles as verses.
+* Every chapter is checked against the expected verse count for its numbering; a mismatch shows the reference without text rather than the wrong verse.
+
+### ✅ Rule: Notes Use a Separate Text Model
+* The notes are written by `gemini-flash-latest` (thinking level low, falls back to `gemini-2.5-flash`) through the REST `generateContent` API with a JSON schema, from the full source transcript plus the Language 1 translation, in every screen language at once. On the 15-minute recording this took about 5 s and named all six passages.
+* **Never send these instructions to the Live Translate socket** (see §1: a system instruction stops it). The notes are a separate request from the host.
+* First notes after ~120 words, then every 90 s with 60 new words, or 25 s into a pause. The previous notes are sent back so wording stays stable on screen.
+
+### ✅ Verified: Following a Reading (v1.5.0)
+* `src/bible-reading.js` keeps the last 8 words of the input transcription and scores verses by shared three-word groups; `server-bible-search.js` indexes the spoken language's whole Bible in a worker thread (31,102 verses, about 6 MB, 0.4 s from the disk cache, 6 s the first time while downloading). The main thread was never delayed more than timer jitter while it built.
+* A verse needs 3 of 6 groups when it continues the reading or lies in a chapter just named; 5 elsewhere in a book just named (Google heard Mark 15 announced as "Marcu 13"); 5, twice in a row, when nothing named its book. **Prefer the expected passage over a better score:** 1 Corinthians 11:23–26 and Luke 22 / Matthew 26 are nearly word for word in Cornilescu, as are Mark 15 and Matthew 27; scoring alone jumped between them.
+* Measured on readings recorded from the 2026-10-04 service through the app's own setup (`tests/fixtures/readings-2026-10-04.json`) against the whole Bible: 1 Corinthians 11:23–29, Mark 15:22–26 and Psalms 50:1–51:19 (unannounced, children reciting) followed in order with no wrong verse; 15 minutes of preaching showed only the verses read after being named, plus John 3:16 when quoted.
+* Only Bibles numbered like the King James are followed (Cornilescu is); a Synodal-numbered spoken language would need its own mapping.
+
+### ✅ Rule: Do Not Touch the Captions
+* The notes panel uses the empty bottom half of the one-language layout and floating cards in the two-language layout; `caption-stream.js`, the word queue and pacing are unchanged. A real-time replay showed the subtitles keeping pace with the panel and a verse on screen.
+* Screens get the whole notes state as `{ type: 'message-notes', state }` and inside every `sync`, so a screen that joins late shows the current verse at once. OBS never shows it.
+* Chrome may apply a font-size change one frame late on these pages, so the panel's shrink-to-fit measures between frames instead of synchronously.
+* The spoken-language captions (**Română**) have their own simple renderer (`src/original-view.js`), not the subtitle word queue, and the relay sends those words only to screens that asked for them (`source-subscribe`).
+* **Testing note:** a projector page in a background tab (two pages in one headless browser) has its animation frames paused, so its subtitles appear to lag far behind. Give each test screen its own browser.
+
+## 8. Model Selection
 
 * **Current Model:** `models/gemini-3.5-live-translate-preview`.
 * **Why not `gemini-2.0-flash`?** General Gemini models require conversational turn orchestration and do not support `translationConfig` for continuous direct audio-to-audio/text translation. `gemini-3.5-live-translate-preview` is specifically Google's low-latency speech-to-speech translation model.

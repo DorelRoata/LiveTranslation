@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.3.36`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
+The current application version is `v1.5.0`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
 
 ## Screenshots
 
@@ -24,6 +24,9 @@ The current application version is `v1.3.36`. See [Changelog](./docs/CHANGELOG.m
 - **Repeat words already in the target language** defaults to off.
 - The Gemini API key is saved on this computer and never shown again after that.
 - Remembered operator settings with a **Reset Settings to Defaults** button.
+- **Bible verse pop-ups**: when the preacher names a passage, its text appears on the screens for a minute, in each language's own Bible. While a passage is read aloud, the card **follows the reading** verse by verse.
+- **Romanian on screen**: the verse also from Cornilescu, and a **Română** layout with the preacher's own words as captions.
+- **Message notes** on one-language screens: the sermon's title, summary, main points, and verses read, written by Gemini and updated as the preacher speaks, with an end-of-sermon recap.
 - Selectable **Smooth** subtitle pacing with a 200 ms buffer, plus the original **Live** pacing mode.
 - An optional live **Automatically Ignore Songs** filter that keeps Gemini connected while pausing song audio.
 - A projector/phone subtitle page with wake lock and automatic reconnection.
@@ -162,6 +165,19 @@ Copy the **Projector Screen URL** from the dashboard. On the projector computer 
 Subtitle viewers automatically reconnect after network or server interruptions and receive the current subtitle history after reconnecting. Wake lock can keep supported phone screens awake.
 
 The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, vertically center each language with compact lane padding, scale against both width and height, and retain a bottom safe area to prevent three-line clipping at common 1080p and 1440p resolutions. Selecting only one language positions that subtitle lane in the upper half of the screen.
+
+## Bible verses and message notes
+
+When the preacher names a passage ("Efeseni 2 cu 16", "John 3:16"), every projector and phone shows the verse for a minute. A screen showing one language uses its bottom half for the verse and for message notes: the title, a short summary, the main points, and the verses read so far. With two languages on screen, the verse appears at the top of each language's half, and **Show recap** opens the whole message over both.
+
+- Verse pop-ups come from references recognized on the host in the preacher's words and the English translation. No AI decides which verse to show.
+- While a passage is read aloud, the card shows the verse being read and the next one. The host compares the words heard with the spoken language's Bible (Cornilescu for Romanian), indexed in a worker thread from the same cache, so a reading is followed even when its reference was misheard or never announced.
+- Screens showing one language also show the verse in the spoken language's Bible, and projectors and phones offer the spoken language itself (**Română**) as a layout.
+- Verse text comes from the getBible API (`api.getbible.net`) and is cached on the host in `bible-cache` beside `config.json`. English uses KJV, WEB, or ASV; Romanian uses Cornilescu; Russian uses the Synodal translation with its own Psalm numbering.
+- The notes are written by a Gemini text model (`gemini-flash-latest`) using the saved API key, about every minute and a half while the preacher speaks. This is separate from the Live Translate connection and does not affect it.
+- The **Message notes** card on the dashboard turns the summary and the verse pop-ups on or off for every screen, sets how long a verse stays, starts notes for a new preacher, and shows any verse on demand. Each screen can also hide them for itself. The OBS overlay never shows them.
+
+Settings are saved on the host in `message-notes.json` beside `config.json`.
 
 ## Remote microphone and laptop control
 
