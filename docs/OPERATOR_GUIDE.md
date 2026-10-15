@@ -315,7 +315,12 @@ About a minute into the sermon, screens that show **one language** fill the bott
 
 ### On one screen only
 
-Each projector and phone has **Notes: On/Off** in its control bar. It hides verses and notes on that screen only and is remembered by that device. The OBS overlay never shows notes or verses.
+Each projector and phone has two buttons under **Notes** in its control bar, each remembered by that device:
+
+- **Summary On/Off** shows or hides the title, summary, points, verses read and the recap on that screen.
+- **Bible On/Off** shows or hides the verse pop-ups on that screen.
+
+So one projector can show only the verses while another shows only the summary. The dashboard switches still turn each one off for every screen. The OBS overlay never shows notes or verses.
 
 ## 14. Recovery and diagnostics
 
@@ -378,8 +383,8 @@ Install Node.js 22 LTS or another version allowed by `package.json`: Node 20.19+
 - Check the status beside **Message notes** on the dashboard. An error there (for example a Gemini quota message) affects only the notes; subtitles keep running.
 - Notes appear only on screens showing one language. On two-language screens, use **Show recap**.
 - A reading is followed only while the words heard match the Bible text; if the reader uses another translation or paraphrases, the card keeps the last verse matched. If the card ever shows the wrong verse, choose **Hide verse now** or turn **Follow the reading** off.
-- Check that **Notes** is **On** in that screen's control bar.
-- A verse shows without its text when that language has no Bible on the verse service, or when the network is down and the chapter was never loaded before.
+- Check that **Summary** and **Bible** are **On** in that screen's control bar.
+- A verse shows without its text when that language has no Bible on the verse service, or when the network or the verse service (api.getbible.net) is down and the chapter was never loaded before. Romanian verses still show once the whole Romanian Bible has been downloaded (it is kept on the host).
 
 ### Port already in use
 

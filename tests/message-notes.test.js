@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -151,6 +151,22 @@ test('a chapter numbered differently, or no network, shows the reference without
   const unknownLanguage = await bible.lookupPassage(parseReference('John 3:16'), 'hi');
   assert.equal(unknownLanguage.label, 'John 3:16');
   assert.deepEqual(unknownLanguage.verses, []);
+});
+
+test('with the verse service down, a chapter comes from a whole book kept on disk', async () => {
+  const cacheDir = mkdtempSync(path.join(os.tmpdir(), 'lt-bible-'));
+  try {
+    const verses = Object.fromEntries(Array.from({ length: 39 }, (_, i) => [i + 1, `Versetul ${i + 1}.`]));
+    mkdirSync(path.join(cacheDir, 'cornilescu'), { recursive: true });
+    writeFileSync(path.join(cacheDir, 'cornilescu', 'book-45.json'), JSON.stringify({ chapters: { 8: verses } }));
+    const calls = [];
+    const bible = createBibleLibrary({ cacheDir, fetchImpl: async url => { calls.push(url); throw new Error('timeout'); }, logger: { warn() {} } });
+    const passage = await bible.lookupPassage(parseReference('Romans 8:28'), 'ro');
+    assert.deepEqual(passage.verses, [{ n: 28, text: 'Versetul 28.' }]);
+    assert.ok(!calls.some(url => /\/45\/8\.json$/.test(url)), 'the chapter is not downloaded');
+  } finally {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
 });
 
 test('long passages are shortened and marked', async () => {

@@ -1,6 +1,7 @@
 // Bible text for verse pop-ups, from the getBible API (api.getbible.net, public
 // domain and freely distributed translations). Each chapter is kept on disk
-// after the first use, so a verse read before needs no network.
+// after the first use, so a verse read before needs no network; so is every
+// book downloaded for following readings, which also serves its chapters.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { BOOKS, formatReference, referenceInScheme, referenceVerses, verseCount } from './src/bible-references.js';
@@ -101,6 +102,10 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
     return once(key, async () => {
       const file = `${translation}/${book}-${chapter}.json`;
       let value = await readCache(file);
+      if (!value) {
+        const verses = (await readCache(`${translation}/book-${book}.json`))?.chapters?.[chapter];
+        if (verses && Object.keys(verses).length) value = { bookName: '', verses };
+      }
       if (!value) {
         try {
           const data = await fetchJson(`${API}/${translation}/${book}/${chapter}.json`);

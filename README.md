@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.5.0`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
+The current application version is `v1.5.1`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
 
 ## Screenshots
 
@@ -175,7 +175,7 @@ When the preacher names a passage ("Efeseni 2 cu 16", "John 3:16"), every projec
 - Screens showing one language also show the verse in the spoken language's Bible, and projectors and phones offer the spoken language itself (**Română**) as a layout.
 - Verse text comes from the getBible API (`api.getbible.net`) and is cached on the host in `bible-cache` beside `config.json`. English uses KJV, WEB, or ASV; Romanian uses Cornilescu; Russian uses the Synodal translation with its own Psalm numbering.
 - The notes are written by a Gemini text model (`gemini-flash-latest`) using the saved API key, about every minute and a half while the preacher speaks. This is separate from the Live Translate connection and does not affect it.
-- The **Message notes** card on the dashboard turns the summary and the verse pop-ups on or off for every screen, sets how long a verse stays, starts notes for a new preacher, and shows any verse on demand. Each screen can also hide them for itself. The OBS overlay never shows them.
+- The **Message notes** card on the dashboard turns the summary and the verse pop-ups on or off for every screen, sets how long a verse stays, starts notes for a new preacher, and shows any verse on demand. Each screen can also hide the summary or the verses for itself. The OBS overlay never shows them.
 
 Settings are saved on the host in `message-notes.json` beside `config.json`.
 

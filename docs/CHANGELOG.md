@@ -2,6 +2,15 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.1 — Summary and Bible verses toggled separately on each screen
+
+**Why:** A screen could hide the notes only all together, so a projector could not show the verses without the summary, or the summary without the verses.
+
+**What changed:**
+- The projector and phone control bar has **Summary On/Off** and **Bible On/Off** under **Notes** instead of one **On/Off**. **Summary** covers the title, summary, points, verses read and the recap; **Bible** covers the verse pop-ups. Each screen remembers its choice; a screen that had notes off keeps both off.
+- When the verse service does not answer, a chapter is read from the whole book kept on the host for following readings, so Romanian verses still show. On 2026-10-14 api.getbible.net stopped answering while this release was tested; English and Russian verses never shown before appeared without text.
+- The subtitles and the dashboard are unchanged.
+
 ## v1.5.0 — Following the Bible reading, and Romanian on screen
 
 **Why:** When a passage is read aloud, the congregation should see the verse being read, from a real Bible, not only the machine translation of it. Ranges such as "Psalms 1 through 4" showed only the first chapter, and the Romanian-speaking majority could not read the verse in their own Bible.

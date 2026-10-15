@@ -93,9 +93,14 @@ const qrCanvasProjector = document.getElementById('qr-canvas-projector');
 const PROJECTOR_QR_KEY = 'live_translate_projector_qr';
 
 // Message notes (Bible verses, summary, points). The operator turns them on
-// for every screen; this button hides them on this screen only.
-const btnNotesToggle = document.getElementById('btn-notes-toggle');
-const PROJECTOR_NOTES_KEY = 'live_translate_projector_notes';
+// for every screen; these buttons hide the summary or the verses on this
+// screen only.
+const SCREEN_NOTES_PARTS = {
+  summary: { button: document.getElementById('btn-summary-toggle'), key: 'live_translate_projector_summary', name: 'Summary', what: 'the message summary and points' },
+  verses: { button: document.getElementById('btn-verses-toggle'), key: 'live_translate_projector_verses', name: 'Bible', what: 'Bible verses' }
+};
+// v1.5.0 had one button for both.
+const OLD_PROJECTOR_NOTES_KEY = 'live_translate_projector_notes';
 const notesView = createMessageNotesView({
   panel: document.getElementById('message-panel'),
   floats: {
@@ -925,32 +930,38 @@ btnQrToggle.addEventListener('click', () => {
   resetControlsTimer();
 });
 
-function setNotesOnThisScreen(enabled, persist = true) {
-  btnNotesToggle.classList.toggle('active', enabled);
-  btnNotesToggle.setAttribute('aria-pressed', String(enabled));
-  btnNotesToggle.textContent = enabled ? 'On' : 'Off';
-  btnNotesToggle.title = enabled
-    ? 'Hide Bible verses and message notes on this screen only.'
-    : 'Show Bible verses and message notes on this screen.';
-  notesView.setView({ enabled });
+function setNotesPartOnThisScreen(part, enabled, persist = true) {
+  const { button, key, name, what } = SCREEN_NOTES_PARTS[part];
+  button.classList.toggle('active', enabled);
+  button.setAttribute('aria-pressed', String(enabled));
+  button.textContent = `${name} ${enabled ? 'On' : 'Off'}`;
+  button.title = enabled
+    ? `Hide ${what} on this screen only.`
+    : `Show ${what} on this screen.`;
+  notesView.setView({ [part]: enabled });
   if (persist) {
     try {
-      localStorage.setItem(PROJECTOR_NOTES_KEY, enabled ? '1' : '0');
+      localStorage.setItem(key, enabled ? '1' : '0');
     } catch (error) {
       console.warn('Unable to save the notes setting:', error);
     }
   }
 }
 
-try {
-  setNotesOnThisScreen(localStorage.getItem(PROJECTOR_NOTES_KEY) !== '0', false);
-} catch (error) {
-  setNotesOnThisScreen(true, false);
+function savedNotesPart(key) {
+  try {
+    return (localStorage.getItem(key) ?? localStorage.getItem(OLD_PROJECTOR_NOTES_KEY)) !== '0';
+  } catch (error) {
+    return true;
+  }
 }
 
-btnNotesToggle.addEventListener('click', () => {
-  setNotesOnThisScreen(btnNotesToggle.getAttribute('aria-pressed') !== 'true');
-  resetControlsTimer();
-});
+for (const [part, { button, key }] of Object.entries(SCREEN_NOTES_PARTS)) {
+  setNotesPartOnThisScreen(part, savedNotesPart(key), false);
+  button.addEventListener('click', () => {
+    setNotesPartOnThisScreen(part, button.getAttribute('aria-pressed') !== 'true');
+    resetControlsTimer();
+  });
+}
 
 connect();

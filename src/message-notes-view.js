@@ -2,6 +2,7 @@
 // with one language on screen the subtitles keep the top half and this fills
 // the bottom half; with two languages a verse floats at the top of each
 // language's half, and the recap opens over everything when the operator asks.
+// Each screen can hide the summary (with the recap) or the verses for itself.
 const MIN_SCALE = 0.62;
 const LIST_LIMIT = 8;
 
@@ -80,7 +81,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
   const recapCard = recapOverlay.querySelector('[data-part="recap"]');
 
   let state = null;
-  let view = { mode: 'lang1', obs: false, enabled: true };
+  let view = { mode: 'lang1', obs: false, summary: true, verses: true };
   let verseUntil = 0;
   let recapUntil = 0;
   let expiryTimer = 0;
@@ -179,7 +180,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
 
   function renderList(lane) {
     const items = (state.verses || []).slice(-LIST_LIMIT);
-    const current = verseActive() ? state.verse.key : '';
+    const current = view.verses && verseActive() ? state.verse.key : '';
     parts.list.replaceChildren(...items.map(item => {
       const chip = el('li', item.key === current ? 'current' : '', item.labels?.[lane] || item.labels?.lang1 || '');
       chip.dir = 'auto';
@@ -192,10 +193,12 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     const lane = laneFor(view.mode);
     const single = view.mode !== 'both';
     const settings = state?.settings || {};
-    const showNotes = Boolean(state && settings.notes && notesHaveContent(state.notes, lane));
-    const showVerse = Boolean(state && verseActive());
-    const showList = Boolean(state && settings.notes && state.verses?.length);
-    const visible = Boolean(state) && view.enabled && !view.obs && single && (showNotes || showVerse || showList);
+    const summary = view.summary && settings.notes;
+    const showNotes = Boolean(state && summary && notesHaveContent(state.notes, lane));
+    const showVerse = Boolean(state && view.verses && verseActive());
+    // "Verses read" belongs to the notes, as in the recap.
+    const showList = Boolean(state && summary && state.verses?.length);
+    const visible = Boolean(state) && !view.obs && single && (showNotes || showVerse || showList);
 
     panel.hidden = !visible;
     if (!visible) {
@@ -216,7 +219,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
 
   // --- Two languages: a verse at the top of each half -------------------------
   function renderFloats() {
-    const show = Boolean(state) && view.enabled && !view.obs && view.mode === 'both' && verseActive();
+    const show = Boolean(state) && view.verses && !view.obs && view.mode === 'both' && verseActive();
     for (const [lane, float] of Object.entries(floats)) {
       const passage = show ? (state.verse.lanes?.[lane]) : null;
       float.hidden = !passage;
@@ -264,7 +267,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     const lanes = view.mode === 'both'
       ? ['lang1', 'lang2'].filter(lane => notesHaveContent(state?.notes, lane))
       : [laneFor(view.mode)].filter(lane => notesHaveContent(state?.notes, lane));
-    const show = Boolean(state) && view.enabled && !view.obs && recapActive() && lanes.length > 0;
+    const show = Boolean(state) && view.summary && !view.obs && recapActive() && lanes.length > 0;
     recapOverlay.hidden = !show;
     if (!show) {
       shown.recapKey = '';
