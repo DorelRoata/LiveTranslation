@@ -118,19 +118,20 @@ All on real sermon audio from the 2026-10-04 livestream, through the real dashbo
 
 ## 7. Bible Verses & Message Notes (v1.4.0)
 
-### ✅ Rule: References Are Found by Rules, Not AI
+### ✅ Rule: References Are Found by Rules, Not AI (with AI Verse Card Fallback)
 * `src/bible-references.js` reads the preacher's words (`source-append`, the input transcription) and any English or Romanian subtitle lane on the host. A reference is reported once the following words show it is complete ("Romans 8" waits through ", verse" for "28"), or 1.8 s after the last piece.
-* Measured on the recorded 2026-10-04 sermon (`tests/fixtures/sermon-2026-10-04-ro.json` and `-en.json`): the Romanian input and the English output arrive within ~0.3 s of each other; all 9 references were found in both, about a second after the verse number, and nothing else. `tests/bible-references.test.js` replays both.
-* Books that are also names or words (Mark, John, Job, Acts, Ioan, Rut, Tit…) count only with a verse or "chapter"; every reference is checked against real chapter and verse counts. Do not loosen this: a false verse on the projector is worse than a missed one, and the operator can type a missed one.
+* Measured on the recorded 2026-10-04 sermon (`tests/fixtures/sermon-2026-10-04-ro.json` and `-en.json`) and the 2026-10-18 live service: the Romanian input and the English output arrive within ~0.3 s of each other; spoken forms including `"cu"`/`"with"`, `"la"`/`"at"`/`"to"` (`"1 Corinteni 15 la 19"`, `"Deuteronomy 6 to 5"`), space-separated `"Galateni 2 20"`, and `"începând cu versetul"` / `"starting with verse"` are matched directly.
+* Books that are also names or words (Mark, John, Job, Acts, Ioan, Rut, Tit…) count only with a verse or "chapter"; every reference is checked against real chapter and verse counts. Bare chapters (`verseStart === 0`) are remembered for reading-following and upgraded in-place when a verse is named, but never open a blank verse card without text.
 * The same verse from the other stream, or repeated by the preacher within 20 s, keeps the card up instead of showing it again.
+* Standalone hesitation fillers (`uh`, `um`, `erm`, Romanian `ă`/`î`, Russian `э`/`эм`) are stripped in `pieceToAppend` (`src/caption-stream.js`) before text reaches screens or transcripts.
 
 ### ✅ Rule: Verse Text Comes From a Real Bible, in That Bible's Numbering
 * Text comes from `api.getbible.net` (chapter files, cached on disk in the config dir), never from a model.
 * References are kept in King James numbering and mapped per Bible (`src/bible-data.js`, generated from the Copenhagen Alliance versification files by `scripts/generate-bible-data.mjs`). The Russian Synodal shifts most Psalms (KJV 23:1 = Синодальный 22:1, 51:10 = 50:12, 10:1 = 9:22) and moves Romans 16:25–27 to 14:24–26; French and Hungarian count Psalm titles as verses.
-* Every chapter is checked against the expected verse count for its numbering; a mismatch shows the reference without text rather than the wrong verse.
+* Every chapter is checked against the expected verse count for its numbering (allowing a 1-verse difference in New Testament chapters such as Cornilescu `3 John 1` and `Revelation 12` where final verses are combined); a numbering mismatch shows the reference without text rather than the wrong verse.
 
 ### ✅ Rule: Notes Use a Separate Text Model
-* The notes are written by `gemini-flash-latest` (thinking level low, falls back to `gemini-2.5-flash`) through the REST `generateContent` API with a JSON schema, from the full source transcript plus the Language 1 translation, in every screen language at once. On the 15-minute recording this took about 5 s and named all six passages.
+* The notes are written by `gemini-flash-latest` (thinking level low, falls back to `gemini-2.5-flash`) through the REST `generateContent` API with a JSON schema, from the full source transcript plus the Language 1 translation, in every screen language at once. On the 15-minute recording this took about 5 s and named all six passages. If the notes extract a specific verse (`verseStart > 0`) that was not yet shown live, the host also displays its verse card when no other verse card is up.
 * **Never send these instructions to the Live Translate socket** (see §1: a system instruction stops it). The notes are a separate request from the host.
 * First notes after ~120 words, then every 90 s with 60 new words, or 25 s into a pause. The previous notes are sent back so wording stays stable on screen.
 

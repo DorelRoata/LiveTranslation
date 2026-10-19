@@ -82,6 +82,9 @@
     body.single-language-layout .section {
       flex: 0 0 50%;
     }
+    body.single-language-layout:has(#message-panel:not([hidden])) .section {
+      flex: 0 0 42%;
+    }
     .text {
       flex: 1 1 auto;
       display: flex;
@@ -255,11 +258,11 @@
       flex: 1 1 0;
       min-height: 0;
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       align-items: start;
       align-content: start;
-      gap: clamp(1rem, 3.2vw, 4rem);
-      padding: clamp(0.9rem, 2.6vh, 2.2rem) clamp(0.5rem, 5vw, 6rem) max(var(--subtitle-bottom-safe), env(safe-area-inset-bottom));
+      gap: clamp(0.75rem, 1.8vh, 1.35rem);
+      padding: clamp(0.9rem, 2.4vh, 2rem) clamp(0.5rem, 5vw, 6rem) max(var(--subtitle-bottom-safe), env(safe-area-inset-bottom));
       box-sizing: border-box;
       overflow: hidden;
       font-size: calc(min(1.42vw, 2.7vh) * var(--mp-scale));
@@ -277,13 +280,17 @@
     .message-panel[data-columns="scripture"] {
       grid-template-columns: minmax(0, 1fr);
     }
+    .message-panel[data-columns="both"] .mp-scripture {
+      padding-top: 0.7em;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
     .message-panel[data-columns="scripture"] {
-      font-size: calc(min(1.75vw, 3.2vh) * var(--mp-scale));
+      font-size: calc(min(1.85vw, 3.35vh) * var(--mp-scale));
       justify-items: center;
       align-content: center;
     }
     .message-panel[data-columns="scripture"] .mp-scripture {
-      width: min(100%, 58em);
+      width: min(100%, 62em);
     }
     body.qr-on .message-panel {
       padding-right: calc(148px + 3rem);
@@ -293,7 +300,7 @@
       min-width: 0;
     }
     .mp-title {
-      margin: 0 0 0.3em;
+      margin: 0 0 0.25em;
       font-size: 1.32em;
       font-weight: 800;
       line-height: 1.12;
@@ -301,18 +308,19 @@
       color: #ffffff;
     }
     .mp-summary {
-      margin: 0 0 0.75em;
-      max-width: 62ch;
+      margin: 0 0 0.6em;
+      max-width: none;
       font-size: 0.98em;
       font-weight: 400;
-      line-height: 1.42;
+      line-height: 1.4;
       color: #b4c1c8;
     }
     .mp-points {
       list-style: none;
       counter-reset: point;
       display: grid;
-      gap: 0.42em;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 22em), 1fr));
+      gap: 0.36em 1.5em;
       margin: 0;
       padding: 0;
     }
@@ -357,13 +365,13 @@
       gap: 0.25em 0.75em;
     }
     .mp-verse-ref {
-      font-size: 1.28em;
+      font-size: 1.38em;
       font-weight: 800;
       line-height: 1.15;
       color: var(--scripture);
     }
     .mp-verse-version {
-      font-size: 0.6em;
+      font-size: 0.64em;
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -375,9 +383,9 @@
       color: #f7f2e7;
     }
     .mp-verse-text {
-      margin: 0.4em 0 0;
-      font-size: 1.12em;
-      line-height: 1.46;
+      margin: 0.35em 0 0;
+      font-size: 1.28em;
+      line-height: 1.44;
     }
     .verse-num {
       margin-right: 0.18em;
@@ -408,17 +416,17 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.4em 0.45em;
-      margin: 0.9em 0 0;
+      margin: 0.75em 0 0;
       padding: 0;
     }
     .mp-verse[hidden] + .mp-verse-list {
       margin-top: 0;
     }
     .mp-verse-list li {
-      padding: 0.24em 0.72em 0.28em;
+      padding: 0.26em 0.76em 0.3em;
       border: 1px solid var(--scripture-soft);
       border-radius: 999px;
-      font-size: 0.76em;
+      font-size: 0.86em;
       font-weight: 600;
       line-height: 1.2;
       color: #cfd8dc;
@@ -445,7 +453,7 @@
       border-radius: 12px;
       background: rgba(15, 19, 23, 0.9);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-      font-size: min(1.3vw, 2.35vh);
+      font-size: min(1.48vw, 2.65vh);
       color: #f7f2e7;
     }
     .vf-ref {
@@ -562,20 +570,20 @@
     }
     /* The verse also in the spoken language's Bible, under the screen's own. */
     .mp-verse-spoken {
-      margin-top: 0.75em;
-      padding-top: 0.6em;
+      margin-top: 0.65em;
+      padding-top: 0.55em;
       border-top: 1px solid rgba(232, 189, 98, 0.18);
     }
     .mp-verse-spoken .mp-verse-head {
-      font-size: 0.78em;
+      font-size: 1em;
     }
     .mp-verse-spoken .mp-verse-ref {
-      font-size: 1em;
+      font-size: 1.38em;
       color: #d9b46a;
     }
     .mp-verse-spoken .mp-verse-text {
-      font-size: 0.84em;
-      color: #d8d2c6;
+      font-size: 1.28em;
+      color: #f7f2e7;
     }
 
     body.obs-mode .message-panel,
@@ -744,7 +752,7 @@
       <button class="control-btn active" id="btn-verses-toggle" type="button" aria-pressed="true">Bible On</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.1</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.2</span>
   </div>
 
   <div class="container" id="subtitles-container">

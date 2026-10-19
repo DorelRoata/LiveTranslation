@@ -58,6 +58,19 @@ function bareWord(word) {
   return word.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
 }
 
+const FILLER_TEST = /(?<![\p{L}\p{N}])(?:uh+|um+|uhm+|erm+|ă+|î+|э-э+|э+|эм+)(?![\p{L}\p{N}])/iu;
+const FILLER_REPLACE = /(?<![\p{L}\p{N}])(?:uh+|um+|uhm+|erm+|ă+|î+|э-э+|э+|эм+)(?![\p{L}\p{N}])(?:\s*[,—–-]+)?/giu;
+
+export function stripFillers(piece) {
+  if (typeof piece !== 'string' || !piece) return '';
+  if (!FILLER_TEST.test(piece)) return piece;
+  const leadingSpace = /^\s/.test(piece) ? ' ' : '';
+  const trailingSpace = /\s$/.test(piece) ? ' ' : '';
+  const cleaned = piece.replace(FILLER_REPLACE, ' ').replace(/\s+/g, ' ').trim();
+  if (!cleaned || /^[,.;:!?…—–-]+$/u.test(cleaned)) return '';
+  return `${leadingSpace}${cleaned}${trailingSpace && !cleaned.endsWith(' ') ? ' ' : ''}`;
+}
+
 function needsJoinSpace(text, next) {
   if (!text || /\s$/.test(text) || !next) return false;
   if (CLOSING_PUNCTUATION.test(next)) return false;
@@ -86,12 +99,18 @@ function seamOverlap(tail, words) {
 //   resumed: the session continued from a resumption handle. Its first piece
 //     can restate the old session's last word, which is dropped here only.
 export function pieceToAppend(currentText, piece, { sessionStart = false, resumed = false } = {}) {
-  if (typeof piece !== 'string' || !piece.trim()) return '';
+  const cleaned = stripFillers(piece);
+  if (!cleaned.trim()) return '';
   const text = typeof currentText === 'string' ? currentText : '';
-  if (!text.trim()) return piece.trimStart();
-  if (!sessionStart) return piece;
+  if (!text.trim()) return cleaned.trimStart();
+  if (!sessionStart) {
+    if (!/^\s/.test(cleaned) && /[,.;:!?…"”’»)\]]$/u.test(text) && needsJoinSpace(text, cleaned)) {
+      return ` ${cleaned}`;
+    }
+    return cleaned;
+  }
 
-  let body = piece.trim();
+  let body = cleaned.trim();
   if (resumed) {
     const tail = text.trim().split(/\s+/).slice(-SEAM_TAIL_WORDS).map(bareWord);
     const words = body.split(/\s+/);
@@ -99,7 +118,7 @@ export function pieceToAppend(currentText, piece, { sessionStart = false, resume
     body = words.slice(overlap).join(' ');
     if (!body) return '';
   }
-  const leadingSpace = /^\s/.test(piece) || needsJoinSpace(text, body);
+  const leadingSpace = /^\s/.test(cleaned) || needsJoinSpace(text, body);
   return `${leadingSpace ? ' ' : ''}${body}`;
 }
 

@@ -201,7 +201,8 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
     if (!chapter || !mapped.verseStart || mapped.chapterEnd) return passage;
 
     const expected = verseCount(mapped.book, mapped.chapter, bible.scheme);
-    if (expected && Object.keys(chapter.verses).length !== expected) return passage;
+    const actual = Object.keys(chapter.verses).length;
+    if (expected && actual !== expected && !(mapped.book >= 40 && Math.abs(actual - expected) === 1)) return passage;
 
     let chars = 0;
     for (const n of referenceVerses(mapped)) {

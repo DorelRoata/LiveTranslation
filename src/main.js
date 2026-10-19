@@ -39,7 +39,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.5.1';
+const APP_VERSION = '1.5.2';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -1706,8 +1706,10 @@ function deliverOutputPiece(channelId, text, session = {}) {
   const lane = `lang${channelId}`;
   const addition = pieceToAppend(subtitleState[lane].text, text, session);
   if (!addition) {
-    logDebug(`Channel ${channelId}: skipped "${text.trim()}" — the resumed session repeated a word already on screen.`, 'info');
-    return;
+    if (session.resumed) {
+      logDebug(`Channel ${channelId}: skipped "${text.trim()}" — the resumed session repeated a word already on screen.`, 'info');
+    }
+    return false;
   }
   subtitleState[lane] = appendLaneText(subtitleState[lane], addition);
   appendTranscriptPiece(outputStreams[channelId], addition);
@@ -1715,6 +1717,7 @@ function deliverOutputPiece(channelId, text, session = {}) {
   if (isSocketOpen(localSubtitlesWS)) {
     localSubtitlesWS.send(JSON.stringify({ type: 'append', lane, text: addition }));
   }
+  return true;
 }
 
 // The preacher's own words also go to the host, which finds Bible references
@@ -1729,6 +1732,7 @@ function deliverInputPiece(text, session = {}, language = '') {
     sourceTail = (sourceTail + sourceAddition).slice(-200);
     sendToRelay({ type: 'source-append', text: sourceAddition, language });
   }
+  return Boolean(addition || sourceAddition);
 }
 
 // --- WebSocket Handlers ---

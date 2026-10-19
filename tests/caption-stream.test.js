@@ -95,13 +95,23 @@ test('a missed piece redraws from the relay text instead of guessing', () => {
   assert.equal(laneUpdatePlan(9, lane).mode, 'redraw');
 });
 
-test('pieces are joined exactly as Google sends them', () => {
+test('pieces are joined exactly as Google sends them, without hesitation fillers', () => {
   assert.equal(pieceToAppend('', ' Amen.'), 'Amen.');
   assert.equal(pieceToAppend('Amen.', ' I would like'), ' I would like');
   assert.equal(pieceToAppend('verse 17,', ' just one verse,'), ' just one verse,');
   assert.equal(pieceToAppend('anything', '   '), '');
   // Unspaced scripts are never given extra spaces.
   assert.equal(pieceToAppend('我们', '知道'), '知道');
+  // Hesitation fillers ("uh", "um", standalone "ă", "эм") are stripped cleanly.
+  assert.equal(pieceToAppend('talking', ' about uh the fact'), ' about the fact');
+  assert.equal(pieceToAppend('Amen.', ' Uh, the second invitation'), ' the second invitation');
+  assert.equal(pieceToAppend('obligation.', ' Uh, or uh What is a yoke?'), ' or What is a yoke?');
+  assert.equal(pieceToAppend('Amen.', ' Uh,'), '');
+  assert.equal(pieceToAppend('este', ' ă Luca 14'), ' Luca 14');
+  assert.equal(pieceToAppend('да?', ' Эм, но был кто-то'), ' но был кто-то');
+  // Missing space after sentence/quote punctuation is restored.
+  assert.equal(pieceToAppend('We pray.', 'We pray, Lord.'), ' We pray, Lord.');
+  assert.equal(pieceToAppend('says: "Take my yoke."', 'What is a yoke?'), ' What is a yoke?');
 });
 
 test('the first piece of a new session gets the space Google leaves off', () => {

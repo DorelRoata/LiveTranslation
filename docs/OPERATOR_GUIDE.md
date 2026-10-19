@@ -264,7 +264,7 @@ The **Message notes** card on the dashboard sits between the audio meters and th
 
 When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default):
 
-- With **one language** on a screen, the verse appears in the bottom half, beside the notes.
+- With **one language** on a screen, the summary and the Bible verses stack vertically in the bottom half so both have the full width of the screen.
 - With **two languages**, a slim card appears at the top of each language's half.
 - Each language gets its own Bible and numbering: English uses the **English Bible** setting (KJV by default), Romanian uses Cornilescu, Russian the Synodal translation (Psalm 23 shows as Псалом 22:1).
 - If the preacher repeats the same verse, the card stays up instead of flashing again. A new verse replaces the old one.
@@ -274,8 +274,8 @@ References are recognized from the preacher's words and the English translation,
 
 | Said | Shown |
 | --- | --- |
-| "Efeseni 2 cu 16", "John 3:16" | Ephesians 2:16, John 3:16 |
-| "1 Corinteni, capitolul 1 de la versetul 17" | 1 Corinthians 1:17 |
+| "Efeseni 2 cu 16", "1 Corinteni 15 la 19", "Galateni 2 20", "John 3:16" | Ephesians 2:16, 1 Corinthians 15:19, Galatians 2:20, John 3:16 |
+| "1 Corinteni, capitolul 1 de la versetul 17", "Ioan 14, începând cu versetul 6" | 1 Corinthians 1:17, John 14:6 |
 | "Psalm 5, 1 through 6", "Psalmul 5, de la 1 la 6" | Psalm 5:1–6 |
 | "Psalms 1 through 4", "Psalmii 1 până la 4" | Psalms 1–4 (reference; the reading is then followed) |
 | "Romans 8:28, 31 and 38" | those three verses on one card |
@@ -293,7 +293,7 @@ The words heard are compared with Cornilescu, so this works when the reader uses
 
 ### Romanian on screen
 
-- With **Verses also in Romanian** on, screens showing English (or Russian) also show the same verse from Cornilescu under it.
+- With **Verses also in Romanian** on, screens showing English (or Russian) also show the same verse from Cornilescu directly under it, at the same font size.
 - Each projector and phone has a **Română** button among its layouts once the preacher has started speaking. It shows the preacher's own words as captions, as Google hears them (expect an occasional misheard word), with the verse and the notes in Romanian. Translated audio does not play in this layout.
 
 ### Which Bible

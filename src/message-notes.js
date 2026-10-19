@@ -162,10 +162,10 @@ function byLane(value, lanes, maxChars) {
 function verseFromModel(item) {
   if (!item || typeof item.book !== 'string') return null;
   const start = Number(item.verseStart) || 0;
+  if (!start) return null;
   const end = Number(item.verseEnd) || 0;
-  let text = `${item.book.trim()} ${Number(item.chapter)}`;
-  if (start) text += `:${start}`;
-  if (start && end > start) text += `-${end}`;
+  let text = `${item.book.trim()} ${Number(item.chapter)}:${start}`;
+  if (end > start) text += `-${end}`;
   return parseReference(text);
 }
 

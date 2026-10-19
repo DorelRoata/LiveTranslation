@@ -73,6 +73,16 @@ test('reads the ways a preacher and Google say a reference', () => {
   assert.deepEqual(labels('Jude 24 and'), ['Jude 1:24']);
   // Google's occasional literal "2 with 16".
   assert.deepEqual(labels('Ephesians 2 with 16 tells us'), ['Ephesians 2:16']);
+  // Romanian "la" / English "at" or "to" and space-separated chapter + verse.
+  assert.deepEqual(labels('la fel cum spune Pavel în 1 Corinteni 15 la 19.'), ['1 Corinthians 15:19']);
+  assert.deepEqual(labels('just like Paul says in 1 Corinthians 15 at 19.'), ['1 Corinthians 15:19']);
+  assert.deepEqual(labels('vine Petru la 2 Petru 2 la 19 și spune'), ['2 Peter 2:19']);
+  assert.deepEqual(labels('cu un verset de la Deuteronom 6 la 5.'), ['Deuteronomy 6:5']);
+  assert.deepEqual(labels('end with a verse from Deuteronomy 6 to 5.'), ['Deuteronomy 6:5']);
+  assert.deepEqual(labels('se exprimă în felul următor la Galateni 2 20.'), ['Galatians 2:20']);
+  assert.deepEqual(labels('expresses it in the following way in Galatians 2 20.'), ['Galatians 2:20']);
+  assert.deepEqual(labels('se adresează lui Filip, la Ioan 14, începând cu versetul 6 și'), ['John 14:6']);
+  assert.deepEqual(labels('addresses Philip, in John 14, starting with verse 6 and'), ['John 14:6']);
 });
 
 test('two references joined by "and" stay two references', () => {

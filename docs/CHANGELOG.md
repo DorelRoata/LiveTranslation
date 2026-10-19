@@ -2,6 +2,16 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.2 — Spoken Bible reference forms, filler stripping, stacked notes layout, and larger verse text
+
+**Why:** During the 2026-10-18 service, several spoken Bible references ("1 Corinteni 15 la 19", "2 Petru 2 la 19", "Deuteronom 6 la 5", "Galateni 2 20") showed only the book/chapter or reference chip without verse text; hesitation fillers ("uh", "ă", "эм") appeared in the live captions; and the side-by-side summary/Bible layout crowded the projector screen while Romanian verses rendered smaller than English.
+
+**What changed:**
+- **Spoken reference recognition:** `src/bible-references.js` now recognizes Romanian and English chapter-verse separators using `la`, `at`, and `to` ("1 Corinteni 15 la 19", "1 Corinthians 15 at 19", "Deuteronomy 6 to 5"), space-separated chapter and verse ("Galateni 2 20", "Galatians 2 20"), and "începând cu versetul" / "starting with verse".
+- **No empty verse cards & AI verse display:** Bare chapters (`verseStart === 0`) no longer pop up a verse card without text, and upgrade in-place when a specific verse in that chapter is named. If Gemini's message notes extract a specific verse that was not yet shown, the verse card now displays its full text automatically.
+- **Hesitation fillers stripped:** Standalone fillers (`uh`, `um`, `erm`, Romanian `ă`/`î`, Russian `э`/`эм`/`э-э`) are stripped from live captions and transcripts, and missing spaces after sentence/quote punctuation are restored.
+- **Stacked layout & larger verse text:** On one-language screens, the summary and Bible references now stack vertically instead of side by side, with a larger Bible reference and verse font size and the Romanian (spoken-language) verse rendered at the exact same size as the primary language.
+
 ## v1.5.1 — Summary and Bible verses toggled separately on each screen
 
 **Why:** A screen could hide the notes only all together, so a projector could not show the verses without the summary, or the summary without the verses.

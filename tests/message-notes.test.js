@@ -306,6 +306,7 @@ test('notes are written by Gemini for each screen language and the verses it nam
   assert.equal(state.notes.title.lang1, 'The Cross of Jesus Christ');
   assert.equal(state.notes.title.lang2, 'Крест Иисуса Христа');
   assert.deepEqual(state.verses.map(item => item.key), ['48.6.14.0']);
+  assert.equal(state.verse.key, '48.6.14.0', 'an unshown verse found by AI notes is also displayed on the verse card');
 
   // No new words: no new request.
   run.advance(120_000);

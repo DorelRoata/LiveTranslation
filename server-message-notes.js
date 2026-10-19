@@ -298,6 +298,16 @@ export function createMessageNotes({
   async function addToList(ref, origin) {
     const key = referenceKey(ref);
     if (listed(ref)) return false;
+    if (ref.verseStart) {
+      const bare = verses.find(item => !item.ref.verseStart && !item.ref.chapterEnd && item.ref.book === ref.book && item.ref.chapter === ref.chapter);
+      if (bare) {
+        bare.key = key;
+        bare.ref = ref;
+        bare.origin = origin;
+        bare.labels = await labelsFor(ref);
+        return true;
+      }
+    }
     const item = { key, ref, origin, labels: {} };
     verses.push(item);
     if (verses.length > MAX_VERSES_LISTED) verses.shift();
@@ -320,7 +330,7 @@ export function createMessageNotes({
     void addToList(ref, origin).then(added => {
       if (added && current === messageId) publish();
     });
-    if (!settings.verses) return;
+    if (!settings.verses || !ref.verseStart) return;
     // The same verse from the other language, or repeated by the preacher:
     // keep the card up instead of showing it again.
     if (verse?.key === key) {
@@ -328,8 +338,6 @@ export function createMessageNotes({
       return;
     }
     if (seenAt && t - seenAt < SAME_VERSE_WINDOW_MS) return;
-    // "Romans 8" said again while Romans 8:28 is up does not replace it.
-    if (verse && !ref.verseStart && verse.ref.book === ref.book && verse.ref.chapter === ref.chapter) return;
     void showVerse(ref, origin);
   }
 
@@ -552,9 +560,19 @@ export function createMessageNotes({
       const result = normalizeNotesResponse(text, laneList);
       notes = { title: result.title, summary: result.summary, points: result.points, updatedAt: now() };
       notesWords = words;
+      let unshown = null;
       for (const ref of result.verses) {
         const checked = makeReference(ref.book, ref.chapter, ref.verseStart, ref.verseEnd);
-        if (checked) await addToList(checked, 'notes');
+        if (!checked) continue;
+        const wasListed = listed(checked);
+        await addToList(checked, 'notes');
+        if (checked.verseStart && !wasListed && !lastSeen.has(referenceKey(checked))) {
+          unshown = checked;
+        }
+      }
+      if (unshown && settings.verses && !verse) {
+        lastSeen.set(referenceKey(unshown), now());
+        await showVerse(unshown, 'notes');
       }
       setStatus('ready');
     } catch (error) {

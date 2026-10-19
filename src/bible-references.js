@@ -162,7 +162,7 @@ const CHAPTER = '(?:chapter|chap\\.|capitolul|capitolului|capitol|cap\\.)';
 const CHAPTERS = '(?:chapters|capitolele|chapter|capitolul|capitol)';
 const VERSE = '(?:verses|verse|vv\\.|v\\.|versetele|versetul|versetului|versete|verset)';
 const AND = '(?:and|și|şi|si)';
-const BEFORE_VERSE = `(?:${AND}\\s+|from\\s+|de\\s+la\\s+|at\\s+|in\\s+|la\\s+)?`;
+const BEFORE_VERSE = `(?:${AND}\\s+|from\\s+|de\\s+la\\s+|începând\\s+cu\\s+|incepand\\s+cu\\s+|starting\\s+(?:with|at|from)\\s+|beginning\\s+(?:with|at|from)\\s+|at\\s+|in\\s+|la\\s+)?`;
 const TO = '(?:to|through|thru|până\\s+la|pana\\s+la|la|and|și|şi|si)';
 const RANGE = `(?:\\s*[-–—]\\s*|\\s+${TO}\\s+(?:${VERSE}\\s*)?)(\\d{1,3})(?![\\d:])`;
 const CHAPTER_WORD = `(?:${CHAPTER}\\s*)?`;
@@ -175,12 +175,13 @@ const THROUGH = `(?:\\s*[-–—]\\s*|\\s+(?:to|through|thru|până\\s+la|pana\\
 // A tail with a verse range is also compiled without it: in "Romans 8:28 and
 // 2 Corinthians 5:17" the "and 2" is not a range, and the second book must
 // stay unread for the next match.
-function tail(source, parts, { range = false, explicit = false } = {}) {
+function tail(source, parts, { range = false, explicit = false, spaced = false } = {}) {
   return {
     re: new RegExp(range ? `${source}(?:${RANGE})?` : source, 'yiu'),
     single: range ? new RegExp(source, 'yiu') : null,
     parts,
-    explicit
+    explicit,
+    spaced
   };
 }
 
@@ -188,13 +189,17 @@ function tail(source, parts, { range = false, explicit = false } = {}) {
 const BOOK_TAILS = [
   tail(`${SEP}${CHAPTER_WORD}${NUM}\\s*:\\s*${NUM}`, 'cv', { range: true }),
   tail(`${SEP}${CHAPTER_WORD}${NUM}\\.${NUM}`, 'cv', { range: true }),
-  tail(`${SEP}${CHAPTER_WORD}${NUM}\\s+(?:cu|with)\\s+${NUM}`, 'cv', { range: true }),
+  tail(`${SEP}${CHAPTER_WORD}${NUM}\\s+(?:cu|with|la|at)\\s+${NUM}`, 'cv', { range: true }),
   tail(`${SEP}${CHAPTER_WORD}${NUM}${SEP}(?:from|de\\s+la)\\s+(?:${VERSE}\\s*)?${NUM}\\s+(?:to|through|la|până\\s+la|pana\\s+la)\\s+(?:${VERSE}\\s*)?${NUM}`, 'cv'),
   tail(`${SEP}${CHAPTER_WORD}${NUM}${SEP}${BEFORE_VERSE}${VERSE}\\s*${NUM}`, 'cv', { range: true }),
   // "Psalm 5, 1 through 6": two numbers and a range, no word "verse".
   tail(`${SEP}${CHAPTER_WORD}${NUM}[\\s,]+${NUM}${THROUGH}`, 'cv'),
   // "Psalms 1 through 4", "capitolele 5-7": several chapters.
   tail(`${SEP}(?:${CHAPTERS}\\s*)?${NUM}${CHAPTER_TO}(?:${CHAPTERS}\\s*)?${NUM}${NOT_MORE}`, 'cc'),
+  // Google sometimes translates Romanian "6 la 5" ("6 at 5") as "6 to 5".
+  tail(`${SEP}${CHAPTER_WORD}${NUM}\\s+to\\s+${NUM}${NOT_MORE}`, 'cv', { range: true }),
+  // Spoken "Galateni 2 20" / "Galatians 2 20" without a separator word.
+  tail(`${SEP}${CHAPTER_WORD}${NUM}\\s+${NUM}${NOT_MORE}`, 'cv', { range: true, spaced: true }),
   tail(`${SEP}${CHAPTER}\\s*${NUM}(?![\\d:])`, 'c', { explicit: true }),
   tail(`${SEP}${VERSE}\\s*${NUM}`, 'v', { range: true }),
   tail(`[\\s,]*${NUM}${NOT_MORE}`, 'c')
@@ -226,6 +231,11 @@ function readTail(spec, text, position) {
   spec.re.lastIndex = position;
   const found = spec.re.exec(text);
   if (!found) return null;
+  if (spec.spaced && spec.single) {
+    spec.single.lastIndex = position;
+    spec.single.exec(text);
+    if (bookStartsAt(text, spec.single.lastIndex - String(found[2]).length)) return null;
+  }
   const numbers = found.slice(1).map(value => (value === undefined ? 0 : Number(value)));
   if (spec.single) {
     const verse = spec.parts === 'v' ? numbers[0] : numbers[1];
@@ -303,7 +313,8 @@ function referenceFromParts(book, parts, numbers, explicit) {
   if (parts === 'cc') {
     if (BOOKS[book - 1].person && !explicit) return null;
     if (!(second > first)) return null;
-    return makeReference(book, first, 0, 0, { chapterEnd: second });
+    const ref = makeReference(book, first, 0, 0, { chapterEnd: second });
+    return ref?.chapterEnd ? ref : null;
   }
   return makeReference(book, first, second, third);
 }
@@ -360,7 +371,8 @@ function readAfterBook(book, text, position, { typed = false } = {}) {
     let ref = referenceFromParts(book, spec.parts, read.numbers, explicit);
     let end = read.end;
     if (!ref) {
-      const context = spec.parts === 'c' || spec.parts === 'cc' ? makeReference(book, read.numbers[0]) : null;
+      if (spec.parts === 'cc') continue;
+      const context = spec.parts === 'c' ? makeReference(book, read.numbers[0]) : null;
       return { refs: [], end, context };
     }
     if (ref.verseStart) {
@@ -424,7 +436,7 @@ export function parseReference(input) {
 
 // A reference is final once a word after it cannot be part of it ("Romans 8"
 // waits through ", verse" for "28"; "Ephesians 2:16 and reconciled" is done).
-const CONTINUES = /^(?:and|și|şi|si|verse|verses|versetul|versetele|versete|verset|chapter|chapters|capitolul|capitolele|capitol|de|la|from|to|through|thru|până|pana|cu|with|at|in)$/iu;
+const CONTINUES = /^(?:and|și|şi|si|verse|verses|versetul|versetele|versete|verset|chapter|chapters|capitolul|capitolele|capitol|de|la|from|to|through|thru|până|pana|cu|with|at|in|începând|incepand|starting|beginning)$/iu;
 function tailIsSettled(trailing) {
   if (/[.?!;]/.test(trailing)) return true;
   const words = trailing.split(/\s+/).map(word => word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '')).filter(Boolean);
