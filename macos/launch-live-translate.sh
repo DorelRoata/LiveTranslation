@@ -411,7 +411,6 @@ if /usr/bin/curl --insecure --silent --fail "$DASHBOARD_URL/api/network-ip" >/de
       RUNNING_CHOICE="$(show_already_running)"
       if [ "$RUNNING_CHOICE" = "Open Dashboard" ]; then
         /usr/bin/open "$DASHBOARD_OPEN_URL"
-        /usr/bin/open "$DASHBOARD_URL/audio-sender.html?host=1"
       fi
       exit 0
     fi
@@ -524,7 +523,6 @@ for ATTEMPT in {1..60}; do
     READY_REPO="$(get_running_repository)"
     if [ "$READY_REPO" = "$REPO_ROOT" ]; then
       /usr/bin/open "$DASHBOARD_OPEN_URL"
-      /usr/bin/open "$DASHBOARD_URL/audio-sender.html?host=1"
       show_notice "Dashboard ready"
       wait "$SERVER_PID"
       exit $?
