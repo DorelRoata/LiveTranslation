@@ -111,13 +111,34 @@ write_install_marker installed
 INSTALL_COMPLETE=1
 trap - EXIT INT TERM
 
+ensure_dock_icon() {
+  [ "${LIVE_TRANSLATE_SKIP_DOCK:-0}" = "1" ] && return 0
+  [ "$APPLICATIONS_DIR" = "$HOME/Applications" ] || return 0
+  [ -d "$DESTINATION_APP" ] || return 0
+
+  local dock_apps
+  dock_apps="$(/usr/bin/defaults read com.apple.dock persistent-apps 2>/dev/null || true)"
+  if printf '%s' "$dock_apps" | /usr/bin/grep -Fq "com.livetranslate.launcher" ||
+     printf '%s' "$dock_apps" | /usr/bin/grep -Fq "Live Translate.app" ||
+     printf '%s' "$dock_apps" | /usr/bin/grep -Fq "Live%20Translate.app"; then
+    return 0
+  fi
+
+  if /usr/bin/defaults write com.apple.dock persistent-apps -array-add \
+    "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$DESTINATION_APP</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"; then
+    /usr/bin/killall Dock >/dev/null 2>&1 || true
+  fi
+}
+
+ensure_dock_icon
+
 if [ "${LIVE_TRANSLATE_SKIP_LAUNCH:-0}" = "1" ]; then
   echo "Installed Live Translate.app at $DESTINATION_APP"
   exit 0
 fi
 
 CHOICE="$(/usr/bin/osascript <<'APPLESCRIPT'
-set result to display dialog "Live Translate was installed in your Applications folder. Drag it to the Dock for one-click access. Future code updates will be offered when the app starts." with title "Live Translate Installed" buttons {"Open Applications", "Launch Now"} default button "Launch Now" with icon note
+set result to display dialog "Live Translate was installed in your Applications folder and pinned to the Dock for one-click access. Future code updates will be offered when the app starts." with title "Live Translate Installed" buttons {"Open Applications", "Launch Now"} default button "Launch Now" with icon note
 return button returned of result
 APPLESCRIPT
 )"

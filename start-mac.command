@@ -3,6 +3,10 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+if [ -x "$SCRIPT_DIR/install-mac-app.command" ]; then
+  LIVE_TRANSLATE_SKIP_LAUNCH=1 "$SCRIPT_DIR/install-mac-app.command" >/dev/null 2>&1 || true
+fi
+
 if ! command -v node >/dev/null 2>&1 && [ -x "$SCRIPT_DIR/../node_binary/bin/node" ]; then
   export PATH="$SCRIPT_DIR/../node_binary/bin:$PATH"
 fi

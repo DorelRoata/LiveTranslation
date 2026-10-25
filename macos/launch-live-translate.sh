@@ -273,22 +273,64 @@ instance_field() {
   /usr/bin/printf '%s' "$1" | "$NODE_BIN" -e 'let value=""; process.stdin.on("data", chunk => value += chunk); process.stdin.on("end", () => { try { const data=JSON.parse(value); if (data.application==="live-translate") process.stdout.write(String(data[process.argv[2]] ?? "")); } catch {} });' "$2"
 }
 
+ensure_dock_icon() {
+  local installed_app="$1"
+  [ "${LIVE_TRANSLATE_DRY_RUN:-0}" = "1" ] && return 0
+  [ "${LIVE_TRANSLATE_SKIP_DOCK:-0}" = "1" ] && return 0
+  [ -d "$installed_app" ] || return 0
+
+  local dock_apps
+  dock_apps="$(/usr/bin/defaults read com.apple.dock persistent-apps 2>/dev/null || true)"
+  if printf '%s' "$dock_apps" | /usr/bin/grep -Fq "com.livetranslate.launcher" ||
+     printf '%s' "$dock_apps" | /usr/bin/grep -Fq "Live Translate.app" ||
+     printf '%s' "$dock_apps" | /usr/bin/grep -Fq "Live%20Translate.app"; then
+    return 0
+  fi
+
+  /usr/bin/printf 'Pinning Live Translate.app to the macOS Dock\n' >>"$LOG_FILE"
+  if /usr/bin/defaults write com.apple.dock persistent-apps -array-add \
+    "<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>$installed_app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>"; then
+    /usr/bin/killall Dock >/dev/null 2>&1 || true
+  fi
+}
+
 sync_installed_app() {
   local installed_app="$HOME/Applications/Live Translate.app"
   local source_app="$REPO_ROOT/macos/Live Translate.app"
-  local installed_version source_version
-  [ -d "$installed_app" ] && [ -d "$source_app" ] || return 0
-  installed_version="$(/usr/bin/defaults read "$installed_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
-  source_version="$(/usr/bin/defaults read "$source_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
-  [ -n "$source_version" ] || return 0
-  [ "$installed_version" = "$source_version" ] && return 0
-  /usr/bin/printf 'Refreshing installed app bundle %s -> %s\n' "$installed_version" "$source_version" >>"$LOG_FILE"
-  if /usr/bin/ditto "$source_app" "$installed_app" &&
-     /bin/chmod +x "$installed_app/Contents/MacOS/live-translate" "$REPO_ROOT/macos/launch-live-translate.sh"; then
-    /usr/bin/codesign --force --deep --sign - "$installed_app" >/dev/null 2>&1 || true
-    /usr/bin/xattr -dr com.apple.quarantine "$installed_app" 2>/dev/null || true
-    /usr/bin/touch "$installed_app"
+  local repo_path_file="$CONFIG_DIR/repo-path.txt"
+  local installed_version source_version needs_refresh=0
+  [ -d "$source_app" ] || return 0
+
+  /bin/mkdir -p "$HOME/Applications"
+  if [ ! -f "$repo_path_file" ] || [ "$(/bin/cat "$repo_path_file" 2>/dev/null || true)" != "$REPO_ROOT" ]; then
+    /usr/bin/printf '%s\n' "$REPO_ROOT" > "$repo_path_file"
+    /bin/chmod 600 "$repo_path_file" 2>/dev/null || true
   fi
+
+  source_version="$(/usr/bin/defaults read "$source_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
+  if [ ! -d "$installed_app" ]; then
+    needs_refresh=1
+  else
+    installed_version="$(/usr/bin/defaults read "$installed_app/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
+    if [ -n "$source_version" ] && [ "$installed_version" != "$source_version" ]; then
+      needs_refresh=1
+    elif ! /usr/bin/cmp -s "$source_app/Contents/MacOS/live-translate" "$installed_app/Contents/MacOS/live-translate" 2>/dev/null ||
+         ! /usr/bin/cmp -s "$source_app/Contents/Info.plist" "$installed_app/Contents/Info.plist" 2>/dev/null; then
+      needs_refresh=1
+    fi
+  fi
+
+  if [ "$needs_refresh" = "1" ]; then
+    /usr/bin/printf 'Syncing installed app bundle (%s -> %s)\n' "${installed_version:-missing}" "${source_version:-current}" >>"$LOG_FILE"
+    if /usr/bin/ditto "$source_app" "$installed_app" &&
+       /bin/chmod +x "$installed_app/Contents/MacOS/live-translate" "$REPO_ROOT/macos/launch-live-translate.sh"; then
+      /usr/bin/codesign --force --deep --sign - "$installed_app" >/dev/null 2>&1 || true
+      /usr/bin/xattr -dr com.apple.quarantine "$installed_app" 2>/dev/null || true
+      /usr/bin/touch "$installed_app"
+    fi
+  fi
+
+  ensure_dock_icon "$installed_app"
 }
 
 stop_running_server() {
@@ -400,7 +442,13 @@ if [ "$(/usr/bin/git rev-parse --is-inside-work-tree 2>/dev/null || true)" = "tr
           show_notice "Installing the latest update..."
           perform_update
           UPDATE_RESULT=$?
-          if [ "$UPDATE_RESULT" = "1" ]; then
+          if [ "$UPDATE_RESULT" = "0" ]; then
+            sync_installed_app
+            LOCAL_VERSION="$("$NODE_BIN" -p "require('./package.json').version" 2>/dev/null || true)"
+            if [ -n "$LOCAL_VERSION" ]; then
+              DASHBOARD_OPEN_URL="$DASHBOARD_URL/?v=$LOCAL_VERSION"
+            fi
+          elif [ "$UPDATE_RESULT" = "1" ]; then
             show_error "The update failed, so the previous version was restored. It will start now. Check $LOG_FILE for details."
           elif [ "$UPDATE_RESULT" != "0" ]; then
             show_error "The update failed and automatic recovery could not complete. Check $LOG_FILE before starting."
