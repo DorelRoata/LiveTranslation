@@ -56,7 +56,7 @@ APPLESCRIPT
 ask_to_start_dirty() {
   /usr/bin/osascript - "$1" <<'APPLESCRIPT'
 on run argv
-  set result to display dialog (item 1 of argv) with title "Live Translate Update" buttons {"Cancel", "Start Current Version"} default button "Start Current Version" cancel button "Cancel" with icon caution
+  set result to display dialog (item 1 of argv) with title "Live Translate Update" buttons {"Cancel", "Start Current Version", "Stash and Update"} default button "Stash and Update" cancel button "Cancel" with icon caution
   return button returned of result
 end run
 APPLESCRIPT
@@ -431,14 +431,36 @@ if [ "$(/usr/bin/git rev-parse --is-inside-work-tree 2>/dev/null || true)" = "tr
     CURRENT_COMMIT="$(/usr/bin/git rev-parse HEAD 2>/dev/null)"
     REMOTE_COMMIT="$(/usr/bin/git rev-parse origin/main 2>/dev/null)"
     if [ -n "$CURRENT_COMMIT" ] && [ -n "$REMOTE_COMMIT" ] && [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ]; then
-      if [ -n "$(/usr/bin/git status --porcelain)" ]; then
-        CHOICE="$(ask_to_start_dirty "An update is available, but this repository has local changes. Nothing will be overwritten. Commit or stash those changes before updating.")"
-        if [ "$CHOICE" != "Start Current Version" ]; then exit 0; fi
-      elif /usr/bin/git merge-base --is-ancestor HEAD origin/main; then
+      if /usr/bin/git merge-base --is-ancestor HEAD origin/main; then
         CURRENT_SHORT="$(/usr/bin/git rev-parse --short HEAD)"
         REMOTE_SHORT="$(/usr/bin/git rev-parse --short origin/main)"
-        CHOICE="$(ask_to_update "A Live Translate update is available ($CURRENT_SHORT to $REMOTE_SHORT). Install it before starting?")"
-        if [ "$CHOICE" = "Update and Start" ]; then
+        DO_UPDATE=0
+        STASH_CREATED=0
+        if [ -n "$(/usr/bin/git status --porcelain)" ]; then
+          CHOICE="$(ask_to_start_dirty "A Live Translate update is available ($CURRENT_SHORT to $REMOTE_SHORT), and this folder has local changes. Stash those changes safely and update before starting?")"
+          if [ "$CHOICE" = "Stash and Update" ]; then
+            STASH_BEFORE="$(/usr/bin/git rev-parse -q --verify refs/stash 2>/dev/null || true)"
+            if /usr/bin/git stash push --include-untracked -m "Live Translate auto-stash before update ($(/bin/date '+%Y-%m-%d %H:%M:%S'))" >>"$LOG_FILE" 2>&1 &&
+               [ -z "$(/usr/bin/git status --porcelain)" ]; then
+              STASH_AFTER="$(/usr/bin/git rev-parse -q --verify refs/stash 2>/dev/null || true)"
+              if [ -n "$STASH_AFTER" ] && [ "$STASH_AFTER" != "$STASH_BEFORE" ]; then
+                STASH_CREATED=1
+              fi
+              DO_UPDATE=1
+            else
+              show_error "Could not stash local changes automatically. Starting the current version. Check $LOG_FILE for details."
+            fi
+          elif [ "$CHOICE" != "Start Current Version" ]; then
+            exit 0
+          fi
+        else
+          CHOICE="$(ask_to_update "A Live Translate update is available ($CURRENT_SHORT to $REMOTE_SHORT). Install it before starting?")"
+          if [ "$CHOICE" = "Update and Start" ]; then
+            DO_UPDATE=1
+          fi
+        fi
+
+        if [ "$DO_UPDATE" = "1" ]; then
           show_notice "Installing the latest update..."
           perform_update
           UPDATE_RESULT=$?
@@ -449,6 +471,9 @@ if [ "$(/usr/bin/git rev-parse --is-inside-work-tree 2>/dev/null || true)" = "tr
               DASHBOARD_OPEN_URL="$DASHBOARD_URL/?v=$LOCAL_VERSION"
             fi
           elif [ "$UPDATE_RESULT" = "1" ]; then
+            if [ "$STASH_CREATED" = "1" ]; then
+              /usr/bin/git stash pop >>"$LOG_FILE" 2>&1 || true
+            fi
             show_error "The update failed, so the previous version was restored. It will start now. Check $LOG_FILE for details."
           elif [ "$UPDATE_RESULT" != "0" ]; then
             show_error "The update failed and automatic recovery could not complete. Check $LOG_FILE before starting."

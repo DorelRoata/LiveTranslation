@@ -26,8 +26,19 @@ if ! /usr/bin/git fetch --quiet origin main >>"$LOG_FILE" 2>&1; then
 fi
 
 if [ -n "$(/usr/bin/git status --porcelain)" ]; then
-  /usr/bin/osascript -e 'display dialog "This repository has local changes, so the update was not applied. Commit or stash them, then run this shortcut again." with title "Live Translate Update" buttons {"OK"} default button "OK" with icon caution'
-  exit 1
+  STASH_CHOICE="$(/usr/bin/osascript <<'APPLESCRIPT' || true
+set result to display dialog "This folder has local changes. Stash those changes safely and install the update?" with title "Live Translate Update" buttons {"Cancel", "Stash and Update"} default button "Stash and Update" cancel button "Cancel" with icon caution
+return button returned of result
+APPLESCRIPT
+)"
+  if [ "$STASH_CHOICE" != "Stash and Update" ]; then
+    exit 0
+  fi
+  if ! /usr/bin/git stash push --include-untracked -m "Live Translate auto-stash before update ($(/bin/date '+%Y-%m-%d %H:%M:%S'))" >>"$LOG_FILE" 2>&1 ||
+     [ -n "$(/usr/bin/git status --porcelain)" ]; then
+    /usr/bin/osascript -e 'display dialog "Could not stash local changes automatically. Check ~/Library/Logs/LiveTranslate.log." with title "Live Translate Update" buttons {"OK"} default button "OK" with icon stop'
+    exit 1
+  fi
 fi
 
 CURRENT="$(/usr/bin/git rev-parse HEAD)"
