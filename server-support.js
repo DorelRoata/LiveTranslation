@@ -40,6 +40,8 @@ export function trimPreview(text, maxLength = 240) {
   return text.length > maxLength ? text.slice(-maxLength) : text;
 }
 
+const GITHUB_REPO = process.env.LIVE_TRANSLATE_GITHUB_REPO || 'DorelRoata/LiveTranslation';
+
 async function runGit(args) {
   const { stdout } = await execFileAsync('git', args, {
     cwd: process.cwd(),
@@ -54,9 +56,119 @@ async function runGit(args) {
   return stdout.trim();
 }
 
+export function normalizeVersionTag(version = '') {
+  return String(version).trim().replace(/^v/i, '');
+}
+
+export function isNewerReleaseVersion(currentVersion = '', remoteVersion = '') {
+  const cleanCurrent = normalizeVersionTag(currentVersion);
+  const cleanRemote = normalizeVersionTag(remoteVersion);
+  if (!cleanRemote || cleanCurrent === cleanRemote) return false;
+
+  const currentParts = cleanCurrent.split('-')[0].split('.').map(part => Number.parseInt(part, 10));
+  const remoteParts = cleanRemote.split('-')[0].split('.').map(part => Number.parseInt(part, 10));
+  if (currentParts.every(Number.isFinite) && remoteParts.every(Number.isFinite)) {
+    const length = Math.max(currentParts.length, remoteParts.length);
+    for (let i = 0; i < length; i++) {
+      const curr = currentParts[i] || 0;
+      const rem = remoteParts[i] || 0;
+      if (rem > curr) return true;
+      if (rem < curr) return false;
+    }
+    return false;
+  }
+  return cleanCurrent !== cleanRemote;
+}
+
+async function readReleaseInfo(rootDir = process.cwd()) {
+  try {
+    const raw = await fs.readFile(path.join(rootDir, 'release-info.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getReleaseUpdateStatus({
+  fetchImpl = fetch,
+  currentVersion = packageVersion,
+  releaseInfo = null,
+  repo = GITHUB_REPO
+} = {}) {
+  const info = releaseInfo || await readReleaseInfo();
+  const localVersion = info?.version || currentVersion;
+  const localCommit = typeof info?.commit === 'string' ? info.commit.slice(0, 7) : '';
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': `LiveTranslate/${localVersion}`
+  };
+
+  const releaseRes = await fetchImpl(`https://api.github.com/repos/${repo}/releases/latest`, {
+    headers,
+    signal: AbortSignal.timeout(10_000)
+  });
+
+  if (releaseRes.ok) {
+    const release = await releaseRes.json();
+    const remoteTag = String(release.tag_name || release.name || '').trim();
+    const remoteCommitMatch = typeof release.target_commitish === 'string' && /^[0-9a-f]{7,40}$/i.test(release.target_commitish)
+      ? release.target_commitish.slice(0, 7)
+      : '';
+    const versionNewer = isNewerReleaseVersion(localVersion, remoteTag);
+    const commitDiffers = Boolean(localCommit && remoteCommitMatch && localCommit !== remoteCommitMatch);
+    const updateAvailable = versionNewer || (!isNewerReleaseVersion(remoteTag, localVersion) && commitDiffers);
+
+    return {
+      mode: 'release',
+      branch: 'release',
+      supportedBranch: true,
+      currentCommit: localCommit ? `v${normalizeVersionTag(localVersion)} (${localCommit})` : `v${normalizeVersionTag(localVersion)}`,
+      remoteCommit: remoteTag || (remoteCommitMatch ? `v${normalizeVersionTag(localVersion)} (${remoteCommitMatch})` : `v${normalizeVersionTag(localVersion)}`),
+      dirty: false,
+      updateAvailable,
+      diverged: false
+    };
+  }
+
+  if (releaseRes.status !== 404) {
+    throw new Error(`GitHub release check returned status ${releaseRes.status}.`);
+  }
+
+  for (const branch of ['release', 'main']) {
+    const pkgRes = await fetchImpl(`https://raw.githubusercontent.com/${repo}/${branch}/package.json`, {
+      headers: { 'User-Agent': `LiveTranslate/${localVersion}` },
+      signal: AbortSignal.timeout(10_000)
+    });
+    if (pkgRes.ok) {
+      const remotePkg = await pkgRes.json();
+      const remoteVersion = String(remotePkg.version || '').trim();
+      return {
+        mode: 'release',
+        branch,
+        supportedBranch: true,
+        currentCommit: `v${normalizeVersionTag(localVersion)}`,
+        remoteCommit: remoteVersion ? `v${normalizeVersionTag(remoteVersion)}` : `v${normalizeVersionTag(localVersion)}`,
+        dirty: false,
+        updateAvailable: isNewerReleaseVersion(localVersion, remoteVersion),
+        diverged: false
+      };
+    }
+  }
+
+  throw new Error('Could not reach GitHub Releases.');
+}
+
 async function getUpdateStatus() {
-  const insideWorktree = await runGit(['rev-parse', '--is-inside-work-tree']);
-  if (insideWorktree !== 'true') throw new Error('Not inside a Git worktree.');
+  let insideWorktree = 'false';
+  try {
+    insideWorktree = await runGit(['rev-parse', '--is-inside-work-tree']);
+  } catch {
+    insideWorktree = 'false';
+  }
+  if (insideWorktree !== 'true') {
+    return getReleaseUpdateStatus();
+  }
 
   let branch = 'detached';
   try {
@@ -65,18 +177,19 @@ async function getUpdateStatus() {
     branch = 'detached';
   }
 
-  await runGit(['fetch', '--quiet', 'origin', 'main']);
+  const supportedBranch = branch === 'main' || branch === 'release';
+  const targetBranch = branch === 'release' ? 'release' : 'main';
+  await runGit(['fetch', '--quiet', 'origin', targetBranch]);
   const [currentCommit, remoteCommit, worktreeStatus] = await Promise.all([
     runGit(['rev-parse', 'HEAD']),
-    runGit(['rev-parse', 'origin/main']),
+    runGit(['rev-parse', `origin/${targetBranch}`]),
     runGit(['status', '--porcelain'])
   ]);
 
   let canFastForward = false;
-  const supportedBranch = branch === 'main';
   if (supportedBranch && currentCommit !== remoteCommit) {
     try {
-      await runGit(['merge-base', '--is-ancestor', 'HEAD', 'origin/main']);
+      await runGit(['merge-base', '--is-ancestor', 'HEAD', `origin/${targetBranch}`]);
       canFastForward = true;
     } catch (error) {
       canFastForward = false;
@@ -84,6 +197,7 @@ async function getUpdateStatus() {
   }
 
   return {
+    mode: 'git',
     branch,
     supportedBranch,
     currentCommit: currentCommit.slice(0, 7),
@@ -245,7 +359,8 @@ export async function getInstanceInfo() {
   try {
     commit = await runGit(['rev-parse', 'HEAD']);
   } catch (error) {
-    commit = '';
+    const releaseInfo = await readReleaseInfo();
+    commit = typeof releaseInfo?.commit === 'string' ? releaseInfo.commit : '';
   }
   return {
     application: 'live-translate',
@@ -535,12 +650,12 @@ export function attachLocalRelay(httpServer, existingRelay = null, { notesOption
         } else if (data.type === 'source-append') {
           // The preacher's own words, for Bible references and message notes.
           if (typeof data.text !== 'string' || data.text.length > 4000) return;
-          notes.addSource(data.text, typeof data.language === 'string' ? data.language.slice(0, 16) : '');
           const before = sourceLane.seq;
           sourceLane = appendLaneText(sourceLane, data.text);
           if (sourceLane.seq !== before) {
             for (const client of wss.clients) if (client.wantsSource && client !== ws) sendSource(client, data.text);
           }
+          notes.addSource(data.text, typeof data.language === 'string' ? data.language.slice(0, 16) : '');
         } else if (data.type === 'source-subscribe') {
           ws.wantsSource = Boolean(data.on);
           if (ws.wantsSource) sendSource(ws);

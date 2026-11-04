@@ -10,11 +10,14 @@ import {
   geminiProxyAllowed,
   getActivityInfo,
   getInstanceInfo,
+  getReleaseUpdateStatus,
   isLocalClient,
+  isNewerReleaseVersion,
   isObsAllowedPath,
   isOperatorClient,
   isPrivateLan,
   isTranslationSessionActive,
+  normalizeVersionTag,
   publicApiKeyStatus,
   setActiveRelay,
   trimPreview
@@ -333,4 +336,46 @@ test('getActivityInfo returns zeros and empty previews without listening on a po
     setActiveRelay(null);
   }
 });
+
+test('release update check compares semantic versions and works without a Git worktree', async () => {
+  assert.equal(normalizeVersionTag('v1.5.2'), '1.5.2');
+  assert.equal(isNewerReleaseVersion('1.5.1', 'v1.5.2'), true);
+  assert.equal(isNewerReleaseVersion('1.5.1', 'v1.5.1'), false);
+  assert.equal(isNewerReleaseVersion('1.6.0', 'v1.5.9'), false);
+  assert.equal(isNewerReleaseVersion('1.5.1', 'v2.0.0'), true);
+
+  const newerStatus = await getReleaseUpdateStatus({
+    currentVersion: '1.5.1',
+    releaseInfo: { version: '1.5.1', commit: '1111111' },
+    async fetchImpl() {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { tag_name: 'v1.6.0', target_commitish: '2222222abcdef' };
+        }
+      };
+    }
+  });
+  assert.equal(newerStatus.mode, 'release');
+  assert.equal(newerStatus.supportedBranch, true);
+  assert.equal(newerStatus.updateAvailable, true);
+  assert.equal(newerStatus.remoteCommit, 'v1.6.0');
+
+  const currentStatus = await getReleaseUpdateStatus({
+    currentVersion: '1.5.1',
+    releaseInfo: { version: '1.5.1', commit: '1111111' },
+    async fetchImpl() {
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { tag_name: 'v1.5.1', target_commitish: '1111111' };
+        }
+      };
+    }
+  });
+  assert.equal(currentStatus.updateAvailable, false);
+});
+
 

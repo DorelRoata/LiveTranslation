@@ -39,7 +39,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.5.2';
+const APP_VERSION = '1.5.3';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -422,6 +422,10 @@ async function loadStoredApiKey() {
     apiKeyStatus.classList.toggle('error', Boolean(data.warning));
     if (data.warning) setDiagnostic(data.warning, 'warning');
     refreshStartEnabled();
+    syncWizardApiKeyState();
+    if (!data.configured && !isRemoteOperator()) {
+      openOnboardingWizard(1);
+    }
   } catch (error) {
     apiKeyInput.disabled = true;
     startBtn.disabled = true;
@@ -934,10 +938,13 @@ checkUpdatesBtn.addEventListener('click', async () => {
     if (!response.ok) throw new Error(data.error || 'Update check failed.');
 
     if (!data.supportedBranch) {
-      setDiagnostic(`Automatic updates require the main branch. This checkout is on ${data.branch}.`, 'warning');
+      setDiagnostic(`Automatic updates require the main or release branch. This checkout is on ${data.branch}.`, 'warning');
     } else if (data.updateAvailable) {
       const localChanges = data.dirty ? ' Local changes must be committed or stashed first.' : '';
-      setDiagnostic(`Update available: ${data.currentCommit} to ${data.remoteCommit}. Quit and reopen the Dock app to install it.${localChanges}`, 'warning');
+      const restartHint = isMacPlatform()
+        ? 'Quit and reopen the Dock app to install it.'
+        : 'Close Live Translate and reopen it from the Desktop shortcut (or run update-windows.bat) to install it.';
+      setDiagnostic(`Update available: ${data.currentCommit} to ${data.remoteCommit}. ${restartHint}${localChanges}`, 'warning');
     } else if (data.diverged) {
       setDiagnostic('This checkout differs from GitHub and cannot be updated automatically. Review it in Git before updating.', 'warning');
     } else {
@@ -2641,8 +2648,371 @@ async function initProjectorSharingQR() {
     const obsUrl = buildObsUrl(obsBaseUrl);
     if (obsTip) obsTip.textContent = obsUrl;
     bindShareActions('copy-obs-url', 'open-obs-url', obsUrl);
+    const wizardObsUrl = document.getElementById('wizard-obs-url');
+    if (wizardObsUrl) wizardObsUrl.textContent = obsUrl;
+    bindShareActions('wizard-copy-obs-url', '', obsUrl);
   };
   refreshObsSharingUrl();
+
+  const wizardProjectorUrl = document.getElementById('wizard-projector-url');
+  const wizardQrCanvas = document.getElementById('wizard-projector-qr-canvas');
+  if (wizardProjectorUrl) wizardProjectorUrl.textContent = subtitlesUrl;
+  if (wizardQrCanvas) {
+    QRCode.toCanvas(wizardQrCanvas, subtitlesUrl, {
+      width: 116,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    }, () => {});
+  }
+  bindShareActions('wizard-copy-projector-url', 'wizard-open-projector-btn', subtitlesUrl);
 }
+
+function isMacPlatform() {
+  return /Mac|iPod|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
+}
+
+function applyPlatformLabels() {
+  if (isMacPlatform()) return;
+  const savedNote = document.getElementById('api-key-saved-note');
+  if (savedNote) savedNote.textContent = 'API key saved on this computer.';
+  const localPlayLabel = localPlaybackToggle?.parentElement?.querySelector('.switch-label');
+  if (localPlayLabel) localPlayLabel.textContent = 'Play on this PC';
+  const streamerLabel = streamerBtn?.querySelector('.btn-text');
+  if (streamerLabel) streamerLabel.textContent = 'Host audio';
+}
+
+applyPlatformLabels();
+
+// --- First-Run Onboarding Wizard ---
+const onboardingModal = document.getElementById('onboarding-modal');
+const openWizardBtn = document.getElementById('open-wizard-btn');
+const wizardCloseBtn = document.getElementById('wizard-close-btn');
+const wizardBackBtn = document.getElementById('wizard-back-btn');
+const wizardNextBtn = document.getElementById('wizard-next-btn');
+const wizardStepPills = Array.from(document.querySelectorAll('.wizard-step-pill'));
+const wizardPanels = Array.from(document.querySelectorAll('.wizard-panel'));
+
+const wizardKeyConfigured = document.getElementById('wizard-key-configured');
+const wizardKeyEntry = document.getElementById('wizard-key-entry');
+const wizardChangeKeyBtn = document.getElementById('wizard-change-key-btn');
+const wizardApiKeyInput = document.getElementById('wizard-api-key-input');
+const wizardToggleKeyBtn = document.getElementById('wizard-toggle-key-btn');
+const wizardApiKeyStatus = document.getElementById('wizard-api-key-status');
+
+const wizardSourceLang = document.getElementById('wizard-source-language');
+const wizardTargetLang1 = document.getElementById('wizard-target-language-1');
+const wizardTargetLang2 = document.getElementById('wizard-target-language-2');
+const wizardIgnoreSongs = document.getElementById('wizard-ignore-songs');
+
+const wizardAudioSource = document.getElementById('wizard-audio-source');
+const wizardMicDeviceGroup = document.getElementById('wizard-mic-device-group');
+const wizardMicDevice = document.getElementById('wizard-mic-device');
+const wizardRefreshMicsBtn = document.getElementById('wizard-refresh-mics-btn');
+const wizardTestMicBtn = document.getElementById('wizard-test-mic-btn');
+const wizardMeterFill = document.getElementById('wizard-meter-fill');
+const wizardMeterBar = document.getElementById('wizard-meter-bar');
+const wizardMeterStatus = document.getElementById('wizard-meter-status');
+const wizardMeterDb = document.getElementById('wizard-meter-db');
+
+let currentWizardStep = 1;
+let wizardReplacingKey = false;
+let wizardMicTestStream = null;
+let wizardMicTestCtx = null;
+let wizardMicTestAnim = null;
+
+function syncWizardApiKeyState() {
+  if (!wizardKeyConfigured || !wizardKeyEntry) return;
+  const showConfigured = apiKeyConfigured && !wizardReplacingKey;
+  wizardKeyConfigured.hidden = !showConfigured;
+  wizardKeyEntry.hidden = showConfigured;
+  if (currentWizardStep === 1 && wizardNextBtn) {
+    wizardNextBtn.textContent = showConfigured ? 'Next: Languages →' : 'Save & Continue →';
+  }
+}
+
+function syncWizardFieldsFromDashboard() {
+  if (wizardSourceLang && selectHasValue(wizardSourceLang, sourceLanguageSelect.value)) {
+    wizardSourceLang.value = sourceLanguageSelect.value;
+  }
+  if (wizardTargetLang1 && selectHasValue(wizardTargetLang1, targetLanguageSelect1.value)) {
+    wizardTargetLang1.value = targetLanguageSelect1.value;
+  }
+  if (wizardTargetLang2 && selectHasValue(wizardTargetLang2, targetLanguageSelect2.value)) {
+    wizardTargetLang2.value = targetLanguageSelect2.value;
+  }
+  if (wizardIgnoreSongs) {
+    wizardIgnoreSongs.checked = ignoreSongsToggle.checked;
+  }
+  if (wizardAudioSource && selectHasValue(wizardAudioSource, audioSourceSelect.value)) {
+    wizardAudioSource.value = audioSourceSelect.value;
+  }
+  if (wizardMicDevice && micDeviceSelect) {
+    wizardMicDevice.innerHTML = micDeviceSelect.innerHTML;
+    wizardMicDevice.value = micDeviceSelect.value;
+  }
+  if (wizardMicDeviceGroup && wizardAudioSource) {
+    wizardMicDeviceGroup.style.display = wizardAudioSource.value === 'mic' ? 'block' : 'none';
+  }
+  syncWizardApiKeyState();
+}
+
+function stopWizardMicTest() {
+  if (wizardMicTestAnim) {
+    cancelAnimationFrame(wizardMicTestAnim);
+    wizardMicTestAnim = null;
+  }
+  if (wizardMicTestStream) {
+    wizardMicTestStream.getTracks().forEach(track => track.stop());
+    wizardMicTestStream = null;
+  }
+  if (wizardMicTestCtx) {
+    wizardMicTestCtx.close().catch(() => {});
+    wizardMicTestCtx = null;
+  }
+  if (wizardTestMicBtn) wizardTestMicBtn.textContent = 'Test Microphone';
+  if (wizardMeterFill) wizardMeterFill.style.width = '0%';
+  if (wizardMeterBar) wizardMeterBar.setAttribute('aria-valuenow', '0');
+  if (wizardMeterDb) wizardMeterDb.textContent = '0%';
+}
+
+async function startWizardMicTest() {
+  if (wizardMicTestStream) {
+    stopWizardMicTest();
+    if (wizardMeterStatus) wizardMeterStatus.textContent = 'Microphone test stopped.';
+    return;
+  }
+  if (!mediaSupported) {
+    if (wizardMeterStatus) wizardMeterStatus.textContent = 'Browser microphone access is not available.';
+    return;
+  }
+  try {
+    if (wizardTestMicBtn) wizardTestMicBtn.textContent = 'Stop Test';
+    if (wizardMeterStatus) wizardMeterStatus.textContent = 'Requesting microphone permission...';
+    const selectedId = wizardMicDevice?.value || 'default';
+    const audioConstraint = selectedId && selectedId !== 'default'
+      ? { deviceId: { exact: selectedId } }
+      : true;
+    wizardMicTestStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraint });
+    await populateMicDevices();
+    if (wizardMicDevice && micDeviceSelect) {
+      wizardMicDevice.innerHTML = micDeviceSelect.innerHTML;
+      wizardMicDevice.value = micDeviceSelect.value;
+    }
+    wizardMicTestCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = wizardMicTestCtx.createMediaStreamSource(wizardMicTestStream);
+    const analyser = wizardMicTestCtx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    if (wizardMeterStatus) wizardMeterStatus.textContent = 'Listening — speak into the pulpit microphone now...';
+
+    const updateMeter = () => {
+      if (!wizardMicTestStream) return;
+      analyser.getFloatTimeDomainData(samples);
+      let peak = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const abs = Math.abs(samples[i]);
+        if (abs > peak) peak = abs;
+      }
+      const pct = Math.min(100, Math.round(peak * 180));
+      if (wizardMeterFill) wizardMeterFill.style.width = `${pct}%`;
+      if (wizardMeterBar) wizardMeterBar.setAttribute('aria-valuenow', String(pct));
+      if (wizardMeterDb) wizardMeterDb.textContent = `${pct}%`;
+      if (pct > 8 && wizardMeterStatus) {
+        wizardMeterStatus.textContent = '✓ Good audio signal detected!';
+      }
+      wizardMicTestAnim = requestAnimationFrame(updateMeter);
+    };
+    wizardMicTestAnim = requestAnimationFrame(updateMeter);
+  } catch (error) {
+    stopWizardMicTest();
+    if (wizardMeterStatus) wizardMeterStatus.textContent = `Could not access microphone: ${error.message}`;
+  }
+}
+
+function setWizardStep(step) {
+  const nextStep = Math.max(1, Math.min(4, Number(step) || 1));
+  if (currentWizardStep === 3 && nextStep !== 3) {
+    stopWizardMicTest();
+  }
+  currentWizardStep = nextStep;
+  syncWizardFieldsFromDashboard();
+
+  wizardPanels.forEach(panel => {
+    panel.hidden = Number(panel.dataset.step) !== currentWizardStep;
+  });
+  wizardStepPills.forEach(pill => {
+    const pillStep = Number(pill.dataset.step);
+    pill.classList.toggle('active', pillStep === currentWizardStep);
+    pill.classList.toggle('completed', pillStep < currentWizardStep || (pillStep === 1 && apiKeyConfigured));
+  });
+
+  if (wizardBackBtn) {
+    wizardBackBtn.hidden = currentWizardStep === 1;
+  }
+  if (wizardNextBtn) {
+    if (currentWizardStep === 1) {
+      wizardNextBtn.textContent = (apiKeyConfigured && !wizardReplacingKey) ? 'Next: Languages →' : 'Save & Continue →';
+    } else if (currentWizardStep === 2) {
+      wizardNextBtn.textContent = 'Next: Microphone →';
+    } else if (currentWizardStep === 3) {
+      wizardNextBtn.textContent = 'Next: Screens & OBS →';
+    } else {
+      wizardNextBtn.textContent = 'Finish Setup';
+    }
+  }
+}
+
+function openOnboardingWizard(step = 1) {
+  if (!onboardingModal) return;
+  wizardReplacingKey = false;
+  setWizardStep(step);
+  onboardingModal.hidden = false;
+}
+
+function closeOnboardingWizard() {
+  stopWizardMicTest();
+  if (onboardingModal) onboardingModal.hidden = true;
+}
+
+openWizardBtn?.addEventListener('click', () => {
+  openOnboardingWizard(apiKeyConfigured ? 2 : 1);
+});
+
+wizardCloseBtn?.addEventListener('click', closeOnboardingWizard);
+
+onboardingModal?.addEventListener('click', event => {
+  if (event.target === onboardingModal) closeOnboardingWizard();
+});
+
+wizardStepPills.forEach(pill => {
+  pill.addEventListener('click', () => {
+    setWizardStep(Number(pill.dataset.step));
+  });
+});
+
+wizardChangeKeyBtn?.addEventListener('click', () => {
+  wizardReplacingKey = true;
+  syncWizardApiKeyState();
+  wizardApiKeyInput?.focus();
+});
+
+wizardToggleKeyBtn?.addEventListener('click', () => {
+  if (!wizardApiKeyInput) return;
+  wizardApiKeyInput.type = wizardApiKeyInput.type === 'password' ? 'text' : 'password';
+});
+
+document.querySelectorAll('.wizard-preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const { source, target1, target2 } = btn.dataset;
+    if (source && selectHasValue(sourceLanguageSelect, source)) sourceLanguageSelect.value = source;
+    if (target1 && selectHasValue(targetLanguageSelect1, target1)) targetLanguageSelect1.value = target1;
+    if (target2 && selectHasValue(targetLanguageSelect2, target2)) targetLanguageSelect2.value = target2;
+    persistAndSyncSetup();
+    syncWizardFieldsFromDashboard();
+  });
+});
+
+wizardSourceLang?.addEventListener('change', () => {
+  if (selectHasValue(sourceLanguageSelect, wizardSourceLang.value)) {
+    sourceLanguageSelect.value = wizardSourceLang.value;
+    persistAndSyncSetup();
+  }
+});
+
+wizardTargetLang1?.addEventListener('change', () => {
+  if (selectHasValue(targetLanguageSelect1, wizardTargetLang1.value)) {
+    targetLanguageSelect1.value = wizardTargetLang1.value;
+    persistAndSyncSetup();
+  }
+});
+
+wizardTargetLang2?.addEventListener('change', () => {
+  if (selectHasValue(targetLanguageSelect2, wizardTargetLang2.value)) {
+    targetLanguageSelect2.value = wizardTargetLang2.value;
+    persistAndSyncSetup();
+  }
+});
+
+wizardIgnoreSongs?.addEventListener('change', () => {
+  ignoreSongsToggle.checked = wizardIgnoreSongs.checked;
+  saveOperatorSettings();
+  syncSongDetectorPreference();
+});
+
+wizardAudioSource?.addEventListener('change', () => {
+  audioSourceSelect.value = wizardAudioSource.value;
+  audioSourceSelect.dispatchEvent(new Event('change'));
+  if (wizardMicDeviceGroup) {
+    wizardMicDeviceGroup.style.display = wizardAudioSource.value === 'mic' ? 'block' : 'none';
+  }
+});
+
+wizardMicDevice?.addEventListener('change', () => {
+  micDeviceSelect.value = wizardMicDevice.value;
+  preferredMicDeviceId = wizardMicDevice.value || DEFAULT_OPERATOR_SETTINGS.microphoneDevice;
+  saveOperatorSettings();
+  if (wizardMicTestStream) {
+    stopWizardMicTest();
+    startWizardMicTest();
+  }
+});
+
+wizardRefreshMicsBtn?.addEventListener('click', async () => {
+  await populateMicDevices();
+  syncWizardFieldsFromDashboard();
+});
+
+wizardTestMicBtn?.addEventListener('click', startWizardMicTest);
+
+wizardBackBtn?.addEventListener('click', () => {
+  if (currentWizardStep > 1) setWizardStep(currentWizardStep - 1);
+});
+
+wizardNextBtn?.addEventListener('click', async () => {
+  if (currentWizardStep === 1) {
+    if (!apiKeyConfigured || wizardReplacingKey) {
+      const candidate = wizardApiKeyInput?.value.trim() || '';
+      if (!candidate) {
+        if (wizardApiKeyStatus) {
+          wizardApiKeyStatus.textContent = 'Please paste your Gemini API key above before continuing.';
+          wizardApiKeyStatus.classList.add('error');
+        }
+        wizardApiKeyInput?.focus();
+        return;
+      }
+      try {
+        wizardNextBtn.disabled = true;
+        await saveApiKey(candidate);
+        wizardReplacingKey = false;
+        if (wizardApiKeyInput) wizardApiKeyInput.value = '';
+        if (wizardApiKeyStatus) {
+          wizardApiKeyStatus.textContent = 'API key saved on this computer.';
+          wizardApiKeyStatus.classList.remove('error');
+        }
+        refreshStartEnabled();
+      } catch (error) {
+        if (wizardApiKeyStatus) {
+          wizardApiKeyStatus.textContent = error.message;
+          wizardApiKeyStatus.classList.add('error');
+        }
+        return;
+      } finally {
+        wizardNextBtn.disabled = false;
+      }
+    }
+    setWizardStep(2);
+    return;
+  }
+
+  if (currentWizardStep < 4) {
+    setWizardStep(currentWizardStep + 1);
+    return;
+  }
+
+  closeOnboardingWizard();
+  setDiagnostic('Setup complete! Click "Start Translation" above when you are ready to go live.', 'good');
+});
 
 initProjectorSharingQR();

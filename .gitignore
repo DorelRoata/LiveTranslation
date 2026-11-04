@@ -26,3 +26,6 @@ public/mediapipe/wasm
 .env
 .env.local
 .live-translate-*-backup*
+node_binary
+bundle
+release-info.json

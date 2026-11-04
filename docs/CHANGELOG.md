@@ -2,6 +2,16 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.3 ? Turnkey Windows church installer, release auto-updater, and First-Time Setup Wizard
+
+**Why:** Sharing Live Translate with other churches (especially on Windows sound-booth PCs) required manually installing Node.js, Git, and running terminal commands, and new volunteers had no guided setup when opening the dashboard for the first time.
+
+**What changed:**
+- **Zero-prerequisite Windows installer (`install-windows.bat`) and launcher (`start-windows.bat`).** Copies the app to `%LOCALAPPDATA%\LiveTranslation-App`, places a **Live Translate** shortcut on the Windows Desktop and Start Menu, and uses a bundled or automatically downloaded portable Node.js runtime so church computers do not need Node.js or Git pre-installed.
+- **Pre-built GitHub Releases on the `release` branch (`.github/workflows/release.yml`).** Pushing to `release` or a version tag runs all tests, builds the production `dist/` assets, bundles portable `node.exe` for Windows, and publishes `LiveTranslate-Windows.zip` to GitHub Releases.
+- **Automatic release updates (`update-windows.bat` and `/api/update/status`).** Checking for updates now works both inside Git repositories and on Release ZIP installations without Git, preserving the saved Gemini API key, Bible cache, and operator settings.
+- **First-Time Setup Wizard in the dashboard.** Automatically opens when no Gemini API key is configured (or when clicking **Setup Wizard** in the operator bar) to guide operators through creating and saving a Gemini API key, choosing church language presets (such as Romanian ? English), testing the pulpit microphone with a live signal meter, and connecting projectors, phones, and OBS.
+
 ## v1.5.2 — Spoken Bible reference forms, filler stripping, stacked notes layout, and larger verse text
 
 **Why:** During the 2026-10-18 service, several spoken Bible references ("1 Corinteni 15 la 19", "2 Petru 2 la 19", "Deuteronom 6 la 5", "Galateni 2 20") showed only the book/chapter or reference chip without verse text; hesitation fillers ("uh", "ă", "эм") appeared in the live captions; and the side-by-side summary/Bible layout crowded the projector screen while Romanian verses rendered smaller than English.

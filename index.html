@@ -111,6 +111,7 @@
             <button id="restart-audio-btn" class="health-btn" type="button" disabled>Restart Audio</button>
             <button id="copy-diagnostics-btn" class="health-btn" type="button">Copy Status</button>
             <button id="check-updates-btn" class="health-btn" type="button">Check Updates</button>
+            <button id="open-wizard-btn" class="health-btn" type="button">Setup Wizard</button>
           </div>
         </section>
 
@@ -604,8 +605,234 @@
       </main>
 
       <footer class="app-footer">
-        <p>Live Translate v1.5.2 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
+        <p>Live Translate v1.5.3 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
       </footer>
+    </div>
+
+    <div id="onboarding-modal" class="wizard-backdrop" role="dialog" aria-modal="true" aria-labelledby="wizard-title" hidden>
+      <div class="wizard-card glass-card">
+        <header class="wizard-header">
+          <div class="wizard-brand">
+            <span class="wizard-badge">First-Time Setup</span>
+            <h2 id="wizard-title">Set Up Live Translate for Your Church</h2>
+          </div>
+          <button type="button" id="wizard-close-btn" class="text-btn wizard-close-btn" aria-label="Close setup wizard">Skip for now</button>
+        </header>
+
+        <nav class="wizard-steps-nav" aria-label="Setup steps">
+          <button type="button" class="wizard-step-pill active" data-step="1">
+            <span class="step-num">1</span>
+            <span class="step-label">Gemini API Key</span>
+          </button>
+          <button type="button" class="wizard-step-pill" data-step="2">
+            <span class="step-num">2</span>
+            <span class="step-label">Languages</span>
+          </button>
+          <button type="button" class="wizard-step-pill" data-step="3">
+            <span class="step-num">3</span>
+            <span class="step-label">Microphone Check</span>
+          </button>
+          <button type="button" class="wizard-step-pill" data-step="4">
+            <span class="step-num">4</span>
+            <span class="step-label">Projector &amp; OBS</span>
+          </button>
+        </nav>
+
+        <div class="wizard-body">
+          <!-- Step 1: Gemini API Key -->
+          <section class="wizard-panel" id="wizard-step-1" data-step="1">
+            <p class="wizard-lead">
+              Live Translate connects directly to Google Gemini to translate the sermon in real time. Each church uses its own Google Gemini API key stored privately on this computer.
+            </p>
+            <ol class="wizard-checklist">
+              <li>
+                <div>
+                  <strong>1. Open Google AI Studio</strong>
+                  <p>Sign in with your church Google account and click <strong>Create API key</strong>.</p>
+                </div>
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="share-link-btn wizard-external-btn">Open Google AI Studio ↗</a>
+              </li>
+              <li>
+                <div>
+                  <strong>2. Enable Pay-as-you-go Billing (Important for Sunday Services)</strong>
+                  <p>In Google AI Studio, link a billing card (Tier 1) so the free-tier limit never interrupts a live sermon. A typical 1-hour sermon costs only a few cents.</p>
+                </div>
+              </li>
+              <li>
+                <div>
+                  <strong>3. Paste Your Gemini API Key Below</strong>
+                  <p>Once saved, your key is kept privately on this computer and hidden from view.</p>
+                </div>
+              </li>
+            </ol>
+
+            <div class="wizard-key-box" id="wizard-key-box">
+              <div class="wizard-key-configured" id="wizard-key-configured" hidden>
+                <span class="wizard-status-ok">✓ Gemini API key is saved on this computer</span>
+                <button type="button" id="wizard-change-key-btn" class="text-btn">Replace saved key</button>
+              </div>
+              <div class="wizard-key-entry" id="wizard-key-entry">
+                <label for="wizard-api-key-input">Gemini API Key</label>
+                <div class="password-wrapper">
+                  <input type="password" id="wizard-api-key-input" placeholder="Paste your AIza... Gemini API Key here" autocomplete="off" />
+                  <button type="button" id="wizard-toggle-key-btn" class="icon-btn" aria-label="Show or hide API key">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+                <small id="wizard-api-key-status" class="input-hint">Your key stays on this computer and is never shown in URLs.</small>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 2: Languages -->
+          <section class="wizard-panel" id="wizard-step-2" data-step="2" hidden>
+            <p class="wizard-lead">
+              Choose the language spoken from the pulpit and the language(s) you want congregation members and screens to receive.
+            </p>
+            <div class="wizard-presets" aria-label="Common church presets">
+              <span class="wizard-preset-label">Quick Presets:</span>
+              <button type="button" class="health-btn wizard-preset-btn" data-source="auto" data-target1="en" data-target2="none">Romanian → English</button>
+              <button type="button" class="health-btn wizard-preset-btn" data-source="auto" data-target1="en" data-target2="ru">Romanian → English + Russian</button>
+              <button type="button" class="health-btn wizard-preset-btn" data-source="en" data-target1="ro" data-target2="none">English → Romanian</button>
+            </div>
+            <div class="wizard-grid-2">
+              <div class="input-group">
+                <label for="wizard-source-language">Preacher's Spoken Language</label>
+                <select id="wizard-source-language">
+                  <option value="auto">Auto-detect (Recommended for Romanian/English)</option>
+                  <option value="ro">Romanian (Română)</option>
+                  <option value="en">English (English)</option>
+                  <option value="ru">Russian (Русский)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="uk">Ukrainian (Українська)</option>
+                </select>
+                <small class="helper-text">Auto-detect automatically recognizes Romanian (including Cornilescu Bible references) and English.</small>
+              </div>
+              <div class="input-group">
+                <label for="wizard-target-language-1">Translate To (Language 1)</label>
+                <select id="wizard-target-language-1">
+                  <option value="en">English (English)</option>
+                  <option value="ro">Romanian (Română)</option>
+                  <option value="ru">Russian (Русский)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="it">Italian (Italiano)</option>
+                  <option value="pt">Portuguese (Português)</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="wizard-target-language-2">Second Translation Language (Optional)</label>
+                <select id="wizard-target-language-2">
+                  <option value="none">None (One language only)</option>
+                  <option value="en">English (English)</option>
+                  <option value="ru">Russian (Русский)</option>
+                  <option value="ro">Romanian (Română)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="de">German (Deutsch)</option>
+                </select>
+                <small class="helper-text">With one language, screens show live subtitles on top and Bible verses + sermon notes below.</small>
+              </div>
+              <div class="input-group">
+                <label class="switch-container">
+                  <input type="checkbox" id="wizard-ignore-songs" />
+                  <span class="switch-slider"></span>
+                  <span class="switch-label">Automatically pause translation during worship songs</span>
+                </label>
+                <small class="helper-text">Uses an on-device audio detector to pause translation while singing and resume when preaching starts.</small>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 3: Audio & Mic Check -->
+          <section class="wizard-panel" id="wizard-step-3" data-step="3" hidden>
+            <p class="wizard-lead">
+              Select the microphone or USB soundboard input connected to this computer and test that audio is coming through clearly.
+            </p>
+            <div class="wizard-grid-2">
+              <div class="input-group">
+                <label for="wizard-audio-source">Audio Source</label>
+                <select id="wizard-audio-source">
+                  <option value="mic">Microphone / USB Mixer on this computer</option>
+                  <option value="system">System audio on this computer</option>
+                  <option value="network">Remote microphone over church Wi-Fi</option>
+                </select>
+              </div>
+              <div class="input-group" id="wizard-mic-device-group">
+                <label for="wizard-mic-device">Microphone / Mixer Input Device</label>
+                <div class="wizard-device-row">
+                  <select id="wizard-mic-device">
+                    <option value="default">Default System Microphone</option>
+                  </select>
+                  <button type="button" id="wizard-refresh-mics-btn" class="share-link-btn">Refresh</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-mic-tester">
+              <div class="wizard-mic-tester-head">
+                <div>
+                  <strong>Live Microphone Signal Test</strong>
+                  <p>Click <strong>Test Microphone</strong> and speak into the pulpit mic to verify green signal bars.</p>
+                </div>
+                <button type="button" id="wizard-test-mic-btn" class="share-link-btn">Test Microphone</button>
+              </div>
+              <div class="wizard-meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="wizard-meter-bar">
+                <div class="wizard-meter-fill" id="wizard-meter-fill"></div>
+              </div>
+              <div class="wizard-meter-foot">
+                <span id="wizard-meter-status">Click "Test Microphone" to check your audio input.</span>
+                <span class="vol-db" id="wizard-meter-db">0%</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 4: Projector, Phones & OBS -->
+          <section class="wizard-panel" id="wizard-step-4" data-step="4" hidden>
+            <p class="wizard-lead">
+              You're all set! Here is how to display live subtitles on your church projector, congregation phones, or OBS live stream:
+            </p>
+            <div class="wizard-grid-2">
+              <div class="network-info-box">
+                <p class="share-card-title">1. Projector &amp; Congregation Phones</p>
+                <p>Open this link on your projector computer or scan the QR code on phones connected to the church Wi-Fi:</p>
+                <p class="share-url" id="wizard-projector-url">https://localhost:5173/subtitles.html</p>
+                <div class="share-qr-block">
+                  <div class="share-qr-frame">
+                    <canvas id="wizard-projector-qr-canvas" aria-label="QR code for projector and phone subtitles"></canvas>
+                  </div>
+                  <div class="share-link-actions">
+                    <button type="button" id="wizard-copy-projector-url" class="share-link-btn">Copy URL</button>
+                    <button type="button" id="wizard-open-projector-btn" class="share-link-btn">Open Projector</button>
+                  </div>
+                </div>
+                <small class="helper-text">Note: On another computer or phone, if the browser warns about a self-signed certificate the first time, click <strong>Advanced → Proceed</strong>.</small>
+              </div>
+
+              <div class="network-info-box">
+                <p class="share-card-title share-card-title-cyan">2. OBS Studio Overlay (Live Stream)</p>
+                <p>In OBS, add a <strong>Browser Source</strong> (set width to <code>1920</code> and height to <code>1080</code>) and paste this address once:</p>
+                <p class="share-url" id="wizard-obs-url">http://localhost:5174/?obs=true</p>
+                <div class="share-link-actions">
+                  <button type="button" id="wizard-copy-obs-url" class="share-link-btn">Copy OBS URL</button>
+                </div>
+                <small class="helper-text">The OBS overlay uses a transparent background and never shows a certificate warning.</small>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="wizard-footer">
+          <button type="button" id="wizard-back-btn" class="secondary-btn wizard-nav-btn" hidden>← Back</button>
+          <div class="wizard-footer-right">
+            <button type="button" id="wizard-next-btn" class="primary-btn wizard-nav-btn">Save &amp; Continue →</button>
+          </div>
+        </footer>
+      </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>

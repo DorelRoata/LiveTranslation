@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.5.2`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
+The current application version is `v1.5.3`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
 
 ## Screenshots
 
@@ -75,6 +75,27 @@ For source development with hot reload:
 ```bash
 npm run dev
 ```
+
+## Windows Easy Setup (No Pre-Installed Tools Needed)
+
+For church sound/media computers running Windows:
+
+1. Download **`LiveTranslate-Windows.zip`** from the [GitHub Releases page](https://github.com/DorelRoata/LiveTranslation/releases/latest) (or click **Code → Download ZIP** on GitHub) and extract the folder.
+2. Double-click **`install-windows.bat`**.
+3. The installer:
+   - Uses the bundled portable Node.js runtime (or downloads portable Node.js automatically on first run—you do **not** need to install Node.js or Git).
+   - Copies the application to `%LOCALAPPDATA%\LiveTranslation-App`.
+   - Places a **Live Translate** shortcut on your **Windows Desktop** and **Start Menu**.
+   - Opens the **First-Time Setup Wizard** in your browser (`https://localhost:5173/`) to guide you through pasting your church's Gemini API key, choosing languages (pre-configured for Romanian → English), testing your pulpit microphone, and connecting projectors/OBS.
+
+### Updating on Windows
+
+- Every time you open the **Live Translate** Desktop shortcut (or `start-windows.bat`), it checks GitHub Releases for a newer version and offers a one-click **Update and Start** prompt while keeping your saved API key (`%APPDATA%\LiveTranslation\config.json`), Bible cache, and settings untouched.
+- You can also double-click **`update-windows.bat`** at any time to check for and install the latest release immediately.
+
+### Publishing a New Release for Other Churches
+
+Pushing to the `release` branch (e.g. `git push origin main:release`) or pushing a version tag (`v*`) triggers `.github/workflows/release.yml`, which runs tests, builds the production `dist/` assets, bundles portable `node.exe` for Windows, and publishes `LiveTranslate-Windows.zip` to GitHub Releases.
 
 ## macOS Dock app
 

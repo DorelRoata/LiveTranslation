@@ -1,0 +1,83 @@
+name: Build and Publish Church Release
+
+on:
+  push:
+    branches:
+      - release
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Build Pre-Packaged Windows Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build production dashboard and assets
+        run: npm run build
+
+      - name: Prune development dependencies for lightweight bundle
+        run: npm prune --omit=dev
+
+      - name: Read version and write release-info.json
+        id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT=$(git rev-parse HEAD)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          node -e "
+            const fs = require('fs');
+            fs.writeFileSync('release-info.json', JSON.stringify({
+              version: '$VERSION',
+              commit: '$COMMIT',
+              branch: 'release',
+              builtAt: new Date().toISOString()
+            }, null, 2) + '\n');
+          "
+
+      - name: Bundle Portable Node.js for Windows x64
+        run: |
+          NODE_VER="v22.14.0"
+          curl -fsSL "https://nodejs.org/dist/${NODE_VER}/win-x64/node.exe" -o node.exe
+          mkdir -p bundle/LiveTranslate-Windows/node_binary/bin
+          mv node.exe bundle/LiveTranslate-Windows/node_binary/bin/node.exe
+
+      - name: Assemble LiveTranslate-Windows release archive
+        run: |
+          DEST="bundle/LiveTranslate-Windows"
+          cp -r dist node_modules public scripts src windows "$DEST/"
+          cp package.json package-lock.json release-info.json README.md "$DEST/"
+          cp server*.js "$DEST/"
+          cp install-windows.bat start-windows.bat update-windows.bat "$DEST/"
+          cd bundle
+          zip -qr ../LiveTranslate-Windows.zip LiveTranslate-Windows
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Live Translate ${{ steps.meta.outputs.tag }}
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            LiveTranslate-Windows.zip
+            install-windows.bat
