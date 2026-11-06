@@ -8,6 +8,8 @@ $ErrorActionPreference = 'Stop'
 
 if (-not $RepoRoot) {
   $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+} else {
+  $RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
 }
 
 $AppName = 'Live Translate'
@@ -37,6 +39,23 @@ function Show-Dialog {
   $iconEnum = [System.Windows.Forms.MessageBoxIcon]::$Icon
   $result = [System.Windows.Forms.MessageBox]::Show($Message, $Title, $btnEnum, $iconEnum)
   return $result.ToString()
+}
+
+function Invoke-NodeSilent {
+  param(
+    [string]$Executable = 'node',
+    [string[]]$Arguments = @()
+  )
+  $prevPref = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    & $Executable @Arguments >$null 2>$null
+    return ($LASTEXITCODE -eq 0)
+  } catch {
+    return $false
+  } finally {
+    $ErrorActionPreference = $prevPref
+  }
 }
 
 function Get-RunningInstance {
@@ -78,6 +97,21 @@ function Get-LocalVersion {
   return '0.0.0'
 }
 
+function Get-LocalCommit {
+  param([string]$Root)
+  $infoPath = Join-Path $Root 'release-info.json'
+  if (Test-Path $infoPath) {
+    try {
+      $info = Get-Content $infoPath -Raw | ConvertFrom-Json
+      if ($info.commit) {
+        $commitStr = [string]$info.commit
+        return $commitStr.Substring(0, [Math]::Min(7, $commitStr.Length))
+      }
+    } catch {}
+  }
+  return ''
+}
+
 function Compare-Semver {
   param([string]$Current, [string]$Remote)
   $c = ($Current -replace '^v', '').Split('-')[0].Split('.')
@@ -113,6 +147,8 @@ function Ensure-PortableNode {
   # 2. Check system node (>= 20.19)
   $sysNode = Get-Command node -ErrorAction SilentlyContinue
   if ($sysNode) {
+    $prevPref = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try {
       $verRaw = & $sysNode.Source -v 2>$null
       if ($verRaw -match '^v(\d+)\.(\d+)') {
@@ -122,7 +158,9 @@ function Ensure-PortableNode {
           return $sysNode.Source
         }
       }
-    } catch {}
+    } catch {} finally {
+      $ErrorActionPreference = $prevPref
+    }
   }
 
   # 3. Automatically download portable Node.js so the user needs nothing installed
@@ -154,24 +192,25 @@ function Ensure-AppReady {
   Push-Location $Root
   try {
     $distIndex = Join-Path $Root 'dist\index.html'
+    $distSubtitles = Join-Path $Root 'dist\subtitles.html'
+    $distAudioSender = Join-Path $Root 'dist\audio-sender.html'
     $wsModule = Join-Path $Root 'node_modules\ws\package.json'
     $sslModule = Join-Path $Root 'node_modules\@vitejs\plugin-basic-ssl\package.json'
-    $viteModule = Join-Path $Root 'node_modules\vite\package.json'
+    $releaseInfo = Join-Path $Root 'release-info.json'
+    $gitDir = Join-Path $Root '.git'
 
-    # If this is a pre-built Release package, dist/ and runtime node_modules are already ready!
-    if ((Test-Path $distIndex) -and (Test-Path $wsModule) -and (Test-Path $sslModule) -and -not (Test-Path $viteModule)) {
+    # If this is a pre-built Release package (or non-git install with built assets), dist/ and runtime node_modules are already ready!
+    if ((Test-Path $distIndex) -and (Test-Path $distSubtitles) -and (Test-Path $distAudioSender) -and (Test-Path $wsModule) -and (Test-Path $sslModule) -and ((Test-Path $releaseInfo) -or -not (Test-Path $gitDir))) {
       return
     }
 
-    & node scripts\runtime-state.js dependencies-ready >$null 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    if (-not (Invoke-NodeSilent -Executable 'node' -Arguments @('scripts\runtime-state.js', 'dependencies-ready'))) {
       Write-Host "Installing required packages (one-time setup)..." -ForegroundColor Yellow
       & npm.cmd ci
       if ($LASTEXITCODE -ne 0) { throw "npm ci failed." }
     }
 
-    & node scripts\runtime-state.js build-ready >$null 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    if (-not (Invoke-NodeSilent -Executable 'node' -Arguments @('scripts\runtime-state.js', 'build-ready'))) {
       Write-Host "Preparing Live Translate interface..." -ForegroundColor Yellow
       & npm.cmd run build
       if ($LASTEXITCODE -ne 0) { throw "npm run build failed." }
@@ -184,13 +223,17 @@ function Ensure-AppReady {
 function Check-RemoteUpdate {
   param([string]$Root)
   $localVer = Get-LocalVersion -Root $Root
+  $localCommit = Get-LocalCommit -Root $Root
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   $headers = @{ 'User-Agent' = "LiveTranslate/$localVer"; 'Accept' = 'application/vnd.github+json' }
 
   try {
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$GitHubRepo/releases/latest" -Headers $headers -TimeoutSec 6 -ErrorAction Stop
     $remoteTag = [string]$release.tag_name
-    if ($remoteTag -and (Compare-Semver -Current $localVer -Remote $remoteTag)) {
+    $remoteCommit = if ($release.target_commitish -match '^[0-9a-f]{7,40}$') { ([string]$release.target_commitish).Substring(0, 7) } else { '' }
+    $versionNewer = $remoteTag -and (Compare-Semver -Current $localVer -Remote $remoteTag)
+    $sameVersionNewCommit = (($remoteTag -replace '^v', '') -eq ($localVer -replace '^v', '')) -and $localCommit -and $remoteCommit -and ($localCommit -ne $remoteCommit)
+    if ($versionNewer -or $sameVersionNewCommit) {
       $zipAsset = $null
       foreach ($asset in $release.assets) {
         if ($asset.name -match 'Windows.*\.zip$' -or $asset.name -match 'LiveTranslate.*\.zip$') {
@@ -283,6 +326,10 @@ function Install-ZipUpdate {
 
 function Create-Shortcuts {
   param([string]$TargetRoot)
+  if ($env:LIVE_TRANSLATE_DRY_RUN -eq '1') {
+    Write-Output "[DryRun] Shortcuts created for $TargetRoot"
+    return
+  }
   $startBat = Join-Path $TargetRoot 'start-windows.bat'
   $wsh = New-Object -ComObject WScript.Shell
 
@@ -307,6 +354,12 @@ if ($Action -eq 'Install') {
   Write-Host " Installing Live Translate for Windows..." -ForegroundColor Cyan
   Write-Host "==============================================================" -ForegroundColor Cyan
 
+  $running = Get-RunningInstance
+  if ($running -and -not $running.translationActive) {
+    try { Invoke-RestMethod -Uri "$DashboardUrl/api/shutdown" -Method Post -TimeoutSec 3 | Out-Null } catch {}
+    Start-Sleep -Seconds 1
+  }
+
   $targetRoot = $RepoRoot
   # If the user ran install-windows.bat from Downloads or a temporary folder and not a git repo, copy to %LOCALAPPDATA%\LiveTranslation-App
   $isGitRepo = Test-Path (Join-Path $RepoRoot '.git')
@@ -326,12 +379,21 @@ if ($Action -eq 'Install') {
 
   $choice = Show-Dialog -Title 'Live Translate Installed' -Message "Live Translate is installed and ready!`n`nA 'Live Translate' shortcut has been placed on your Windows Desktop and Start Menu.`n`nWould you like to launch Live Translate now?" -Buttons 'YesNo' -Icon 'Information'
   if ($choice -eq 'Yes' -or $choice -eq 'OK') {
-    & $PSCommandPath -Action Start -RepoRoot $targetRoot
+    $installedScript = Join-Path $targetRoot 'windows\launch-live-translate.ps1'
+    if (Test-Path $installedScript) {
+      & $installedScript -Action Start -RepoRoot $targetRoot
+    } else {
+      & $PSCommandPath -Action Start -RepoRoot $targetRoot
+    }
   }
   exit 0
 }
 
 if ($Action -eq 'Update') {
+  Write-Host "==============================================================" -ForegroundColor Cyan
+  Write-Host " Checking for Live Translate Updates..." -ForegroundColor Cyan
+  Write-Host "==============================================================" -ForegroundColor Cyan
+
   $running = Get-RunningInstance
   if ($running -and $running.translationActive) {
     Show-Dialog -Title 'Live Translate Update' -Message 'A live translation session is currently active. Stop translation before installing an update.' -Buttons 'OK' -Icon 'Warning' | Out-Null
@@ -379,6 +441,11 @@ if ($updateInfo.Available) {
 
 Ensure-AppReady -Root $RepoRoot
 
+if ($env:LIVE_TRANSLATE_DRY_RUN -eq '1') {
+  Write-Output "[DryRun] Server ready to start at $RepoRoot"
+  exit 0
+}
+
 Write-Host ""
 Write-Host "==============================================================" -ForegroundColor Green
 Write-Host " Starting Live Translate Server on $DashboardUrl" -ForegroundColor Green
@@ -392,6 +459,7 @@ Start-Job -ScriptBlock {
     Start-Sleep -Milliseconds 500
     try {
       [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+      [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
       $req = [System.Net.WebRequest]::Create("$Url/api/instance")
       $req.Timeout = 1000
       $resp = $req.GetResponse()

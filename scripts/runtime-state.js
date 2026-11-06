@@ -15,6 +15,10 @@ const requiredPackages = [
   'vite',
   'ws'
 ];
+const runtimePackages = [
+  '@vitejs/plugin-basic-ssl',
+  'ws'
+];
 const buildInputs = [
   'audio-sender.html',
   'index.html',
@@ -98,23 +102,46 @@ async function readStamp(stampPath) {
   }
 }
 
-async function dependenciesAreReady() {
-  const stamp = await readStamp(dependencyStampPath);
-  if (stamp?.fingerprint !== await dependencyFingerprint()) return false;
-
-  const require = createRequire(import.meta.url);
+async function isPrebuiltRelease() {
   try {
+    const stat = await fs.stat(path.join(projectRoot, 'release-info.json'));
+    if (stat.isFile()) return true;
+  } catch {}
+  try {
+    await fs.stat(path.join(projectRoot, '.git'));
+    return false;
+  } catch {
+    try {
+      const distStat = await fs.stat(path.join(projectRoot, 'dist', 'index.html'));
+      return distStat.isFile() && distStat.size > 0;
+    } catch {
+      return false;
+    }
+  }
+}
+
+async function dependenciesAreReady() {
+  const require = createRequire(import.meta.url);
+  if (await isPrebuiltRelease()) {
+    try {
+      for (const packageName of runtimePackages) require.resolve(packageName);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    const stamp = await readStamp(dependencyStampPath);
+    if (stamp?.fingerprint !== await dependencyFingerprint()) return false;
     for (const packageName of requiredPackages) require.resolve(packageName);
+    return true;
   } catch {
     return false;
   }
-  return true;
 }
 
 async function buildIsReady() {
-  const stamp = await readStamp(buildStampPath);
-  if (stamp?.fingerprint !== await buildFingerprint()) return false;
-
   try {
     for (const relativePath of requiredBuildFiles) {
       const fileStat = await fs.stat(path.join(projectRoot, 'dist', relativePath));
@@ -123,7 +150,16 @@ async function buildIsReady() {
   } catch {
     return false;
   }
-  return true;
+
+  if (await isPrebuiltRelease()) return true;
+
+  try {
+    const stamp = await readStamp(buildStampPath);
+    if (stamp?.fingerprint !== await buildFingerprint()) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function writeStamp(stampPath, fingerprint) {

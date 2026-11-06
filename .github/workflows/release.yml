@@ -34,9 +34,6 @@ jobs:
       - name: Build production dashboard and assets
         run: npm run build
 
-      - name: Prune development dependencies for lightweight bundle
-        run: npm prune --omit=dev
-
       - name: Read version and write release-info.json
         id: meta
         run: |
@@ -64,7 +61,11 @@ jobs:
       - name: Assemble LiveTranslate-Windows release archive
         run: |
           DEST="bundle/LiveTranslate-Windows"
-          cp -r dist node_modules public scripts src windows "$DEST/"
+          mkdir -p "$DEST/node_modules/@vitejs"
+          cp -r dist public scripts src windows "$DEST/"
+          cp -r node_modules/ws "$DEST/node_modules/"
+          cp -r node_modules/@vitejs/plugin-basic-ssl "$DEST/node_modules/@vitejs/"
+          cp audio-sender.html index.html subtitles.html vite.config.js "$DEST/"
           cp package.json package-lock.json release-info.json README.md "$DEST/"
           cp server*.js "$DEST/"
           cp install-windows.bat start-windows.bat update-windows.bat "$DEST/"
