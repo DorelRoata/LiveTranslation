@@ -18,6 +18,7 @@ function formatLeft(ms) {
 export function createNotesConsole({ send, log = () => {} }) {
   const $ = id => document.getElementById(id);
   const ui = {
+    console: $('notes-console'),
     status: $('notes-status'),
     summaryToggle: $('notes-summary-toggle'),
     versesToggle: $('notes-verses-toggle'),
@@ -27,6 +28,7 @@ export function createNotesConsole({ send, log = () => {} }) {
     onscreenLabel: document.querySelector('.notes-onscreen-label'),
     verseSeconds: $('notes-verse-seconds'),
     englishBible: $('notes-english-bible'),
+    bibleSize: $('notes-bible-size'),
     newMessage: $('notes-new-message-btn'),
     update: $('notes-update-btn'),
     recap: $('notes-recap-btn'),
@@ -82,15 +84,24 @@ export function createNotesConsole({ send, log = () => {} }) {
     ui.followToggle.disabled = !settings.verses;
     ui.verseSeconds.value = String(settings.verseSeconds);
     ui.englishBible.value = settings.englishBible;
+    if (ui.bibleSize) ui.bibleSize.value = settings.bibleSize || DEFAULT_NOTES_SETTINGS.bibleSize;
+    if (ui.console) ui.console.dataset.summary = settings.notes ? 'on' : 'off';
   }
 
   function renderStatus() {
     const status = state?.status || { state: 'waiting' };
+    const summaryOn = state ? Boolean(state.settings?.notes) : false;
+    const versesOn = state ? state.settings?.verses !== false : true;
     let text = '';
     let tone = status.state;
-    if (!state?.settings?.notes) {
-      text = 'Summary off — verses only';
-      tone = 'off';
+    if (!summaryOn) {
+      if (versesOn) {
+        text = 'Bible verses on · Summary off';
+        tone = 'ready';
+      } else {
+        text = 'Bible & summary off';
+        tone = 'off';
+      }
     } else if (status.state === 'updating') {
       text = 'Updating…';
     } else if (status.state === 'error') {
@@ -113,6 +124,7 @@ export function createNotesConsole({ send, log = () => {} }) {
   function renderPreview() {
     const notes = state?.notes;
     const has = notesHaveContent(notes, 'lang1');
+    if (ui.console) ui.console.dataset.hasNotes = has ? 'true' : 'false';
     ui.empty.hidden = has;
     ui.title.textContent = notes?.title?.lang1 || '';
     ui.title.hidden = !ui.title.textContent;
@@ -206,6 +218,8 @@ export function createNotesConsole({ send, log = () => {} }) {
     const parts = [
       `summary ${settings.notes ? 'on' : 'off'}`,
       `verse pop-ups ${settings.verses ? `on (${settings.verseSeconds}s)` : 'off'}`,
+      `english Bible ${(settings.englishBible || 'kjv').toUpperCase()}`,
+      `bible text ${settings.bibleSize || 'lg'}`,
       `follow reading ${settings.follow ? 'on' : 'off'}`,
       `spoken-language verses ${settings.spokenVerses ? 'on' : 'off'}${state.source?.name ? ` (${state.source.name})` : ''}`,
       `status ${state.status?.state || 'unknown'}${state.status?.detail ? ` (${state.status.detail})` : ''}`,
@@ -214,12 +228,16 @@ export function createNotesConsole({ send, log = () => {} }) {
     return parts.join(', ');
   }
 
-  ui.summaryToggle.addEventListener('change', () => sendSettings({ notes: ui.summaryToggle.checked }));
+  ui.summaryToggle.addEventListener('change', () => {
+    if (ui.console) ui.console.dataset.summary = ui.summaryToggle.checked ? 'on' : 'off';
+    sendSettings({ notes: ui.summaryToggle.checked });
+  });
   ui.versesToggle.addEventListener('change', () => sendSettings({ verses: ui.versesToggle.checked }));
   ui.followToggle.addEventListener('change', () => sendSettings({ follow: ui.followToggle.checked }));
   ui.spokenToggle.addEventListener('change', () => sendSettings({ spokenVerses: ui.spokenToggle.checked }));
   ui.verseSeconds.addEventListener('change', () => sendSettings({ verseSeconds: Number(ui.verseSeconds.value) }));
   ui.englishBible.addEventListener('change', () => sendSettings({ englishBible: ui.englishBible.value }));
+  ui.bibleSize?.addEventListener('change', () => sendSettings({ bibleSize: ui.bibleSize.value }));
 
   ui.newMessage.addEventListener('click', () => {
     const hasContent = notesHaveContent(state?.notes, 'lang1') || state?.verses?.length;

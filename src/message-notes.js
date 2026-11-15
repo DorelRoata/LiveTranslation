@@ -8,21 +8,26 @@ import { parseReference } from './bible-references.js';
 export const NOTES_MODEL = 'gemini-flash-latest';
 export const NOTES_FALLBACK_MODEL = 'gemini-2.5-flash';
 export const VERSE_SECONDS_OPTIONS = Object.freeze([30, 60, 90, 120, 180]);
+export const BIBLE_SIZE_OPTIONS = Object.freeze(['md', 'lg', 'xl']);
 export const ENGLISH_BIBLES = Object.freeze([
   { id: 'kjv', label: 'King James Version (KJV)' },
+  { id: 'nkjv', label: 'New King James Version (NKJV)' },
+  { id: 'niv', label: 'New International Version (NIV)' },
+  { id: 'esv', label: 'English Standard Version (ESV)' },
   { id: 'web', label: 'World English Bible (WEB)' },
   { id: 'asv', label: 'American Standard Version (ASV)' }
 ]);
 
 export const DEFAULT_NOTES_SETTINGS = Object.freeze({
-  notes: true,
+  notes: false,
   verses: true,
   // The verse card follows a passage being read aloud, verse by verse.
   follow: true,
   // One-language screens also show the verse in the spoken language's Bible.
   spokenVerses: true,
   verseSeconds: 60,
-  englishBible: 'kjv'
+  englishBible: 'kjv',
+  bibleSize: 'lg'
 });
 
 export const MAX_POINTS = 6;
@@ -40,6 +45,7 @@ export function normalizeNotesSettings(input = {}, base = DEFAULT_NOTES_SETTINGS
   const seconds = Number(input.verseSeconds);
   if (VERSE_SECONDS_OPTIONS.includes(seconds)) settings.verseSeconds = seconds;
   if (ENGLISH_BIBLES.some(bible => bible.id === input.englishBible)) settings.englishBible = input.englishBible;
+  if (BIBLE_SIZE_OPTIONS.includes(input.bibleSize)) settings.bibleSize = input.bibleSize;
   return settings;
 }
 

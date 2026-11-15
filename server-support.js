@@ -5,7 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
 import { appendLaneText, applyRelaySnapshot, emptyLaneState, laneDisplayText, pieceToAppend } from './src/caption-stream.js';
-import { buildSystemSetup } from './src/system-setup.js';
+import { buildSystemSetup, normalizeSubtitleFont, normalizeSubtitleLineCount, normalizeSubtitleTextSize } from './src/system-setup.js';
 import { createMessageNotes } from './server-message-notes.js';
 
 const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
@@ -647,6 +647,22 @@ export function attachLocalRelay(httpServer, existingRelay = null, { notesOption
           Object.assign(subtitleState, buildSystemSetup(data));
           notes.setLanguages(subtitleState);
           broadcast(syncMessage());
+        } else if (data.type === 'projector-display') {
+          subtitleState.subtitleLineCount = normalizeSubtitleLineCount(
+            data.subtitleLineCount ?? data.lineCount ?? subtitleState.subtitleLineCount
+          );
+          subtitleState.subtitleTextSize = normalizeSubtitleTextSize(
+            data.subtitleTextSize ?? data.textSize ?? subtitleState.subtitleTextSize
+          );
+          subtitleState.subtitleFont = normalizeSubtitleFont(
+            data.subtitleFont ?? data.font ?? subtitleState.subtitleFont
+          );
+          broadcast(JSON.stringify({
+            type: 'projector-display',
+            subtitleLineCount: subtitleState.subtitleLineCount,
+            subtitleTextSize: subtitleState.subtitleTextSize,
+            subtitleFont: subtitleState.subtitleFont
+          }), ws);
         } else if (data.type === 'source-append') {
           // The preacher's own words, for Bible references and message notes.
           if (typeof data.text !== 'string' || data.text.length > 4000) return;
@@ -743,6 +759,9 @@ export function attachLocalRelay(httpServer, existingRelay = null, { notesOption
         targetLanguageName2: typeof subtitleState.targetLanguageName2 === 'string' ? subtitleState.targetLanguageName2 : '',
         isDual: Boolean(subtitleState.isDual),
         subtitlePacing: typeof subtitleState.subtitlePacing === 'string' ? subtitleState.subtitlePacing : 'smooth',
+        subtitleLineCount: normalizeSubtitleLineCount(subtitleState.subtitleLineCount),
+        subtitleTextSize: normalizeSubtitleTextSize(subtitleState.subtitleTextSize),
+        subtitleFont: normalizeSubtitleFont(subtitleState.subtitleFont),
         obsLanguage: typeof subtitleState.obsLanguage === 'string' ? subtitleState.obsLanguage : 'both'
       },
       previews: {

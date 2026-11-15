@@ -25,6 +25,23 @@ export const LANGUAGE_NAMES = Object.freeze({
   sr: 'Serbian'
 });
 
+export const SUBTITLE_LINE_COUNTS = Object.freeze([2, 3, 4, 5]);
+export const SUBTITLE_TEXT_SIZES = Object.freeze(['lg', 'xl']);
+export const SUBTITLE_FONTS = Object.freeze(['outfit', 'hyperlegible', 'condensed', 'sans', 'serif']);
+
+export function normalizeSubtitleLineCount(value) {
+  const count = Number(value);
+  return SUBTITLE_LINE_COUNTS.includes(count) ? count : 3;
+}
+
+export function normalizeSubtitleTextSize(value) {
+  return SUBTITLE_TEXT_SIZES.includes(value) ? value : 'lg';
+}
+
+export function normalizeSubtitleFont(value) {
+  return SUBTITLE_FONTS.includes(value) ? value : 'outfit';
+}
+
 export function getLanguageName(code, fallback = '') {
   if (!code || code === 'none') return fallback;
   return LANGUAGE_NAMES[String(code).toLowerCase()] || String(code).toUpperCase();
@@ -46,6 +63,9 @@ export function buildSystemSetup(input = {}) {
     targetLanguageName1: getLanguageName(targetLanguage1, 'Language 1'),
     targetLanguageName2: isDual ? getLanguageName(targetLanguage2, 'Language 2') : '',
     subtitlePacing: normalizePacingMode(input.subtitlePacing),
+    subtitleLineCount: normalizeSubtitleLineCount(input.subtitleLineCount),
+    subtitleTextSize: normalizeSubtitleTextSize(input.subtitleTextSize),
+    subtitleFont: normalizeSubtitleFont(input.subtitleFont),
     isDual,
     obsLanguage: normalizeObsLanguage(input.obsLanguage)
   };

@@ -1,13 +1,22 @@
 // Bible text for verse pop-ups, from the getBible API (api.getbible.net, public
-// domain and freely distributed translations). Each chapter is kept on disk
-// after the first use, so a verse read before needs no network; so is every
-// book downloaded for following readings, which also serves its chapters.
+// domain translations), Bolls (bolls.life, NKJV/ESV), and jsDelivr/GitHub (NIV).
+// Each chapter or book is kept on disk after the first use so verses already
+// read need no network; whole books downloaded for following readings also serve
+// individual chapters.
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { BOOKS, formatReference, referenceInScheme, referenceVerses, verseCount } from './src/bible-references.js';
 
 const API = 'https://api.getbible.net/v2';
+const BOLLS_API = 'https://bolls.life';
+// Never use bolls.life for NIV: it serves a publisher prohibition message instead of Scripture.
+const BOLLS_SLUGS = { nkjv: 'NKJV', esv: 'ESV' };
+const NIV_BASES = [
+  'https://cdn.jsdelivr.net/gh/aruljohn/Bible-niv@main',
+  'https://raw.githubusercontent.com/aruljohn/Bible-niv/main'
+];
 const FETCH_TIMEOUT_MS = 4000;
+const BULK_TIMEOUT_MS = 20_000;
 const MAX_VERSES_SHOWN = 6;
 const MAX_TEXT_CHARS = 900;
 
@@ -35,7 +44,7 @@ export const LANGUAGE_BIBLES = Object.freeze({
   tr: { id: 'turkish', label: 'Kutsal Kitap', scheme: 'eng' }
 });
 
-const ENGLISH_LABELS = { kjv: 'KJV', web: 'WEB', asv: 'ASV' };
+const ENGLISH_LABELS = { kjv: 'KJV', nkjv: 'NKJV', niv: 'NIV', esv: 'ESV', web: 'WEB', asv: 'ASV' };
 
 // "Psalms 23" reads as one psalm in most languages.
 const ONE_PSALM = { en: 'Psalm', ro: 'Psalmul', ru: 'Псалом', uk: 'Псалом', es: 'Salmo', fr: 'Psaume', de: 'Psalm', pt: 'Salmo', it: 'Salmo', pl: 'Psalm' };
@@ -50,15 +59,71 @@ export function bibleForLanguage(language, englishBible = 'kjv') {
   return bible ? { ...bible, language: code } : null;
 }
 
+function isPublisherNotice(text) {
+  return /biblica,\s*inc\.\s*has\s*prohibited/i.test(String(text || ''));
+}
+
+// NKJV Psalm superscriptions begin with a balanced <i>...</i> block (often with
+// nested <i>A Psalm</i>) immediately followed by a duplicate closing </i>.
+function stripDoubledItalicPrefix(value) {
+  if (!/^<i>/i.test(value)) return value;
+  const tagPattern = /<\/?i>/gi;
+  let depth = 0;
+  let match;
+  while ((match = tagPattern.exec(value))) {
+    depth += match[0].toLowerCase() === '<i>' ? 1 : -1;
+    if (depth === 0) {
+      const rest = value.slice(tagPattern.lastIndex);
+      if (/^\s*<\/i>\s*/i.test(rest)) return rest.replace(/^\s*<\/i>\s*/i, '');
+      return value;
+    }
+  }
+  return value;
+}
+
+function decodeHtmlEntities(text) {
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => {
+      const n = Number(code);
+      return Number.isFinite(n) ? String.fromCodePoint(n) : '';
+    });
+}
+
+export function cleanBollsText(text) {
+  if (isPublisherNotice(text)) return '';
+  let value = stripDoubledItalicPrefix(String(text || '').trim());
+  // ESV embeds mid-verse section headings in <b>...</b>.
+  value = value.replace(/<b>[\s\S]*?<\/b>/gi, ' ');
+  // NKJV uses <i>...</i> for supplied words, including inside words (e.g. corner<i>stone,</i>).
+  value = value.replace(/<\/?i>/gi, '');
+  value = value.replace(/<br\s*\/?>/gi, ' ');
+  value = value.replace(/<[^>]+>/g, ' ');
+  value = decodeHtmlEntities(value).replace(/\s+/g, ' ').trim();
+  return isPublisherNotice(value) ? '' : value;
+}
+
 // Cornilescu is stored with cedilla letters (ş, ţ); Romanian uses commas.
 function cleanVerseText(text, language) {
+  if (isPublisherNotice(text)) return '';
   let value = String(text || '').replace(/[¶]/g, '').replace(/\s+/g, ' ').trim();
   if (language === 'ro') value = value.replace(/ş/g, 'ș').replace(/ţ/g, 'ț').replace(/Ş/g, 'Ș').replace(/Ţ/g, 'Ț');
   return value;
 }
 
+function nivBookFile(book) {
+  if (book === 22) return 'Song Of Solomon';
+  return BOOKS[book - 1]?.name || '';
+}
+
 export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, logger = console } = {}) {
   const chapters = new Map();
+  const books = new Map();
   const bookNames = new Map();
   const inFlight = new Map();
 
@@ -82,8 +147,8 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
     }
   }
 
-  async function fetchJson(url) {
-    const response = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  async function fetchJson(url, timeoutMs = FETCH_TIMEOUT_MS) {
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   }
@@ -95,6 +160,74 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
     return promise;
   }
 
+  function rememberBook(key, value) {
+    books.set(key, value);
+    if (books.size > 140) books.delete(books.keys().next().value);
+  }
+
+  async function loadNivBook(book) {
+    const filename = nivBookFile(book);
+    if (!filename) return null;
+    let data = null;
+    let lastError = null;
+    for (const base of NIV_BASES) {
+      try {
+        data = await fetchJson(`${base}/${encodeURIComponent(filename)}.json`, BULK_TIMEOUT_MS);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (!data) throw lastError || new Error('NIV book download failed');
+    const value = { chapters: {} };
+    for (const chapter of data.chapters || []) {
+      const chNum = Number(chapter.chapter);
+      if (!chNum) continue;
+      const verses = {};
+      for (const verse of chapter.verses || []) {
+        const vNum = Number(verse.verse);
+        const text = cleanVerseText(verse.text, 'en');
+        if (vNum && text) verses[vNum] = text;
+      }
+      if (Object.keys(verses).length) value.chapters[chNum] = verses;
+    }
+    if (!Object.keys(value.chapters).length) return null;
+    rememberBook(`niv/${book}`, value);
+    await writeCache(`niv/book-${book}.json`, value);
+    return value;
+  }
+
+  async function loadBollsBulk(translation) {
+    const slug = BOLLS_SLUGS[translation];
+    return once(`bulk/${translation}`, async () => {
+      const rows = await fetchJson(`${BOLLS_API}/static/translations/${slug}.json`, BULK_TIMEOUT_MS);
+      if (!Array.isArray(rows)) throw new Error(`Unexpected bulk payload for ${slug}`);
+      const grouped = new Map();
+      for (const row of rows) {
+        const bookNum = Number(row.book);
+        const chNum = Number(row.chapter);
+        const vNum = Number(row.verse);
+        if (!bookNum || !chNum || !vNum) continue;
+        const text = cleanBollsText(row.text);
+        if (!text) continue;
+        let bookEntry = grouped.get(bookNum);
+        if (!bookEntry) {
+          bookEntry = { chapters: {} };
+          grouped.set(bookNum, bookEntry);
+        }
+        if (!bookEntry.chapters[chNum]) bookEntry.chapters[chNum] = {};
+        bookEntry.chapters[chNum][vNum] = text;
+      }
+      const writes = [];
+      for (const [bookNum, value] of grouped.entries()) {
+        rememberBook(`${translation}/${bookNum}`, value);
+        writes.push(writeCache(`${translation}/book-${bookNum}.json`, value));
+      }
+      await Promise.all(writes);
+      return grouped;
+    });
+  }
+
   // { bookName, verses: { [n]: text } } or null when it cannot be loaded.
   async function getChapter(translation, book, chapter) {
     const key = `${translation}/${book}/${chapter}`;
@@ -103,17 +236,36 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
       const file = `${translation}/${book}-${chapter}.json`;
       let value = await readCache(file);
       if (!value) {
-        const verses = (await readCache(`${translation}/book-${book}.json`))?.chapters?.[chapter];
-        if (verses && Object.keys(verses).length) value = { bookName: '', verses };
+        const bookData = books.get(`${translation}/${book}`) || await readCache(`${translation}/book-${book}.json`);
+        const verses = bookData?.chapters?.[chapter];
+        if (verses && Object.keys(verses).length) value = { bookName: BOOKS[book - 1]?.name || '', verses };
       }
       if (!value) {
         try {
-          const data = await fetchJson(`${API}/${translation}/${book}/${chapter}.json`);
-          const verses = {};
-          for (const verse of data.verses || []) verses[verse.verse] = verse.text;
-          value = { bookName: String(data.book_name || '').trim(), verses };
-          if (!Object.keys(verses).length) return null;
-          void writeCache(file, value);
+          if (translation === 'niv') {
+            const bookData = await getBook('niv', book);
+            const verses = bookData?.chapters?.[chapter];
+            if (!verses || !Object.keys(verses).length) return null;
+            value = { bookName: BOOKS[book - 1]?.name || '', verses };
+          } else if (BOLLS_SLUGS[translation]) {
+            const rows = await fetchJson(`${BOLLS_API}/get-text/${BOLLS_SLUGS[translation]}/${book}/${chapter}/`);
+            const verses = {};
+            for (const row of Array.isArray(rows) ? rows : []) {
+              const vNum = Number(row.verse);
+              const text = cleanBollsText(row.text);
+              if (vNum && text) verses[vNum] = text;
+            }
+            if (!Object.keys(verses).length) return null;
+            value = { bookName: BOOKS[book - 1]?.name || '', verses };
+            void writeCache(file, value);
+          } else {
+            const data = await fetchJson(`${API}/${translation}/${book}/${chapter}.json`);
+            const verses = {};
+            for (const verse of data.verses || []) verses[verse.verse] = verse.text;
+            value = { bookName: String(data.book_name || '').trim(), verses };
+            if (!Object.keys(verses).length) return null;
+            void writeCache(file, value);
+          }
         } catch (error) {
           logger.warn?.(`Bible text unavailable (${key}): ${error.message}`);
           return null;
@@ -129,10 +281,22 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
   // reading index. Kept on disk like chapters.
   async function getBook(translation, book) {
     return once(`book/${translation}/${book}`, async () => {
+      const mem = books.get(`${translation}/${book}`);
+      if (mem) return mem;
       const file = `${translation}/book-${book}.json`;
       const cached = await readCache(file);
-      if (cached) return cached;
+      if (cached) {
+        rememberBook(`${translation}/${book}`, cached);
+        return cached;
+      }
       try {
+        if (translation === 'niv') {
+          return await loadNivBook(book);
+        }
+        if (BOLLS_SLUGS[translation]) {
+          const grouped = await loadBollsBulk(translation);
+          return grouped.get(Number(book)) || books.get(`${translation}/${book}`) || null;
+        }
         const data = await fetchJson(`${API}/${translation}/${book}.json`);
         const value = { chapters: {} };
         for (const chapter of data.chapters || []) {
@@ -141,6 +305,7 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
           value.chapters[chapter.chapter] = verses;
         }
         if (!Object.keys(value.chapters).length) return null;
+        rememberBook(`${translation}/${book}`, value);
         await writeCache(file, value);
         return value;
       } catch (error) {
@@ -201,8 +366,16 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
     if (!chapter || !mapped.verseStart || mapped.chapterEnd) return passage;
 
     const expected = verseCount(mapped.book, mapped.chapter, bible.scheme);
-    const actual = Object.keys(chapter.verses).length;
-    if (expected && actual !== expected && !(mapped.book >= 40 && Math.abs(actual - expected) === 1)) return passage;
+    const keys = Object.keys(chapter.verses).map(Number).filter(n => Number.isInteger(n) && n > 0);
+    if (!keys.length) return passage;
+    const actual = keys.length;
+    const maxVerse = Math.max(...keys);
+    if (expected) {
+      const valid = mapped.book < 40
+        ? actual === expected && maxVerse === expected
+        : Math.abs(maxVerse - expected) <= 1 && Math.abs(actual - expected) <= 3;
+      if (!valid) return passage;
+    }
 
     let chars = 0;
     for (const n of referenceVerses(mapped)) {

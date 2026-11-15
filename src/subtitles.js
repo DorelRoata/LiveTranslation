@@ -1,7 +1,11 @@
+import '@fontsource/atkinson-hyperlegible/400.css';
+import '@fontsource/atkinson-hyperlegible/700.css';
+import '@fontsource/barlow-semi-condensed/600.css';
+import '@fontsource/barlow-semi-condensed/700.css';
 import QRCode from 'qrcode';
 import { obsLanguageToViewMode } from './obs-language.js';
 import { emptyLaneState, laneUpdatePlan, normalizeLaneState } from './caption-stream.js';
-import { getLanguageName } from './system-setup.js';
+import { getLanguageName, normalizeSubtitleFont, normalizeSubtitleLineCount, normalizeSubtitleTextSize } from './system-setup.js';
 import { decodePcm16Base64, schedulePlayback } from './pcm-audio.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import { createMessageNotesView } from './message-notes-view.js';
@@ -44,6 +48,9 @@ let subtitleState = {
   targetLanguageName1: "",
   targetLanguageName2: "",
   subtitlePacing: "smooth",
+  subtitleLineCount: 3,
+  subtitleTextSize: "lg",
+  subtitleFont: "outfit",
   isDual: false,
   obsLanguage: "both"
 };
@@ -83,6 +90,7 @@ const btnAudioToggle = document.getElementById('btn-audio-toggle');
 const btnWakeLock = document.getElementById('btn-wake-lock');
 const subtitleLineButtons = document.querySelectorAll('.subtitle-lines-btn');
 const subtitleSizeButtons = document.querySelectorAll('.subtitle-size-btn');
+const subtitleFontSelect = document.getElementById('subtitle-font-select');
 const secLang1 = document.getElementById('sec-lang1');
 const secLang2 = document.getElementById('sec-lang2');
 
@@ -136,7 +144,9 @@ if (obsMode) document.body.classList.add('obs-mode');
 notesView.setView({ obs: obsMode });
 let audioEnabled = false;
 let visibleLineCount = 3;
-let subtitleTextSize = 'md';
+let subtitleTextSize = 'lg';
+let subtitleFont = 'outfit';
+let hasLocalDisplayOverride = false;
 const SUBTITLE_DISPLAY_SETTINGS_KEY = 'live_translate_subtitle_display';
 
 const wakeLock = createScreenWakeLock(({ status, supported, desired, active }) => {
@@ -223,10 +233,14 @@ function scheduleVisibleLaneReflow() {
 window.addEventListener('resize', scheduleVisibleLaneReflow, { passive: true });
 document.fonts?.ready.then(scheduleVisibleLaneReflow);
 
-function applySubtitleDisplaySettings(lineCount, textSize, persist = true) {
-  visibleLineCount = Number(lineCount) === 2 ? 2 : 3;
-  subtitleTextSize = ['sm', 'md', 'lg'].includes(textSize) ? textSize : 'md';
+function applySubtitleDisplaySettings(lineCount, textSize, font = subtitleFont, persist = true) {
+  visibleLineCount = normalizeSubtitleLineCount(lineCount);
+  subtitleTextSize = normalizeSubtitleTextSize(textSize);
+  subtitleFont = normalizeSubtitleFont(font);
   document.body.dataset.subtitleSize = subtitleTextSize;
+  document.body.dataset.subtitleLines = String(visibleLineCount);
+  document.body.dataset.subtitleFont = subtitleFont;
+  document.body.style.setProperty('--subtitle-lines', String(visibleLineCount));
   document.body.style.setProperty('--src-lines', String(visibleLineCount));
 
   subtitleLineButtons.forEach(button => {
@@ -239,41 +253,61 @@ function applySubtitleDisplaySettings(lineCount, textSize, persist = true) {
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', String(active));
   });
+  if (subtitleFontSelect) {
+    subtitleFontSelect.value = subtitleFont;
+  }
 
   if (persist) {
     try {
       localStorage.setItem(SUBTITLE_DISPLAY_SETTINGS_KEY, JSON.stringify({
         lineCount: visibleLineCount,
-        textSize: subtitleTextSize
+        textSize: subtitleTextSize,
+        font: subtitleFont
       }));
     } catch (error) {
       console.warn('Unable to save subtitle display settings:', error);
     }
   }
   scheduleVisibleLaneReflow();
+  document.fonts?.ready.then(scheduleVisibleLaneReflow);
 }
 
 function loadSubtitleDisplaySettings() {
   try {
-    const saved = JSON.parse(localStorage.getItem(SUBTITLE_DISPLAY_SETTINGS_KEY) || '{}');
-    applySubtitleDisplaySettings(saved.lineCount, saved.textSize, false);
+    const raw = localStorage.getItem(SUBTITLE_DISPLAY_SETTINGS_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      hasLocalDisplayOverride = true;
+      applySubtitleDisplaySettings(saved.lineCount, saved.textSize, saved.font, false);
+      return;
+    }
+    hasLocalDisplayOverride = false;
+    applySubtitleDisplaySettings(3, 'lg', 'outfit', false);
   } catch (error) {
     console.warn('Unable to load subtitle display settings:', error);
-    applySubtitleDisplaySettings(3, 'md', false);
+    hasLocalDisplayOverride = false;
+    applySubtitleDisplaySettings(3, 'lg', 'outfit', false);
   }
 }
 
 subtitleLineButtons.forEach(button => {
   button.addEventListener('click', () => {
-    applySubtitleDisplaySettings(button.dataset.lines, subtitleTextSize);
+    hasLocalDisplayOverride = true;
+    applySubtitleDisplaySettings(button.dataset.lines, subtitleTextSize, subtitleFont);
     resetControlsTimer();
   });
 });
 subtitleSizeButtons.forEach(button => {
   button.addEventListener('click', () => {
-    applySubtitleDisplaySettings(visibleLineCount, button.dataset.size);
+    hasLocalDisplayOverride = true;
+    applySubtitleDisplaySettings(visibleLineCount, button.dataset.size, subtitleFont);
     resetControlsTimer();
   });
+});
+subtitleFontSelect?.addEventListener('change', () => {
+  hasLocalDisplayOverride = true;
+  applySubtitleDisplaySettings(visibleLineCount, subtitleTextSize, subtitleFontSelect.value);
+  resetControlsTimer();
 });
 loadSubtitleDisplaySettings();
 
@@ -796,15 +830,45 @@ function connect() {
           lang2: normalizeLaneState(data.state?.lang2)
         };
         pacingMode = normalizePacingMode(subtitleState.subtitlePacing);
+        if (!hasLocalDisplayOverride) {
+          applySubtitleDisplaySettings(
+            subtitleState.subtitleLineCount,
+            subtitleState.subtitleTextSize,
+            subtitleState.subtitleFont,
+            false
+          );
+        }
         applyHostLayout(subtitleState);
         updateUIElements();
         renderSubtitleLane("lang1");
         renderSubtitleLane("lang2");
         if (data.messageNotes) {
+          syncHostNotesSettings(data.messageNotes);
           notesView.update(data.messageNotes);
           updateSourceButton(data.messageNotes.source);
         }
+      } else if (data.type === 'projector-display') {
+        subtitleState.subtitleLineCount = normalizeSubtitleLineCount(data.subtitleLineCount);
+        subtitleState.subtitleTextSize = normalizeSubtitleTextSize(data.subtitleTextSize);
+        subtitleState.subtitleFont = normalizeSubtitleFont(data.subtitleFont ?? subtitleState.subtitleFont);
+        if (window.innerWidth > 700 || !hasLocalDisplayOverride) {
+          if (window.innerWidth > 700) {
+            hasLocalDisplayOverride = false;
+            try {
+              localStorage.removeItem(SUBTITLE_DISPLAY_SETTINGS_KEY);
+            } catch {
+              // ignore storage failures
+            }
+          }
+          applySubtitleDisplaySettings(
+            subtitleState.subtitleLineCount,
+            subtitleState.subtitleTextSize,
+            subtitleState.subtitleFont,
+            false
+          );
+        }
       } else if (data.type === 'message-notes') {
+        syncHostNotesSettings(data.state);
         notesView.update(data.state);
         updateSourceButton(data.state?.source);
       } else if (data.type === 'source') {
@@ -930,18 +994,46 @@ btnQrToggle.addEventListener('click', () => {
   resetControlsTimer();
 });
 
+const localNotesAllowed = { summary: true, verses: true };
+const hostNotesEnabled = { summary: false, verses: true };
+
+function syncScreenNotesButtons() {
+  notesView.setView({
+    summary: localNotesAllowed.summary,
+    verses: localNotesAllowed.verses
+  });
+  for (const [part, { button, name, what }] of Object.entries(SCREEN_NOTES_PARTS)) {
+    const hostOn = hostNotesEnabled[part];
+    const effective = hostOn && localNotesAllowed[part];
+    button.classList.toggle('active', effective);
+    button.setAttribute('aria-pressed', String(effective));
+    button.textContent = `${name} ${effective ? 'On' : 'Off'}`;
+    if (!hostOn) {
+      button.title = window.innerWidth > 700
+        ? `${name} is turned off on the dashboard. Click to turn on ${what}.`
+        : `${name} is turned off on the dashboard.`;
+    } else {
+      button.title = effective
+        ? `Hide ${what} on this screen only.`
+        : `Show ${what} on this screen.`;
+    }
+  }
+}
+
+function syncHostNotesSettings(notesState) {
+  if (!notesState?.settings) return;
+  hostNotesEnabled.summary = Boolean(notesState.settings.notes);
+  hostNotesEnabled.verses = notesState.settings.verses !== false;
+  syncScreenNotesButtons();
+}
+
 function setNotesPartOnThisScreen(part, enabled, persist = true) {
-  const { button, key, name, what } = SCREEN_NOTES_PARTS[part];
-  button.classList.toggle('active', enabled);
-  button.setAttribute('aria-pressed', String(enabled));
-  button.textContent = `${name} ${enabled ? 'On' : 'Off'}`;
-  button.title = enabled
-    ? `Hide ${what} on this screen only.`
-    : `Show ${what} on this screen.`;
-  notesView.setView({ [part]: enabled });
+  localNotesAllowed[part] = Boolean(enabled);
+  const { key } = SCREEN_NOTES_PARTS[part];
+  syncScreenNotesButtons();
   if (persist) {
     try {
-      localStorage.setItem(key, enabled ? '1' : '0');
+      localStorage.setItem(key, localNotesAllowed[part] ? '1' : '0');
     } catch (error) {
       console.warn('Unable to save the notes setting:', error);
     }
@@ -957,11 +1049,20 @@ function savedNotesPart(key) {
 }
 
 for (const [part, { button, key }] of Object.entries(SCREEN_NOTES_PARTS)) {
-  setNotesPartOnThisScreen(part, savedNotesPart(key), false);
+  localNotesAllowed[part] = savedNotesPart(key);
   button.addEventListener('click', () => {
-    setNotesPartOnThisScreen(part, button.getAttribute('aria-pressed') !== 'true');
+    if (!hostNotesEnabled[part] && window.innerWidth > 700 && subtitleSocket?.readyState === WebSocket.OPEN) {
+      setNotesPartOnThisScreen(part, true);
+      const settingKey = part === 'summary' ? 'notes' : 'verses';
+      hostNotesEnabled[part] = true;
+      subtitleSocket.send(JSON.stringify({ type: 'notes-settings', settings: { [settingKey]: true } }));
+      syncScreenNotesButtons();
+    } else {
+      setNotesPartOnThisScreen(part, !localNotesAllowed[part]);
+    }
     resetControlsTimer();
   });
 }
+syncScreenNotesButtons();
 
 connect();

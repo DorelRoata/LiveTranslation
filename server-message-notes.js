@@ -158,12 +158,37 @@ export function createMessageNotes({
     }
   }
 
+  async function lookupVerseLanes(ref) {
+    const passages = await Promise.all(lanes().map(async ({ lane, code }) => {
+      try {
+        return [lane, await bible.lookupPassage(ref, code, settings.englishBible)];
+      } catch (error) {
+        logger.warn?.(`Verse lookup failed: ${error.message}`);
+        return [lane, { label: '', version: '', verses: [], truncated: false }];
+      }
+    }));
+    return Object.fromEntries(passages);
+  }
+
+  async function refreshActiveVerse() {
+    if (!verse || verse.until <= now() || disposed) return;
+    const activeId = verse.id;
+    const current = messageId;
+    const nextLanes = await lookupVerseLanes(verse.ref);
+    if (verse?.id !== activeId || current !== messageId || disposed) return;
+    verse = { ...verse, lanes: nextLanes };
+    publish();
+  }
+
   function applySettings(input) {
     settingsChanged = true;
     const previous = settings;
     settings = normalizeNotesSettings(input, settings);
     if ((!settings.verses && previous.verses) || (!settings.follow && previous.follow && verse?.following)) hideVerse(false);
-    if (settings.englishBible !== previous.englishBible) refreshLabels();
+    if (settings.englishBible !== previous.englishBible) {
+      refreshLabels();
+      void refreshActiveVerse();
+    }
     void saveSettings();
     publish();
     maybeUpdateNotes();
@@ -359,14 +384,7 @@ export function createMessageNotes({
   async function showVerse(ref, origin, { following = false } = {}) {
     const id = ++verseSeq;
     const current = messageId;
-    const passages = await Promise.all(lanes().map(async ({ lane, code }) => {
-      try {
-        return [lane, await bible.lookupPassage(ref, code, settings.englishBible)];
-      } catch (error) {
-        logger.warn?.(`Verse lookup failed: ${error.message}`);
-        return [lane, { label: '', version: '', verses: [], truncated: false }];
-      }
-    }));
+    const nextLanes = await lookupVerseLanes(ref);
     // A newer verse, or a new message, arrived while this one was loading.
     if (id !== verseSeq || current !== messageId || disposed) return;
     const t = now();
@@ -375,7 +393,7 @@ export function createMessageNotes({
       key: referenceKey(ref),
       ref,
       origin,
-      lanes: Object.fromEntries(passages),
+      lanes: nextLanes,
       following,
       shownAt: t,
       until: t + settings.verseSeconds * 1000,

@@ -7,13 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     body {
-      --subtitle-font-size: clamp(1.4rem, min(3.5vw, 6vh), 4.5rem);
+      --subtitle-lines: 3;
+      --subtitle-budget-vh: 38vh;
+      --subtitle-max-by-lines: calc(var(--subtitle-budget-vh) / (var(--subtitle-lines, 3) * 1.24));
+      --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
+      --subtitle-font-family: 'Outfit', system-ui, -apple-system, sans-serif;
       --subtitle-line-height: 1.15;
       --subtitle-line-gap: 0.25rem;
       --subtitle-bottom-safe: clamp(1rem, 3vh, 2.5rem);
       background-color: #000000;
       color: #ffffff;
-      font-family: 'Outfit', sans-serif;
+      font-family: var(--subtitle-font-family);
       margin: 0;
       padding: 0 clamp(0.75rem, 3vw, 3rem);
       display: flex;
@@ -24,11 +28,26 @@
       overflow: hidden;
       position: relative;
     }
-    body[data-subtitle-size="sm"] {
-      --subtitle-font-size: clamp(1.25rem, min(3vw, 5.3vh), 3.9rem);
+    body[data-subtitle-font="outfit"] {
+      --subtitle-font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    }
+    body[data-subtitle-font="hyperlegible"] {
+      --subtitle-font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+    }
+    body[data-subtitle-font="condensed"] {
+      --subtitle-font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+    }
+    body[data-subtitle-font="sans"] {
+      --subtitle-font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+    body[data-subtitle-font="serif"] {
+      --subtitle-font-family: Georgia, 'Times New Roman', serif;
     }
     body[data-subtitle-size="lg"] {
-      --subtitle-font-size: clamp(1.5rem, min(4vw, 6.8vh), 5.1rem);
+      --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
+    }
+    body[data-subtitle-size="xl"] {
+      --subtitle-font-size: clamp(1.7rem, min(5.2vw, 8.6vh, var(--subtitle-max-by-lines)), 6.6rem);
     }
     .status-dot {
       position: fixed;
@@ -79,11 +98,58 @@
     body.single-language-layout .container {
       justify-content: flex-start;
     }
-    body.single-language-layout .section {
+    body.obs-mode.single-language-layout {
+      --subtitle-budget-vh: 38vh;
+    }
+    body.obs-mode.single-language-layout .section {
       flex: 0 0 50%;
     }
-    body.single-language-layout:has(#message-panel:not([hidden])) .section {
-      flex: 0 0 42%;
+    body.single-language-layout:not(.obs-mode) {
+      --subtitle-budget-vh: 56vh;
+    }
+    body.single-language-layout:not(.obs-mode) .section {
+      flex: 0 0 60%;
+      justify-content: flex-start;
+    }
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"],
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"] {
+      --subtitle-budget-vh: 62vh;
+    }
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"] .section,
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"] .section {
+      flex: 0 0 68%;
+    }
+    body.single-language-layout:not(.obs-mode) .text {
+      flex: 0 1 auto;
+      justify-content: flex-start;
+      padding-top: clamp(2.25rem, 6vh, 4.5rem);
+      padding-bottom: clamp(0.75rem, 2vh, 1.5rem);
+    }
+    body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) {
+      --subtitle-budget-vh: 42vh;
+    }
+    body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .section {
+      flex: 0 0 48%;
+    }
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])),
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) {
+      --subtitle-budget-vh: 46vh;
+    }
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])) .section,
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) .section {
+      flex: 0 0 52%;
+    }
+    body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .text {
+      padding-top: clamp(1.25rem, 3.5vh, 2.5rem);
+      padding-bottom: clamp(0.5rem, 1.5vh, 1rem);
+    }
+    .section:has(.verse-float:not([hidden])) {
+      --subtitle-budget-vh: 25vh;
+    }
+    .section:has(.verse-float:not([hidden])) .text {
+      justify-content: flex-end;
+      padding-top: clamp(5rem, 13vh, 9.5rem);
+      padding-bottom: 0.75rem;
     }
     .text {
       flex: 1 1 auto;
@@ -100,6 +166,14 @@
       overflow: hidden;
       color: #ffffff;
       padding: 0 10% var(--subtitle-bottom-safe);
+    }
+    body[data-subtitle-size="lg"] .text {
+      padding-left: 5%;
+      padding-right: 5%;
+    }
+    body[data-subtitle-size="xl"] .text {
+      padding-left: 2%;
+      padding-right: 2%;
     }
     .sub-line,
     .sub-line-active {
@@ -129,6 +203,7 @@
 
     /* Floating Control Bar Styles */
     .control-bar {
+      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
       position: fixed;
       top: 1.5rem;
       left: 50%;
@@ -204,6 +279,22 @@
       min-width: 2rem;
       padding: 0.35rem 0.6rem;
     }
+    .control-select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e6eef2;
+      padding: 0.32rem 0.7rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: inherit;
+      outline: none;
+    }
+    .control-select option {
+      background: #141920;
+      color: #ffffff;
+    }
 
     /* Corner QR so the congregation can join without covering the subtitles */
     .qr-float {
@@ -253,6 +344,7 @@
     }
     .message-panel {
       --mp-scale: 1;
+      --bible-scale: 1;
       --scripture: #e8bd62;
       --scripture-soft: rgba(232, 189, 98, 0.32);
       flex: 1 1 0;
@@ -265,9 +357,18 @@
       padding: clamp(0.9rem, 2.4vh, 2rem) clamp(0.5rem, 5vw, 6rem) max(var(--subtitle-bottom-safe), env(safe-area-inset-bottom));
       box-sizing: border-box;
       overflow: hidden;
-      font-size: calc(min(1.42vw, 2.7vh) * var(--mp-scale));
+      font-size: calc(min(1.48vw, 2.8vh) * var(--mp-scale));
       color: #d6dee2;
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent) top / 100% 1px no-repeat;
+    }
+    [data-bible-size="md"] {
+      --bible-scale: 0.86;
+    }
+    [data-bible-size="lg"] {
+      --bible-scale: 1;
+    }
+    [data-bible-size="xl"] {
+      --bible-scale: 1.18;
     }
     .message-panel[hidden],
     .message-panel [hidden],
@@ -283,14 +384,15 @@
     .message-panel[data-columns="both"] .mp-scripture {
       padding-top: 0.7em;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: calc(1.16em * var(--bible-scale, 1));
     }
     .message-panel[data-columns="scripture"] {
-      font-size: calc(min(1.85vw, 3.35vh) * var(--mp-scale));
+      font-size: calc(min(2.35vw, 4.25vh) * var(--bible-scale, 1) * var(--mp-scale));
       justify-items: center;
       align-content: center;
     }
     .message-panel[data-columns="scripture"] .mp-scripture {
-      width: min(100%, 62em);
+      width: min(100%, 78rem);
     }
     body.qr-on .message-panel {
       padding-right: calc(148px + 3rem);
@@ -440,20 +542,21 @@
 
     /* Two languages: the verse sits in the space above each language's lines. */
     .verse-float {
+      --bible-scale: 1;
       --scripture: #e8bd62;
       position: absolute;
       top: clamp(0.35rem, 1.3vh, 1rem);
       left: 50%;
       z-index: 5;
-      width: min(82%, 74rem);
+      width: min(90%, 84rem);
       box-sizing: border-box;
       transform: translateX(-50%);
-      padding: 0.5em 1.05em 0.55em;
+      padding: 0.55em 1.1em 0.6em;
       border: 1px solid rgba(232, 189, 98, 0.34);
       border-radius: 12px;
       background: rgba(15, 19, 23, 0.9);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-      font-size: min(1.48vw, 2.65vh);
+      font-size: calc(min(1.82vw, 3.25vh) * var(--bible-scale, 1));
       color: #f7f2e7;
     }
     .vf-ref {
@@ -466,7 +569,7 @@
       margin: 0.18em 0 0;
       overflow: hidden;
       line-height: 1.34;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
     }
     .verse-float .verse-timer {
@@ -633,22 +736,34 @@
         gap: 1rem;
       }
       .section {
-        padding: 0.5rem 1rem;
+        padding: 0.45rem 0.75rem;
       }
-      .text {
+      body[data-subtitle-size] .text {
         padding: 0 0 max(1rem, env(safe-area-inset-bottom));
+      }
+      body.single-language-layout:not(.obs-mode) .text {
+        padding-top: clamp(1rem, 3.5vh, 2rem);
+      }
+      body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .section {
+        flex: 0 0 46%;
       }
       .qr-float canvas {
         width: 112px;
         height: 112px;
       }
-      .message-panel,
+      .message-panel {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.9rem;
+        padding: 0.8rem 0.25rem max(1rem, env(safe-area-inset-bottom));
+        overflow-y: auto;
+        font-size: calc(clamp(0.86rem, 3.8vw, 1.08rem) * var(--bible-scale, 1) * var(--mp-scale));
+      }
       .message-panel[data-columns="scripture"] {
         grid-template-columns: minmax(0, 1fr);
         gap: 0.9rem;
         padding: 0.8rem 0.25rem max(1rem, env(safe-area-inset-bottom));
         overflow-y: auto;
-        font-size: calc(clamp(0.82rem, 3.7vw, 1.05rem) * var(--mp-scale));
+        font-size: calc(clamp(0.98rem, 4.3vw, 1.25rem) * var(--bible-scale, 1) * var(--mp-scale));
       }
       .message-panel .mp-scripture {
         order: -1;
@@ -658,7 +773,7 @@
       }
       .verse-float {
         width: calc(100% - 0.5rem);
-        font-size: clamp(0.78rem, 3.4vw, 0.95rem);
+        font-size: calc(clamp(0.88rem, 3.8vw, 1.08rem) * var(--bible-scale, 1));
       }
       .recap-card {
         grid-auto-flow: row;
@@ -676,15 +791,15 @@
 
     @media (max-height: 650px) {
       body {
-        --subtitle-font-size: clamp(1.2rem, 3vw, 2.1rem);
+        --subtitle-font-size: clamp(1.3rem, min(3.4vw, var(--subtitle-max-by-lines)), 2.5rem);
         --subtitle-bottom-safe: max(0.75rem, env(safe-area-inset-bottom));
         padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
       }
-      body[data-subtitle-size="sm"] {
-        --subtitle-font-size: clamp(1.05rem, 2.6vw, 1.8rem);
-      }
       body[data-subtitle-size="lg"] {
-        --subtitle-font-size: clamp(1.3rem, 3.4vw, 2.4rem);
+        --subtitle-font-size: clamp(1.3rem, min(3.4vw, var(--subtitle-max-by-lines)), 2.5rem);
+      }
+      body[data-subtitle-size="xl"] {
+        --subtitle-font-size: clamp(1.45rem, min(4vw, var(--subtitle-max-by-lines)), 2.9rem);
       }
       .container {
         gap: 0.5rem;
@@ -692,9 +807,12 @@
       .section {
         padding: 0.5rem 0.75rem;
       }
-      .text {
+      body[data-subtitle-size] .text {
         height: auto;
         padding: 0 2% var(--subtitle-bottom-safe);
+      }
+      body.single-language-layout:not(.obs-mode) .text {
+        padding-top: clamp(0.9rem, 3vh, 1.75rem);
       }
     }
 
@@ -707,7 +825,7 @@
     }
   </style>
 </head>
-<body data-subtitle-size="md">
+<body data-subtitle-size="lg" data-subtitle-lines="3" data-subtitle-font="outfit">
   <div class="status-dot" id="status-indicator" role="status" aria-label="Connecting to host" title="Connecting to Host..."></div>
 
   <!-- Floating Navigation Controls -->
@@ -725,10 +843,19 @@
       <span class="control-sublabel">Lines</span>
       <button class="control-btn compact subtitle-lines-btn" type="button" data-lines="2" aria-label="Show two subtitle lines" aria-pressed="false">2</button>
       <button class="control-btn compact subtitle-lines-btn active" type="button" data-lines="3" aria-label="Show three subtitle lines" aria-pressed="true">3</button>
+      <button class="control-btn compact subtitle-lines-btn" type="button" data-lines="4" aria-label="Show four subtitle lines" aria-pressed="false">4</button>
+      <button class="control-btn compact subtitle-lines-btn" type="button" data-lines="5" aria-label="Show five subtitle lines" aria-pressed="false">5</button>
       <span class="control-sublabel">Text</span>
-      <button class="control-btn compact subtitle-size-btn" type="button" data-size="sm" aria-label="Small subtitle text" aria-pressed="false">S</button>
-      <button class="control-btn compact subtitle-size-btn active" type="button" data-size="md" aria-label="Medium subtitle text" aria-pressed="true">M</button>
-      <button class="control-btn compact subtitle-size-btn" type="button" data-size="lg" aria-label="Large subtitle text" aria-pressed="false">L</button>
+      <button class="control-btn compact subtitle-size-btn active" type="button" data-size="lg" aria-label="Large subtitle text" aria-pressed="true">L</button>
+      <button class="control-btn compact subtitle-size-btn" type="button" data-size="xl" aria-label="Extra large subtitle text" aria-pressed="false">XL</button>
+      <span class="control-sublabel">Font</span>
+      <select class="control-select" id="subtitle-font-select" aria-label="Subtitle font">
+        <option value="outfit" selected>Modern</option>
+        <option value="hyperlegible">Hyperlegible</option>
+        <option value="condensed">Condensed</option>
+        <option value="sans">Clean Sans</option>
+        <option value="serif">Serif</option>
+      </select>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group">
@@ -748,11 +875,11 @@
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
     <div class="control-group">
       <span class="control-label">Notes:</span>
-      <button class="control-btn active" id="btn-summary-toggle" type="button" aria-pressed="true">Summary On</button>
+      <button class="control-btn" id="btn-summary-toggle" type="button" aria-pressed="false">Summary Off</button>
       <button class="control-btn active" id="btn-verses-toggle" type="button" aria-pressed="true">Bible On</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.3</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.4</span>
   </div>
 
   <div class="container" id="subtitles-container">

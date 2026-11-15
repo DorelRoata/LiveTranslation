@@ -10,19 +10,35 @@ import {
   normalizeNotesSettings,
   notesUpdateDue
 } from '../src/message-notes.js';
-import { createBibleLibrary } from '../server-bible.js';
+import { createBibleLibrary, cleanBollsText } from '../server-bible.js';
 import { createMessageNotes } from '../server-message-notes.js';
 import { parseReference } from '../src/bible-references.js';
 
 const LANES = [{ lane: 'lang1', code: 'en' }, { lane: 'lang2', code: 'ru' }];
 
 test('settings keep only known values', () => {
+  assert.deepEqual(DEFAULT_NOTES_SETTINGS, {
+    notes: false,
+    verses: true,
+    follow: true,
+    spokenVerses: true,
+    verseSeconds: 60,
+    englishBible: 'kjv',
+    bibleSize: 'lg'
+  });
   assert.deepEqual(normalizeNotesSettings({}), DEFAULT_NOTES_SETTINGS);
   assert.deepEqual(
-    normalizeNotesSettings({ notes: false, verses: false, follow: false, spokenVerses: false, verseSeconds: 120, englishBible: 'web' }),
-    { notes: false, verses: false, follow: false, spokenVerses: false, verseSeconds: 120, englishBible: 'web' }
+    normalizeNotesSettings({ notes: true, verses: false, follow: false, spokenVerses: false, verseSeconds: 120, englishBible: 'web', bibleSize: 'xl' }),
+    { notes: true, verses: false, follow: false, spokenVerses: false, verseSeconds: 120, englishBible: 'web', bibleSize: 'xl' }
   );
-  const kept = normalizeNotesSettings({ verseSeconds: 7, englishBible: 'niv', notes: 'yes' });
+  for (const englishBible of ['kjv', 'nkjv', 'niv', 'esv', 'web', 'asv']) {
+    for (const bibleSize of ['md', 'lg', 'xl']) {
+      const normalized = normalizeNotesSettings({ englishBible, bibleSize });
+      assert.equal(normalized.englishBible, englishBible);
+      assert.equal(normalized.bibleSize, bibleSize);
+    }
+  }
+  const kept = normalizeNotesSettings({ verseSeconds: 7, englishBible: 'unknown', bibleSize: 'huge', notes: 'yes' });
   assert.deepEqual(kept, DEFAULT_NOTES_SETTINGS);
 });
 
@@ -294,6 +310,7 @@ test('notes are written by Gemini for each screen language and the verses it nam
       });
     }
   });
+  run.engine.applySettings({ notes: true });
   const sermon = 'Crucea lui Hristos ne împacă cu Dumnezeu și ne dă pace. '.repeat(14);
   run.engine.addSource(sermon);
   for (let i = 0; i < 6; i++) await flush();
@@ -331,6 +348,7 @@ test('an older model without thinking levels, or a missing model, still produces
       return geminiReply({ title: { en: 'Grace', ru: 'Благодать' }, summary: { en: '', ru: '' }, points: [], verses: [] });
     }
   });
+  run.engine.applySettings({ notes: true });
   run.engine.addSource('Harul lui Dumnezeu este de ajuns pentru noi toți. '.repeat(16));
   for (let i = 0; i < 8; i++) await flush();
   assert.deepEqual(tried, ['gemini-flash-latest+thinking', 'gemini-2.5-flash+thinking', 'gemini-2.5-flash']);
@@ -346,6 +364,7 @@ test('a Gemini error is shown to the operator and retried later, not every secon
       return geminiReply('Quota exceeded', { status: 429 });
     }
   });
+  run.engine.applySettings({ notes: true });
   run.engine.addSource('Cuvântul lui Dumnezeu este viu și lucrător în noi. '.repeat(16));
   for (let i = 0; i < 6; i++) await flush();
   assert.equal(calls, 1);
@@ -402,4 +421,158 @@ test('a verse said again during a reading of its range is not listed twice', asy
   await flush();
   await flush();
   assert.deepEqual(run.last().verses.map(item => item.key), ['46.11.23.26']);
+});
+
+test('NKJV and ESV clean Bolls superscriptions, headings, mid-word italics, omitted NT verses, and block publisher notices', async () => {
+  assert.equal(cleanBollsText('Biblica, Inc. has prohibited distribution of NIV'), '');
+
+  const cacheDir = mkdtempSync(path.join(os.tmpdir(), 'lt-bible-bolls-'));
+  try {
+    const calls = [];
+    const fetchImpl = async url => {
+      calls.push(url);
+      if (url.endsWith('/get-text/NKJV/19/11/')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            { verse: 1, text: '<i>To the Chief Musician. <i>A Psalm</i> of David.</i>  </i> In the LORD I put my trust;' },
+            { verse: 2, text: 'For look! The wicked bend their bow,' },
+            { verse: 3, text: 'If the founda<i>tions</i> are destroyed, What can the righteous do?' },
+            { verse: 4, text: 'The LORD is in His holy temple,' },
+            { verse: 5, text: 'The LORD tests the righteous,' },
+            { verse: 6, text: 'Upon the wicked He will rain coals;' },
+            { verse: 7, text: 'For the LORD is righteous,' }
+          ]
+        };
+      }
+      if (url.endsWith('/static/translations/NKJV.json')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => [
+            { book: 19, chapter: 23, verse: 1, text: 'The LORD <i>is</i> my shepherd;' },
+            { book: 43, chapter: 3, verse: 16, text: 'For God so loved the world' }
+          ]
+        };
+      }
+      if (url.endsWith('/get-text/ESV/41/9/')) {
+        const rows = [];
+        for (let v = 1; v <= 50; v++) {
+          if (v === 44 || v === 46) continue;
+          const text = v === 14
+            ? '<b>Jesus Heals a Boy with an Unclean Spirit</b> And when they came to the disciples, they saw a great crowd.'
+            : `ESV Mark 9:${v}.`;
+          rows.push({ verse: v, text });
+        }
+        return { ok: true, status: 200, json: async () => rows };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+
+    const bible = createBibleLibrary({ cacheDir, fetchImpl, logger: { warn() {} } });
+    const nkjv = await bible.lookupPassage(parseReference('Psalm 11:1-3'), 'en', 'nkjv');
+    assert.equal(nkjv.version, 'NKJV');
+    assert.equal(nkjv.verses[0].text, 'In the LORD I put my trust;');
+    assert.equal(nkjv.verses[2].text, 'If the foundations are destroyed, What can the righteous do?');
+
+    const [psBook, jnBook] = await Promise.all([bible.getBook('nkjv', 19), bible.getBook('nkjv', 43)]);
+    assert.equal(psBook.chapters[23][1], 'The LORD is my shepherd;');
+    assert.equal(jnBook.chapters[3][16], 'For God so loved the world');
+    assert.equal(calls.filter(u => u.endsWith('/static/translations/NKJV.json')).length, 1);
+
+    const esvHeading = await bible.lookupPassage(parseReference('Mark 9:14'), 'en', 'esv');
+    assert.equal(esvHeading.version, 'ESV');
+    assert.equal(esvHeading.verses[0].text, 'And when they came to the disciples, they saw a great crowd.');
+
+    const esvOmitted = await bible.lookupPassage(parseReference('Mark 9:43-48'), 'en', 'esv');
+    assert.deepEqual(esvOmitted.verses.map(v => v.n), [43, 45, 47, 48]);
+  } finally {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('NIV uses Song Of Solomon filename, falls back from jsDelivr to GitHub, and caches to disk', async () => {
+  const cacheDir = mkdtempSync(path.join(os.tmpdir(), 'lt-bible-niv-'));
+  try {
+    const requested = [];
+    const fetchImpl = async url => {
+      requested.push(url);
+      if (url.startsWith('https://cdn.jsdelivr.net/')) return { ok: false, status: 502, json: async () => ({}) };
+      if (url.endsWith('/Song%20Of%20Solomon.json')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            chapters: [
+              {
+                chapter: 2,
+                verses: Array.from({ length: 17 }, (_, i) => ({
+                  verse: String(i + 1),
+                  text: i === 0 ? 'I am a rose of Sharon, a lily of the valleys.' : `Song 2:${i + 1}.`
+                }))
+              }
+            ]
+          })
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+
+    const bible = createBibleLibrary({ cacheDir, fetchImpl, logger: { warn() {} } });
+    const online = await bible.lookupPassage(parseReference('Song of Solomon 2:1'), 'en', 'niv');
+    assert.equal(online.version, 'NIV');
+    assert.deepEqual(online.verses, [{ n: 1, text: 'I am a rose of Sharon, a lily of the valleys.' }]);
+    assert.ok(requested.some(u => u.includes('raw.githubusercontent.com') && u.endsWith('/Song%20Of%20Solomon.json')));
+
+    const offline = createBibleLibrary({ cacheDir, fetchImpl: async () => { throw new Error('offline'); }, logger: { warn() {} } });
+    const cached = await offline.lookupPassage(parseReference('Song of Solomon 2:1'), 'en', 'niv');
+    assert.equal(cached.version, 'NIV');
+    assert.equal(cached.verses[0].text, 'I am a rose of Sharon, a lily of the valleys.');
+  } finally {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
+});
+
+test('default settings keep summary off and Bible on, and switching English Bible refreshes an onscreen verse', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  let geminiCalls = 0;
+  const run = createEngine(t, {
+    fetchImpl: async () => {
+      geminiCalls += 1;
+      return geminiReply({ title: { en: 'Should not run', ru: 'Не должно' }, summary: { en: '', ru: '' }, points: [], verses: [] });
+    },
+    bible: {
+      async labelFor(ref, language) {
+        return `${language}:${ref.book}.${ref.chapter}.${ref.verseStart}`;
+      },
+      async lookupPassage(ref, language, englishBible) {
+        const version = language === 'en' ? englishBible.toUpperCase() : 'SYNODAL';
+        return {
+          label: `${language}:${ref.book}.${ref.chapter}.${ref.verseStart}`,
+          version,
+          verses: [{ n: ref.verseStart, text: `${version} text` }],
+          truncated: false
+        };
+      }
+    }
+  });
+
+  assert.equal(run.engine.snapshot().settings.notes, false);
+  assert.equal(run.engine.snapshot().settings.verses, true);
+
+  run.engine.addSource('Cuvântul lui Dumnezeu rămâne în veac și ne întărește credința noastră astăzi. '.repeat(14));
+  for (let i = 0; i < 6; i++) await flush();
+  assert.equal(geminiCalls, 0, 'summary notes stay off by default');
+
+  run.engine.addSource(' Să citim Efeseni 2 cu 16, spune', 'ro');
+  await flush();
+  await flush();
+  assert.equal(run.last().verse.lanes.lang1.version, 'KJV');
+
+  run.engine.applySettings({ englishBible: 'esv' });
+  await flush();
+  await flush();
+  assert.equal(run.last().verse.lanes.lang1.version, 'ESV');
+  assert.equal(run.last().verse.lanes.lang1.verses[0].text, 'ESV text');
 });

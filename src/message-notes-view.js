@@ -3,7 +3,7 @@
 // the bottom half; with two languages a verse floats at the top of each
 // language's half, and the recap opens over everything when the operator asks.
 // Each screen can hide the summary (with the recap) or the verses for itself.
-const MIN_SCALE = 0.62;
+const MIN_SCALE = 0.48;
 const LIST_LIMIT = 8;
 
 // Same rule as message-notes.js; kept here so screens do not load the Bible
@@ -199,6 +199,8 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     // "Verses read" belongs to the notes, as in the recap.
     const showList = Boolean(state && summary && state.verses?.length);
     const visible = Boolean(state) && !view.obs && single && (showNotes || showVerse || showList);
+    const bibleSize = settings.bibleSize || 'lg';
+    panel.dataset.bibleSize = bibleSize;
 
     panel.hidden = !visible;
     if (!visible) {
@@ -220,7 +222,9 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
   // --- Two languages: a verse at the top of each half -------------------------
   function renderFloats() {
     const show = Boolean(state) && view.verses && !view.obs && view.mode === 'both' && verseActive();
+    const bibleSize = state?.settings?.bibleSize || 'lg';
     for (const [lane, float] of Object.entries(floats)) {
+      float.dataset.bibleSize = bibleSize;
       const passage = show ? (state.verse.lanes?.[lane]) : null;
       float.hidden = !passage;
       if (!passage) {
@@ -353,6 +357,10 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
 
   window.addEventListener('resize', scheduleFit, { passive: true });
   document.fonts?.ready.then(scheduleFit);
+  if (typeof ResizeObserver === 'function') {
+    const panelObserver = new ResizeObserver(() => scheduleFit());
+    panelObserver.observe(panel);
+  }
 
   return { update, setView };
 }

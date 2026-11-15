@@ -8,7 +8,14 @@ import {
   updateSongGateState
 } from './song-detection.js';
 import { buildObsUrl } from './obs-language.js';
-import { buildSystemSetup, countWords, getLanguageName } from './system-setup.js';
+import {
+  buildSystemSetup,
+  countWords,
+  getLanguageName,
+  normalizeSubtitleFont,
+  normalizeSubtitleLineCount,
+  normalizeSubtitleTextSize
+} from './system-setup.js';
 import { appendLaneText, emptyLaneState, endsSentence, pieceToAppend } from './caption-stream.js';
 import { buildGeminiAudioMessage, buildGeminiSetupMessage, canForwardGeminiAudio, normalizeSourceLanguage, shouldReconnectOnNetworkOnline, smoothTranslationLatency } from './gemini-live.js';
 import { applyBiblicalGlossary } from './glossary.js';
@@ -39,7 +46,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.5.3';
+const APP_VERSION = '1.5.4';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -58,6 +65,9 @@ const DEFAULT_OPERATOR_SETTINGS = Object.freeze({
   localSpeaker: false,
   localVolume: 1,
   subtitlePacing: 'smooth',
+  subtitleLineCount: 3,
+  subtitleTextSize: 'lg',
+  subtitleFont: 'outfit',
   ignoreSongs: false,
   transcriptFontSize: 'md'
 });
@@ -260,6 +270,42 @@ function setTranscriptFontSize(size) {
   return safeSize;
 }
 
+function updateSetupSummaryPill() {
+  const pill = document.getElementById('setup-summary-pill');
+  if (!pill) return;
+  const sourceVal = sessionConfig?.sourceLanguage ?? sourceLanguageSelect.value;
+  const lang1Val = sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value;
+  const lang2Val = sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value;
+  const sourceLabel = sourceVal === 'auto' ? 'Auto' : getLanguageName(sourceVal, 'Auto');
+  const lang1Label = getLanguageName(lang1Val, 'Translation');
+  const targetsLabel = lang2Val !== 'none'
+    ? `${lang1Label} + ${getLanguageName(lang2Val, 'Language 2')}`
+    : lang1Label;
+  const activeSize = normalizeSubtitleTextSize(document.querySelector('.projector-size-btn.active')?.dataset.size);
+  const activeLines = normalizeSubtitleLineCount(document.querySelector('.projector-lines-btn.active')?.dataset.lines);
+  pill.textContent = `${sourceLabel} → ${targetsLabel} · Projector ${activeSize.toUpperCase()} · ${activeLines} lines`;
+}
+
+function setProjectorDisplayControls(lineCount, textSize, font) {
+  const safeLines = normalizeSubtitleLineCount(lineCount);
+  const safeSize = normalizeSubtitleTextSize(textSize);
+  const safeFont = normalizeSubtitleFont(font);
+  document.querySelectorAll('.projector-lines-btn').forEach(btn => {
+    const isActive = Number(btn.dataset.lines) === safeLines;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+  document.querySelectorAll('.projector-size-btn').forEach(btn => {
+    const isActive = btn.dataset.size === safeSize;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+  const fontSelect = document.getElementById('projector-font-select');
+  if (fontSelect) fontSelect.value = safeFont;
+  updateSetupSummaryPill();
+  return { subtitleLineCount: safeLines, subtitleTextSize: safeSize, subtitleFont: safeFont };
+}
+
 function applyOperatorSettings(settings) {
   setSelectValue(audioSourceSelect, settings.audioSource, DEFAULT_OPERATOR_SETTINGS.audioSource);
   setSelectValue(sourceLanguageSelect, settings.sourceLanguage, DEFAULT_OPERATOR_SETTINGS.sourceLanguage);
@@ -283,6 +329,7 @@ function applyOperatorSettings(settings) {
   const volume = Number(settings.localVolume);
   hostVolumeSlider.value = String(Number.isFinite(volume) ? Math.min(1, Math.max(0, volume)) : DEFAULT_OPERATOR_SETTINGS.localVolume);
   setSelectValue(subtitlePacingSelect, settings.subtitlePacing, DEFAULT_OPERATOR_SETTINGS.subtitlePacing);
+  setProjectorDisplayControls(settings.subtitleLineCount, settings.subtitleTextSize, settings.subtitleFont);
   ignoreSongsToggle.checked = typeof settings.ignoreSongs === 'boolean'
     ? settings.ignoreSongs
     : DEFAULT_OPERATOR_SETTINGS.ignoreSongs;
@@ -308,6 +355,9 @@ function getOperatorSettings() {
     localSpeaker: localPlaybackToggle.checked,
     localVolume: Number(hostVolumeSlider.value),
     subtitlePacing: subtitlePacingSelect.value,
+    subtitleLineCount: normalizeSubtitleLineCount(document.querySelector('.projector-lines-btn.active')?.dataset.lines),
+    subtitleTextSize: normalizeSubtitleTextSize(document.querySelector('.projector-size-btn.active')?.dataset.size),
+    subtitleFont: normalizeSubtitleFont(document.getElementById('projector-font-select')?.value),
     ignoreSongs: ignoreSongsToggle.checked,
     transcriptFontSize: activeFontButton?.dataset.size || DEFAULT_OPERATOR_SETTINGS.transcriptFontSize
   };
@@ -421,6 +471,10 @@ async function loadStoredApiKey() {
     }
     apiKeyStatus.classList.toggle('error', Boolean(data.warning));
     if (data.warning) setDiagnostic(data.warning, 'warning');
+    if ((data.configured || isRemoteOperator()) && window.innerWidth <= 760) {
+      const setupDetails = document.getElementById('setup-details');
+      if (setupDetails) setupDetails.open = false;
+    }
     refreshStartEnabled();
     syncWizardApiKeyState();
     if (!data.configured && !isRemoteOperator()) {
@@ -528,6 +582,12 @@ resetSettingsBtn.addEventListener('click', () => {
   saveOperatorSettings();
   syncSongDetectorPreference();
   sendToRelay({ type: 'notes-settings', settings: DEFAULT_NOTES_SETTINGS });
+  sendToRelay({
+    type: 'projector-display',
+    subtitleLineCount: DEFAULT_OPERATOR_SETTINGS.subtitleLineCount,
+    subtitleTextSize: DEFAULT_OPERATOR_SETTINGS.subtitleTextSize,
+    subtitleFont: DEFAULT_OPERATOR_SETTINGS.subtitleFont
+  });
   setDiagnostic('Operator settings restored to defaults. Play on this Mac, target-language repeat, and automatic song filtering are off.', 'good');
 });
 
@@ -822,6 +882,8 @@ function setHealthItem(name, state, detail) {
   if (!item) return;
   item.dataset.state = state;
   item.querySelector('.health-detail').textContent = detail;
+  const label = item.querySelector('strong')?.textContent || name;
+  item.title = detail ? `${label} — ${detail}` : label;
   healthSnapshot[name] = { state, detail };
 }
 
@@ -856,7 +918,19 @@ function setSessionSettingsDisabled(disabled) {
 function setLiveMode(live) {
   document.body.classList.toggle('is-live', live);
   const setupDetails = document.getElementById('setup-details');
-  if (setupDetails) setupDetails.open = !live;
+  if (setupDetails) {
+    setupDetails.open = !live && !(window.innerWidth <= 760 && (apiKeyConfigured || isRemoteOperator()));
+  }
+}
+
+function setMobileTranscriptLane(lane) {
+  const safeLane = ['all', 'input', 'lang1', 'lang2'].includes(lane) ? lane : 'all';
+  if (transcriptGridEl) transcriptGridEl.dataset.mobileLane = safeLane;
+  document.querySelectorAll('.transcript-tab-btn').forEach(btn => {
+    const isActive = btn.dataset.lane === safeLane;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
 }
 
 function applyDashboardLanguageLayout() {
@@ -866,13 +940,26 @@ function applyDashboardLanguageLayout() {
   const colLang2 = document.getElementById('col-lang-2');
   const header1 = document.getElementById('header-lang-1');
   const header2 = document.getElementById('header-lang-2');
+  const tabLang1 = document.getElementById('mobile-tab-lang1');
+  const tabLang2 = document.getElementById('mobile-tab-lang2');
+  const lang1Name = getLanguageName(lang1, 'Language 1');
+  const lang2Name = getLanguageName(lang2, 'Language 2');
   if (colLang2) colLang2.hidden = !isDual;
   if (header1) {
     header1.textContent = isDual
-      ? getLanguageName(lang1, 'Language 1')
+      ? lang1Name
       : getLanguageName(lang1, 'Translation');
   }
-  if (header2) header2.textContent = getLanguageName(lang2, 'Language 2');
+  if (header2) header2.textContent = lang2Name;
+  if (tabLang1) tabLang1.textContent = lang1Name;
+  if (tabLang2) {
+    tabLang2.textContent = lang2Name;
+    tabLang2.hidden = !isDual;
+  }
+  if (!isDual && transcriptGridEl?.dataset.mobileLane === 'lang2') {
+    setMobileTranscriptLane('all');
+  }
+  updateSetupSummaryPill();
   if (!isRunning && healthItems.gemini2) {
     healthItems.gemini2.hidden = !isDual;
     if (!isDual) setHealthItem('gemini2', 'idle', 'Not enabled');
@@ -1611,7 +1698,7 @@ if (muteMicBtn) {
   });
 }
 
-// 3. Dynamic Font Size Picker
+// 3. Dynamic Font Size Picker & Projector Display / Mobile Transcript Controls
 function initFontSizePicker() {
   const fontBtns = document.querySelectorAll(".font-size-btn");
 
@@ -1624,7 +1711,52 @@ function initFontSizePicker() {
   });
 }
 
+function initProjectorDisplayControls() {
+  const fontSelect = document.getElementById('projector-font-select');
+  const applyAndBroadcast = (lines, size, font) => {
+    const next = setProjectorDisplayControls(lines, size, font);
+    saveOperatorSettings();
+    syncLocalSubtitlesSetup();
+    sendToRelay({
+      type: 'projector-display',
+      subtitleLineCount: next.subtitleLineCount,
+      subtitleTextSize: next.subtitleTextSize,
+      subtitleFont: next.subtitleFont
+    });
+  };
+
+  document.querySelectorAll('.projector-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const currentLines = document.querySelector('.projector-lines-btn.active')?.dataset.lines;
+      applyAndBroadcast(currentLines, btn.dataset.size, fontSelect?.value);
+    });
+  });
+
+  document.querySelectorAll('.projector-lines-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const currentSize = document.querySelector('.projector-size-btn.active')?.dataset.size;
+      applyAndBroadcast(btn.dataset.lines, currentSize, fontSelect?.value);
+    });
+  });
+
+  fontSelect?.addEventListener('change', () => {
+    const currentLines = document.querySelector('.projector-lines-btn.active')?.dataset.lines;
+    const currentSize = document.querySelector('.projector-size-btn.active')?.dataset.size;
+    applyAndBroadcast(currentLines, currentSize, fontSelect.value);
+  });
+}
+
+function initMobileTranscriptTabs() {
+  document.querySelectorAll('.transcript-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setMobileTranscriptLane(btn.dataset.lane);
+    });
+  });
+}
+
 initFontSizePicker();
+initProjectorDisplayControls();
+initMobileTranscriptTabs();
 
 // --- Transcript panels ---
 // Google's pieces are final as sent, so a bubble is just those pieces joined,
@@ -2406,6 +2538,9 @@ function initLocalSubtitlesWS() {
         notesConsole.update(data.state);
       } else if (data.type === 'notes-error') {
         notesConsole.showError(data.error);
+      } else if (data.type === 'projector-display') {
+        setProjectorDisplayControls(data.subtitleLineCount, data.subtitleTextSize, data.subtitleFont);
+        saveOperatorSettings();
       } else if (data.type === 'sync') {
         if (data.messageNotes) notesConsole.update(data.messageNotes);
         remoteAudioStreaming = Boolean(data.state?.audioSenderStreaming);
@@ -2501,7 +2636,10 @@ function syncLocalSubtitlesSetup() {
     targetLanguage1: sessionConfig?.targetLanguage1 ?? targetLanguageSelect1.value,
     targetLanguage2: sessionConfig?.targetLanguage2 ?? targetLanguageSelect2.value,
     subtitlePacing: sessionConfig?.subtitlePacing ?? subtitlePacingSelect.value,
-    obsLanguage: obsLanguageSelect.value
+    obsLanguage: obsLanguageSelect.value,
+    subtitleLineCount: document.querySelector('.projector-lines-btn.active')?.dataset.lines,
+    subtitleTextSize: document.querySelector('.projector-size-btn.active')?.dataset.size,
+    subtitleFont: document.getElementById('projector-font-select')?.value
   });
   localSubtitlesWS.send(JSON.stringify({
     type: 'setup',

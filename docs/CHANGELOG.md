@@ -2,6 +2,16 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.4 — Sanctuary readability, projector fonts, NKJV/NIV/ESV Bibles, and mobile dashboard polish
+
+**Why:** Longer sanctuaries needed larger default projector subtitles, an Extra Large option with up to 5 visible lines, selectable subtitle fonts, larger scripture text, additional English Bible translations (NKJV, NIV, ESV), and Bible verse pop-ups enabled by default without AI message summaries crowding the screen unless turned on.
+
+**What changed:**
+- **Projector typography & sizing (`L` / `XL`, `2–5` lines, and Font selector).** Projector subtitles now default to **Large (`L`)**, offer **Extra Large (`XL`)** and **4–5 visible lines** for long sanctuaries, remove unused Small/Medium projector options, and include a live **Font** selector (`Modern`, `Hyperlegible`, `Condensed`, `Clean Sans`, `Serif`) synced between the dashboard and projector control bar with offline bundled fonts.
+- **Top-floating single-language subtitles.** When one language is selected on projectors and phones, subtitles float near the top of the screen so congregation heads do not block line 1, while allowing 4–5 large lines to extend further downward cleanly above scripture cards.
+- **NKJV, NIV, and ESV English Bibles + larger Bible text.** Added **NKJV**, **NIV**, and **ESV** alongside KJV, WEB, and ASV in `server-bible.js` (cached locally in `bible-cache/` for offline reuse), and added a **Bible text** size control (**Medium**, **Large** default, **Extra Large**).
+- **Cleaner defaults & mobile-friendly dashboard.** **Bible verse pop-ups** is **on** by default and **Summary & points on screens** is **off** by default. Reorganized the dashboard **Bible & message notes** card into clear rows with touch-friendly mobile controls (`40px` tap targets and `16px` mobile inputs to prevent iOS auto-zoom).
+
 ## v1.5.3 — Turnkey Windows church installer, release auto-updater, and First-Time Setup Wizard
 
 **Why:** Sharing Live Translate with other churches (especially on Windows sound-booth PCs) required manually installing Node.js, Git, and running terminal commands, and new volunteers had no guided setup when opening the dashboard for the first time.

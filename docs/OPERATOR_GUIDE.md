@@ -258,15 +258,15 @@ Both modes use sentence punctuation for semantic line breaks and a 60-character 
 
 ## 13. Bible verses and message notes
 
-The **Message notes** card on the dashboard sits between the audio meters and the transcripts. Its settings are kept on the host Mac, so the Mac and a laptop dashboard always show the same switches.
+The **Bible & message notes** card on the dashboard sits between the audio meters and the transcripts (you can also set the projector's default **Projector Display** text size `L / XL` — defaulting to `L` — visible lines `2 / 3 / 4 / 5` — defaulting to `3` — and **Font** — `Modern`, `Hyperlegible`, `Condensed`, `Clean Sans`, or `Serif` — under **Setup → Screens & extras**). Its settings are kept on the host Mac, so the Mac and any laptop or mobile dashboard stay in sync. By default, **Bible verse pop-ups** is **on** and **Summary & points on screens** is **off**.
 
 ### Verse pop-ups
 
-When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default):
+When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default). Adjust **Bible text** (**Medium**, **Large** default, or **Extra Large**) to make scripture cards easier to read from the back of the sanctuary:
 
-- With **one language** on a screen, the summary and the Bible verses stack vertically in the bottom half so both have the full width of the screen.
-- With **two languages**, a slim card appears at the top of each language's half.
-- Each language gets its own Bible and numbering: English uses the **English Bible** setting (KJV by default), Romanian uses Cornilescu, Russian the Synodal translation (Psalm 23 shows as Псалом 22:1).
+- With **one language** on a screen, subtitles float near the top of the screen with room to extend downward for 4–5 large lines, and any active verse card displays clearly below them with generous scripture typography; when **Summary & points** is enabled, the summary and verses stack below.
+- With **two languages**, a legible floating verse card sits at the top of each language's half without overlapping the subtitles.
+- Each language gets its own Bible and numbering: English uses the **English Bible** setting (KJV by default, with NKJV, NIV, ESV, WEB, and ASV available), Romanian uses Cornilescu, Russian the Synodal translation (Psalm 23 shows as Псалом 22:1).
 - If the preacher repeats the same verse, the card stays up instead of flashing again. A new verse replaces the old one.
 - Hindi and Bulgarian have no Bible on the verse service, so those screens show the reference without text. A screen also shows the reference alone if the network is down and that chapter was never shown before.
 
@@ -298,7 +298,7 @@ The words heard are compared with Cornilescu, so this works when the reader uses
 
 ### Which Bible
 
-English uses the **English Bible** setting: King James (KJV, the default), World English (WEB) or American Standard (ASV). The New King James and the NIV are copyrighted and have no free source the app can use, so they are not offered. The ESV could be added: Crossway gives churches a free key at api.esv.org. Romanian uses Cornilescu and Russian the Synodal translation, the Bibles of Romanian and Russian-speaking evangelical churches.
+English uses the **English Bible** setting: King James (KJV, the default), New King James (NKJV), New International (NIV), English Standard (ESV), World English (WEB), or American Standard (ASV). Changing **English Bible** while a verse is on screen updates that card right away. Romanian uses Cornilescu and Russian the Synodal translation, the Bibles of Romanian and Russian-speaking evangelical churches.
 
 **Clear screens** also removes the current verse and the recap. The summary stays until you turn it off or choose **New message**.
 
@@ -306,16 +306,16 @@ If a verse was missed, type it in **Show a verse** (for example `John 3:16`, `Ro
 
 ### Summary and points
 
-About a minute into the sermon, screens that show **one language** fill the bottom half with the message's title, a two-sentence summary, the main points in order, and the verses read. The notes are written by Gemini from the transcript in every screen language, and they update about every minute and a half while the preacher speaks, and once more when the preacher pauses. The preview in the card shows exactly what the screens show.
+When **Summary & points on screens** is switched on (off by default), about a minute into the sermon, screens that show **one language** fill the bottom half with the message's title, a two-sentence summary, the main points in order, and the verses read. The notes are written by Gemini from the transcript in every screen language, and they update about every minute and a half while the preacher speaks, and once more when the preacher pauses. When enabled, the preview in the card shows what the screens show.
 
 - **Update now** rewrites the notes immediately.
 - **Show recap** puts the whole message over the subtitles on every screen, both languages side by side, for up to two minutes. Use it at the end of the sermon. Choose **Hide recap** to remove it sooner.
 - **New message** clears the notes and the verses list. Use it when the next preacher starts. Notes also start fresh by themselves after 30 minutes of silence.
-- Turn **Summary & points on screens** off during announcements or when it is not wanted; no notes are written while it is off, and verse pop-ups keep working. Turn **Bible verse pop-ups** off to stop verses appearing by themselves.
+- Leave **Summary & points on screens** off during announcements or when only subtitles and Bible verses are wanted; no AI notes are written while it is off, and verse pop-ups keep working. Turn **Bible verse pop-ups** off to stop verses appearing by themselves.
 
 ### On one screen only
 
-Each projector and phone has two buttons under **Notes** in its control bar, each remembered by that device:
+Each projector and phone has two buttons under **Notes** in its control bar (each remembered by that device, defaulting to **Summary Off** and **Bible On**):
 
 - **Summary On/Off** shows or hides the title, summary, points, verses read and the recap on that screen.
 - **Bible On/Off** shows or hides the verse pop-ups on that screen.

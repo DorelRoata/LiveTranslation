@@ -134,7 +134,10 @@
 
         <section class="control-panel glass-card" aria-label="Translation Settings">
           <details class="panel-details setup-details" id="setup-details" open>
-            <summary class="panel-summary">Setup</summary>
+            <summary class="panel-summary">
+              <span>Setup</span>
+              <span class="setup-summary-pill" id="setup-summary-pill">Auto → English · Projector L · 3 lines</span>
+            </summary>
             <div class="config-grid">
               <div class="config-col">
                 <h3 class="config-col-title"><span>01</span> Source</h3>
@@ -263,10 +266,33 @@
 
               <div class="config-col">
                 <h3 class="config-col-title"><span>03</span> Screens &amp; extras</h3>
-                <div class="input-group instruction-group">
-                  <label for="system-instruction-input">Operator notes</label>
-                  <textarea id="system-instruction-input" class="instruction-input" placeholder="Optional notes for this computer only..."></textarea>
-                  <small class="helper-text">Google Live Translate is audio-only and does not use written instructions. Sending them made translation stop after the first phrase. These notes stay on this computer and are not sent to Gemini.</small>
+                <div class="input-group projector-display-group">
+                  <span class="field-group-label">Projector Display</span>
+                  <div class="projector-picker-row">
+                    <div class="segmented-group" role="group" aria-label="Projector subtitle text size">
+                      <span class="segmented-label">Text</span>
+                      <button type="button" class="segmented-btn projector-size-btn active" data-size="lg" aria-pressed="true" title="Large subtitle text (Default)">L</button>
+                      <button type="button" class="segmented-btn projector-size-btn" data-size="xl" aria-pressed="false" title="Extra large subtitle text for long sanctuaries">XL</button>
+                    </div>
+                    <div class="segmented-group" role="group" aria-label="Projector visible subtitle lines">
+                      <span class="segmented-label">Lines</span>
+                      <button type="button" class="segmented-btn projector-lines-btn" data-lines="2" aria-pressed="false" title="Two subtitle lines">2</button>
+                      <button type="button" class="segmented-btn projector-lines-btn active" data-lines="3" aria-pressed="true" title="Three subtitle lines (Default)">3</button>
+                      <button type="button" class="segmented-btn projector-lines-btn" data-lines="4" aria-pressed="false" title="Four subtitle lines">4</button>
+                      <button type="button" class="segmented-btn projector-lines-btn" data-lines="5" aria-pressed="false" title="Five subtitle lines">5</button>
+                    </div>
+                    <div class="segmented-group projector-font-picker">
+                      <label class="segmented-label" for="projector-font-select">Font</label>
+                      <select id="projector-font-select" class="projector-font-select" aria-label="Projector subtitle font">
+                        <option value="outfit" selected>Modern (Outfit)</option>
+                        <option value="hyperlegible">Hyperlegible (Atkinson)</option>
+                        <option value="condensed">Condensed (Barlow)</option>
+                        <option value="sans">Clean Sans (Arial)</option>
+                        <option value="serif">Classic Serif (Georgia)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <small class="helper-text">Updates projectors and OBS live. Use <strong>XL</strong> with <strong>4–5 lines</strong> for long sanctuaries.</small>
                 </div>
 
                 <div class="input-group">
@@ -275,16 +301,7 @@
                     <option value="smooth" selected>Smooth (200 ms buffer)</option>
                     <option value="live">Live (Legacy / Lowest Delay)</option>
                   </select>
-                  <small class="helper-text">Smooth groups short phrases and accelerates gradually when needed. This setting is sent to every projector, phone, and OBS overlay.</small>
-                </div>
-
-                <div class="input-group checkbox-group">
-                  <label class="switch-container">
-                    <input type="checkbox" id="echo-toggle" />
-                    <span class="switch-slider"></span>
-                    <span class="switch-label">Repeat words already in the target language</span>
-                  </label>
-                  <small class="helper-text">Leave off unless the speaker is mixing the source and target languages and you want those target-language words spoken back.</small>
+                  <small class="helper-text">Smooth groups short phrases and accelerates gradually when needed. Sent to every projector, phone, and OBS overlay.</small>
                 </div>
 
                 <div class="input-group checkbox-group song-filter-control">
@@ -294,6 +311,21 @@
                     <span class="switch-label">Automatically Ignore Songs</span>
                   </label>
                   <small id="song-filter-status" class="helper-text song-filter-status" data-state="off" role="status" aria-live="polite">Off — songs may be translated.</small>
+                </div>
+
+                <div class="input-group checkbox-group">
+                  <label class="switch-container">
+                    <input type="checkbox" id="echo-toggle" />
+                    <span class="switch-slider"></span>
+                    <span class="switch-label">Repeat words already in the target language</span>
+                  </label>
+                  <small class="helper-text">Leave off unless the speaker mixes source and target languages.</small>
+                </div>
+
+                <div class="input-group instruction-group">
+                  <label for="system-instruction-input">Operator notes</label>
+                  <textarea id="system-instruction-input" class="instruction-input" placeholder="Optional notes for this computer only..."></textarea>
+                  <small class="helper-text">Google Live Translate is audio-only and does not use written instructions. These notes stay on this computer.</small>
                 </div>
 
                 <button id="reset-settings-btn" class="secondary-btn reset-settings-btn" type="button">
@@ -437,14 +469,14 @@
             </div>
           </div>
 
-          <section class="notes-console glass-card" id="notes-console" aria-labelledby="notes-heading">
+          <section class="notes-console glass-card" id="notes-console" data-summary="off" data-has-notes="false" aria-labelledby="notes-heading">
             <header class="notes-head">
               <div class="notes-title-area">
                 <svg class="notes-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">
                   <path d="M3.5 5.5c0-.8.7-1.5 1.5-1.5h6v15.5H5a1.5 1.5 0 0 0-1.5 1.5zM20.5 5.5c0-.8-.7-1.5-1.5-1.5h-6v15.5h6c.8 0 1.5.7 1.5 1.5z"></path>
                 </svg>
-                <h3 id="notes-heading">Message notes</h3>
-                <span class="notes-status" id="notes-status" data-state="waiting" role="status" aria-live="polite">Waiting for about a minute of preaching</span>
+                <h3 id="notes-heading">Bible &amp; message notes</h3>
+                <span class="notes-status" id="notes-status" data-state="ready" role="status" aria-live="polite">Bible verses on · Summary off</span>
               </div>
               <div class="notes-actions">
                 <button id="notes-new-message-btn" class="health-btn" type="button" title="Clear the summary and verses for the next preacher.">New message</button>
@@ -454,11 +486,6 @@
             </header>
 
             <div class="notes-controls">
-              <label class="switch-container">
-                <input type="checkbox" id="notes-summary-toggle" checked />
-                <span class="switch-slider"></span>
-                <span class="switch-label">Summary &amp; points on screens</span>
-              </label>
               <label class="switch-container">
                 <input type="checkbox" id="notes-verses-toggle" checked />
                 <span class="switch-slider"></span>
@@ -474,6 +501,30 @@
                 <span class="switch-slider"></span>
                 <span class="switch-label" id="notes-spoken-label">Verses also in the spoken language</span>
               </label>
+              <label class="switch-container">
+                <input type="checkbox" id="notes-summary-toggle" />
+                <span class="switch-slider"></span>
+                <span class="switch-label">Summary &amp; points on screens</span>
+              </label>
+              <div class="notes-field">
+                <label for="notes-english-bible">English Bible</label>
+                <select id="notes-english-bible">
+                  <option value="kjv" selected>King James (KJV)</option>
+                  <option value="nkjv">New King James (NKJV)</option>
+                  <option value="niv">New International (NIV)</option>
+                  <option value="esv">English Standard (ESV)</option>
+                  <option value="web">World English (WEB)</option>
+                  <option value="asv">American Standard (ASV)</option>
+                </select>
+              </div>
+              <div class="notes-field">
+                <label for="notes-bible-size">Bible text</label>
+                <select id="notes-bible-size">
+                  <option value="md">Medium</option>
+                  <option value="lg" selected>Large</option>
+                  <option value="xl">Extra Large</option>
+                </select>
+              </div>
               <div class="notes-field">
                 <label for="notes-verse-seconds">Verse stays</label>
                 <select id="notes-verse-seconds">
@@ -482,14 +533,6 @@
                   <option value="90">1½ minutes</option>
                   <option value="120">2 minutes</option>
                   <option value="180">3 minutes</option>
-                </select>
-              </div>
-              <div class="notes-field">
-                <label for="notes-english-bible">English Bible</label>
-                <select id="notes-english-bible">
-                  <option value="kjv" selected>King James (KJV)</option>
-                  <option value="web">World English (WEB)</option>
-                  <option value="asv">American Standard (ASV)</option>
                 </select>
               </div>
             </div>
@@ -533,6 +576,12 @@
 
           <div class="transcript-controls-bar">
             <span class="transcript-heading">Live Transcripts</span>
+            <div class="transcript-mobile-tabs" role="group" aria-label="Filter mobile transcripts">
+              <button type="button" class="transcript-tab-btn active" data-lane="all" aria-pressed="true">All</button>
+              <button type="button" class="transcript-tab-btn" data-lane="input" aria-pressed="false">Detected</button>
+              <button type="button" class="transcript-tab-btn" data-lane="lang1" id="mobile-tab-lang1" aria-pressed="false">English</button>
+              <button type="button" class="transcript-tab-btn" data-lane="lang2" id="mobile-tab-lang2" aria-pressed="false" hidden>Language 2</button>
+            </div>
             <div class="font-size-picker">
               <span class="font-size-label">Text Size</span>
               <button class="font-size-btn" data-size="sm" aria-pressed="false" title="Small Text">S</button>
@@ -542,8 +591,8 @@
             </div>
           </div>
 
-          <div class="transcript-grid font-md" id="transcript-grid">
-            <div class="transcript-col glass-card">
+          <div class="transcript-grid font-md" id="transcript-grid" data-mobile-lane="all">
+            <div class="transcript-col glass-card" data-lane-col="input">
               <div class="col-header">
                 <div class="col-title-area">
                   <span class="circle-indicator input-pulse"></span>
@@ -559,7 +608,7 @@
               </div>
             </div>
 
-            <div class="transcript-col glass-card">
+            <div class="transcript-col glass-card" data-lane-col="lang1">
               <div class="col-header">
                 <div class="col-title-area">
                   <span class="circle-indicator output-pulse-1"></span>
@@ -575,7 +624,7 @@
               </div>
             </div>
 
-            <div class="transcript-col glass-card" id="col-lang-2" hidden>
+            <div class="transcript-col glass-card" id="col-lang-2" data-lane-col="lang2" hidden>
               <div class="col-header">
                 <div class="col-title-area">
                   <span class="circle-indicator output-pulse-2"></span>
@@ -605,7 +654,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Live Translate v1.5.3 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
+        <p>Live Translate v1.5.4 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
       </footer>
     </div>
 
