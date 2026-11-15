@@ -274,6 +274,7 @@ export function createMessageNotes({
     notesWords = 0;
     lastAttemptAt = 0;
     refreshLabels();
+    void refreshActiveVerse();
     publish();
   }
 
@@ -295,6 +296,7 @@ export function createMessageNotes({
     notesWords = 0;
     lastAttemptAt = 0;
     refreshLabels();
+    void refreshActiveVerse();
     maybeUpdateNotes();
   }
 
@@ -304,6 +306,7 @@ export function createMessageNotes({
   }
 
   function refreshLabels() {
+    if (!verses.length) return;
     const current = messageId;
     void Promise.all(verses.map(async item => {
       item.labels = await labelsFor(item.ref);
@@ -352,18 +355,21 @@ export function createMessageNotes({
     const seenAt = lastSeen.get(key);
     lastSeen.set(key, t);
     const current = messageId;
-    void addToList(ref, origin).then(added => {
-      if (added && current === messageId) publish();
-    });
-    if (!settings.verses || !ref.verseStart) return;
+    const canShow = Boolean(settings.verses && ref.verseStart);
     // The same verse from the other language, or repeated by the preacher:
     // keep the card up instead of showing it again.
-    if (verse?.key === key) {
+    if (canShow && verse?.key === key) {
+      void addToList(ref, origin);
       extendVerse();
       return;
     }
-    if (seenAt && t - seenAt < SAME_VERSE_WINDOW_MS) return;
-    void showVerse(ref, origin);
+    if (!canShow || (seenAt && t - seenAt < SAME_VERSE_WINDOW_MS)) {
+      void addToList(ref, origin).then(added => {
+        if (added && current === messageId) publish();
+      });
+      return;
+    }
+    void showVerse(ref, origin, { beforePublish: addToList(ref, origin) });
   }
 
   // --- The verse card ---------------------------------------------------------
@@ -381,10 +387,10 @@ export function createMessageNotes({
     publish();
   }
 
-  async function showVerse(ref, origin, { following = false } = {}) {
+  async function showVerse(ref, origin, { following = false, beforePublish = null } = {}) {
     const id = ++verseSeq;
     const current = messageId;
-    const nextLanes = await lookupVerseLanes(ref);
+    const [nextLanes] = await Promise.all([lookupVerseLanes(ref), beforePublish]);
     // A newer verse, or a new message, arrived while this one was loading.
     if (id !== verseSeq || current !== messageId || disposed) return;
     const t = now();
@@ -450,42 +456,44 @@ export function createMessageNotes({
     }
     reading = { id: best.id, at: t, ...at };
     rememberMention({ book: at.book, chapter: at.chapter });
-    noteReadingInList(at);
     // The verse being read now, and the next one to read along.
     const next = at.verse < verseCount(at.book, at.chapter) ? at.verse + 1 : 0;
     const ref = makeReference(at.book, at.chapter, at.verse, next);
-    if (ref) void showVerse(ref, 'reading', { following: true });
+    const listTask = noteReadingInList(at, { announce: !ref });
+    if (ref) void showVerse(ref, 'reading', { following: true, beforePublish: listTask });
   }
 
   // A reading is listed once, as the range read so far ("Psalms 50:1–23").
-  function noteReadingInList(at) {
+  function noteReadingInList(at, { announce = true } = {}) {
     const current = messageId;
     const item = readingItem && verses.includes(readingItem) ? readingItem : null;
     if (item && item.ref.book === at.book && item.ref.chapter === at.chapter && item.ref.verseStart
       && at.verse >= item.ref.verseStart && at.verse <= (item.ref.verseEnd || item.ref.verseStart) + 4) {
       const last = Math.max(item.ref.verseEnd || item.ref.verseStart, at.verse);
       const ref = makeReference(at.book, at.chapter, item.ref.verseStart, last);
-      if (!ref || referenceKey(ref) === item.key) return;
+      if (!ref || referenceKey(ref) === item.key) return Promise.resolve(false);
       item.ref = ref;
       item.key = referenceKey(ref);
-      void labelsFor(ref).then(labels => {
+      return labelsFor(ref).then(labels => {
         item.labels = labels;
-        if (current === messageId) publish();
+        if (announce && current === messageId) publish();
+        return true;
       });
-      return;
     }
     const announced = verses.find(entry => entry.ref.book === at.book && entry.ref.chapter === at.chapter
       && referenceVerses(entry.ref).includes(at.verse));
     if (announced) {
       readingItem = announced;
-      return;
+      return Promise.resolve(false);
     }
     const ref = makeReference(at.book, at.chapter, at.verse);
-    if (!ref) return;
-    void addToList(ref, 'reading').then(added => {
-      if (added && current === messageId) publish();
+    if (!ref) return Promise.resolve(false);
+    const task = addToList(ref, 'reading').then(added => {
+      if (announce && added && current === messageId) publish();
+      return added;
     });
     readingItem = verses[verses.length - 1];
+    return task;
   }
 
   function hideVerse(announce = true) {
@@ -641,9 +649,12 @@ export function createMessageNotes({
         const listed = typeof payload.key === 'string' ? verses.find(item => item.key === payload.key) : null;
         const ref = listed?.ref || parseReference(payload.reference);
         if (!ref) return 'That is not a Bible reference this app knows. Try "John 3:16" or "Psalm 23".';
-        void addToList(ref, 'operator').then(added => added && publish());
         lastSeen.set(referenceKey(ref), now());
-        void showVerse(ref, 'operator');
+        if (ref.verseStart) {
+          void showVerse(ref, 'operator', { beforePublish: addToList(ref, 'operator') });
+        } else {
+          void addToList(ref, 'operator').then(added => added && publish());
+        }
         return '';
       }
       case 'hide-verse':

@@ -64,7 +64,8 @@ function isPublisherNotice(text) {
 }
 
 // NKJV Psalm superscriptions begin with a balanced <i>...</i> block (often with
-// nested <i>A Psalm</i>) immediately followed by a duplicate closing </i>.
+// nested <i>A Psalm</i>) immediately followed by a duplicate closing </i> or
+// an empty <i> </i> spacer (Psalms 70:1, 92:1).
 function stripDoubledItalicPrefix(value) {
   if (!/^<i>/i.test(value)) return value;
   const tagPattern = /<\/?i>/gi;
@@ -74,7 +75,7 @@ function stripDoubledItalicPrefix(value) {
     depth += match[0].toLowerCase() === '<i>' ? 1 : -1;
     if (depth === 0) {
       const rest = value.slice(tagPattern.lastIndex);
-      if (/^\s*<\/i>\s*/i.test(rest)) return rest.replace(/^\s*<\/i>\s*/i, '');
+      if (/^\s*(?:<i>\s*)?<\/i>\s*/i.test(rest)) return rest.replace(/^\s*(?:<i>\s*)?<\/i>\s*/i, '');
       return value;
     }
   }
@@ -95,6 +96,12 @@ function decodeHtmlEntities(text) {
     });
 }
 
+function stripEditorialNotes(value) {
+  return value
+    .replace(/\[\s*(?:Some of the earliest|The earliest)\s+manuscripts\s+do\s+not\s+include[^\]]*\]/gi, ' ')
+    .replace(/\[\[|\]\]/g, '');
+}
+
 export function cleanBollsText(text) {
   if (isPublisherNotice(text)) return '';
   let value = stripDoubledItalicPrefix(String(text || '').trim());
@@ -104,14 +111,19 @@ export function cleanBollsText(text) {
   value = value.replace(/<\/?i>/gi, '');
   value = value.replace(/<br\s*\/?>/gi, ' ');
   value = value.replace(/<[^>]+>/g, ' ');
-  value = decodeHtmlEntities(value).replace(/\s+/g, ' ').trim();
+  value = stripEditorialNotes(decodeHtmlEntities(value)).replace(/\s+/g, ' ').trim();
   return isPublisherNotice(value) ? '' : value;
 }
 
 // Cornilescu is stored with cedilla letters (ş, ţ); Romanian uses commas.
-function cleanVerseText(text, language) {
+// NIV source data stores apostrophes and closing single quotes as backticks (`).
+export function cleanVerseText(text, language) {
   if (isPublisherNotice(text)) return '';
-  let value = String(text || '').replace(/[¶]/g, '').replace(/\s+/g, ' ').trim();
+  let value = stripEditorialNotes(String(text || ''))
+    .replace(/`/g, '’')
+    .replace(/[¶]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (language === 'ro') value = value.replace(/ş/g, 'ș').replace(/ţ/g, 'ț').replace(/Ş/g, 'Ș').replace(/Ţ/g, 'Ț');
   return value;
 }
@@ -379,7 +391,8 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
 
     let chars = 0;
     for (const n of referenceVerses(mapped)) {
-      const text = cleanVerseText(chapter.verses[n], bible.language);
+      const rawVerse = chapter.verses[n];
+      const text = BOLLS_SLUGS[bible.id] ? cleanBollsText(rawVerse) : cleanVerseText(rawVerse, bible.language);
       if (!text) continue;
       if (passage.verses.length >= MAX_VERSES_SHOWN || (passage.verses.length && chars + text.length > MAX_TEXT_CHARS)) {
         passage.truncated = true;
@@ -387,6 +400,10 @@ export function createBibleLibrary({ cacheDir, fetchImpl = globalThis.fetch, log
       }
       passage.verses.push({ n, text });
       chars += text.length;
+    }
+    if (!passage.verses.length && bible.language === 'en' && bible.id !== 'kjv') {
+      const fallback = await lookupPassage(ref, 'en', 'kjv');
+      if (fallback.verses.length) return fallback;
     }
     return passage;
   }

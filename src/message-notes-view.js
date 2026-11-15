@@ -1,10 +1,16 @@
 // Shows message notes on the projector and phones. Subtitles are not touched:
 // with one language on screen the subtitles keep the top half and this fills
-// the bottom half; with two languages a verse floats at the top of each
+// the bottom half; with two languages a verse sits cleanly at the top of each
 // language's half, and the recap opens over everything when the operator asks.
 // Each screen can hide the summary (with the recap) or the verses for itself.
-const MIN_SCALE = 0.48;
+// Bible verse typography is fixed strictly by `data-bible-size` so every
+// passage renders at the exact same font size without dynamic shrinking.
+const MIN_SCALE = 0.56;
 const LIST_LIMIT = 8;
+
+const reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+  ? window.matchMedia('(prefers-reduced-motion: reduce)')
+  : { matches: false };
 
 // Same rule as message-notes.js; kept here so screens do not load the Bible
 // reference tables.
@@ -19,10 +25,13 @@ function el(tag, className, text) {
   return node;
 }
 
-function restartAnimation(node, className) {
-  node.classList.remove(className);
-  void node.offsetWidth;
-  node.classList.add(className);
+function animateSmooth(node, keyframes, duration = 220) {
+  if (!node || reducedMotion.matches || typeof node.animate !== 'function') return;
+  node.getAnimations?.().forEach(animation => animation.cancel());
+  node.animate(keyframes, {
+    duration,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+  });
 }
 
 // Verse text with small verse numbers when more than one verse is shown.
@@ -52,11 +61,26 @@ function laneFor(mode) {
 }
 
 function startTimer(bar, remainingMs, durationMs) {
+  if (!bar) return;
   const total = Math.max(durationMs || remainingMs, 1);
-  bar.style.animation = 'none';
-  void bar.offsetWidth;
-  bar.style.transform = `scaleX(${Math.min(1, remainingMs / total)})`;
-  bar.style.animation = `verseTimer ${Math.max(remainingMs, 0)}ms linear forwards`;
+  const ratio = Math.max(0, Math.min(1, remainingMs / total));
+  bar.getAnimations?.().forEach(animation => animation.cancel());
+  bar.style.transform = `scaleX(${ratio})`;
+  if (!reducedMotion.matches && typeof bar.animate === 'function' && remainingMs > 0) {
+    bar.animate(
+      [{ transform: `scaleX(${ratio})` }, { transform: 'scaleX(0)' }],
+      { duration: Math.max(remainingMs, 0), easing: 'linear', fill: 'forwards' }
+    );
+  }
+}
+
+function shouldRestartTimer(previous, verseId, remainingMs) {
+  const nextDeadline = performance.now() + Math.max(0, remainingMs || 0);
+  if (!previous || previous.id !== verseId) return { restart: true, next: { id: verseId, deadline: nextDeadline } };
+  if (Math.abs(nextDeadline - previous.deadline) > 1000) {
+    return { restart: true, next: { id: verseId, deadline: nextDeadline } };
+  }
+  return { restart: false, next: previous };
 }
 
 export function createMessageNotesView({ panel, floats, recapOverlay }) {
@@ -86,7 +110,18 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
   let recapUntil = 0;
   let expiryTimer = 0;
   let fitFrame = 0;
-  const shown = { verseId: null, verseUntil: 0, floatIds: {}, points: {}, title: {}, recapKey: '' };
+  const shown = {
+    verseContentKey: '',
+    versePrimaryKey: '',
+    verseTimer: null,
+    floatContentKeys: {},
+    floatPrimaryKeys: {},
+    floatTimers: {},
+    listKey: '',
+    notesFitKey: '',
+    points: {},
+    recapKey: ''
+  };
 
   function verseActive() {
     return Boolean(state?.verse) && performance.now() < verseUntil;
@@ -123,14 +158,21 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     const notes = state.notes;
     const title = notes?.title?.[lane] || '';
     if (parts.title.textContent !== title) {
+      const hadTitle = Boolean(parts.title.textContent);
       parts.title.textContent = title;
-      if (title) restartAnimation(parts.title, 'mp-fresh');
+      if (title && !hadTitle) {
+        animateSmooth(parts.title, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'translateY(0)' }], 240);
+      }
     }
     parts.title.hidden = !title;
+
     const summary = notes?.summary?.[lane] || '';
     if (parts.summary.textContent !== summary) {
+      const hadSummary = Boolean(parts.summary.textContent);
       parts.summary.textContent = summary;
-      if (summary) restartAnimation(parts.summary, 'mp-fresh');
+      if (summary && !hadSummary) {
+        animateSmooth(parts.summary, [{ opacity: 0 }, { opacity: 1 }], 220);
+      }
     }
     parts.summary.hidden = !summary;
 
@@ -147,45 +189,83 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     parts.points.hidden = points.length === 0;
   }
 
-  function renderVerseCard(lane) {
+  function renderVerseCard(lane, wasVisible) {
     const verse = state.verse;
     const following = Boolean(verse.following);
     const passage = verse.lanes?.[lane] || verse.lanes?.lang1;
-    parts.verseRef.textContent = followLabel(passage?.label, following);
-    parts.verseVersion.textContent = passage?.version || '';
-    fillVerseText(parts.verseText, passage, { following });
-    parts.verseText.hidden = !(passage?.verses?.length);
-
     // The same verse in the spoken language's Bible (Cornilescu under KJV).
     const spoken = lane !== 'src' && state.settings?.spokenVerses ? verse.lanes?.src : null;
-    parts.spoken.hidden = !(spoken?.verses?.length);
-    if (spoken?.verses?.length) {
-      parts.spokenRef.textContent = followLabel(spoken.label, following);
-      parts.spokenVersion.textContent = spoken.version || '';
-      fillVerseText(parts.spokenText, spoken, { following });
+    const refLabel = followLabel(passage?.label, following);
+    const primaryFirstText = passage?.verses?.[0]?.text || '';
+    const primaryKey = `${lane}|${refLabel}|${passage?.version || ''}|${primaryFirstText}`;
+    const contentKey = JSON.stringify([
+      lane,
+      following,
+      refLabel,
+      passage?.version || '',
+      passage?.verses || [],
+      Boolean(passage?.truncated),
+      spoken ? followLabel(spoken.label, following) : '',
+      spoken?.version || '',
+      spoken?.verses || [],
+      Boolean(spoken?.truncated)
+    ]);
+
+    if (contentKey !== shown.verseContentKey) {
+      parts.verseRef.textContent = refLabel;
+      parts.verseVersion.textContent = passage?.version || '';
+      fillVerseText(parts.verseText, passage, { following });
+      parts.verseText.hidden = !(passage?.verses?.length);
+
+      parts.spoken.hidden = !(spoken?.verses?.length);
+      if (spoken?.verses?.length) {
+        parts.spokenRef.textContent = followLabel(spoken.label, following);
+        parts.spokenVersion.textContent = spoken.version || '';
+        fillVerseText(parts.spokenText, spoken, { following });
+      }
+
+      if (!wasVisible) {
+        animateSmooth(parts.verse, [
+          { opacity: 0, transform: 'translateY(6px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ], 240);
+      } else if (primaryKey !== shown.versePrimaryKey) {
+        animateSmooth(parts.verseText, [{ opacity: 0.72 }, { opacity: 1 }], 180);
+        if (!parts.spoken.hidden) {
+          animateSmooth(parts.spokenText, [{ opacity: 0.72 }, { opacity: 1 }], 180);
+        }
+      }
+
+      shown.verseContentKey = contentKey;
+      shown.versePrimaryKey = primaryKey;
     }
 
     // While following, the card stays as long as the reading goes on, so its
     // countdown would only jump back with every verse.
     parts.verseTimerTrack.hidden = following;
-    const continuing = following && shown.following && shown.verseId !== null;
-    if (shown.verseId !== verse.id) restartAnimation(continuing ? parts.verseText : parts.verse, continuing ? 'mp-advance' : 'mp-fresh');
-    if (!following && (shown.verseId !== verse.id || shown.verseUntil !== verse.remainingMs)) {
-      startTimer(parts.verseTimer, verse.remainingMs, verse.durationMs);
+    if (following) {
+      shown.verseTimer = null;
+    } else {
+      const check = shouldRestartTimer(shown.verseTimer, verse.id, verse.remainingMs);
+      shown.verseTimer = check.next;
+      if (check.restart) {
+        startTimer(parts.verseTimer, verse.remainingMs, verse.durationMs);
+      }
     }
-    shown.verseId = verse.id;
-    shown.verseUntil = verse.remainingMs;
-    shown.following = following;
   }
 
   function renderList(lane) {
     const items = (state.verses || []).slice(-LIST_LIMIT);
     const current = view.verses && verseActive() ? state.verse.key : '';
-    parts.list.replaceChildren(...items.map(item => {
-      const chip = el('li', item.key === current ? 'current' : '', item.labels?.[lane] || item.labels?.lang1 || '');
-      chip.dir = 'auto';
-      return chip;
-    }));
+    const listKey = JSON.stringify([lane, current, items.map(item => [item.key, item.labels?.[lane] || item.labels?.lang1 || ''])]);
+    if (listKey !== shown.listKey) {
+      parts.list.replaceChildren(...items.map(item => {
+        const chip = el('li', item.key === current ? 'current' : '', item.labels?.[lane] || item.labels?.lang1 || '');
+        chip.dir = 'auto';
+        return chip;
+      }));
+      shown.listKey = listKey;
+    }
     parts.list.hidden = items.length === 0;
   }
 
@@ -202,21 +282,41 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     const bibleSize = settings.bibleSize || 'lg';
     panel.dataset.bibleSize = bibleSize;
 
+    const wasVerseVisible = !panel.hidden && !parts.verse.hidden;
     panel.hidden = !visible;
     if (!visible) {
-      shown.verseId = null;
+      shown.verseContentKey = '';
+      shown.versePrimaryKey = '';
+      shown.verseTimer = null;
       return;
     }
-    renderNotes(lane);
+    if (showNotes) renderNotes(lane);
     parts.notes.hidden = !showNotes;
     parts.verse.hidden = !showVerse;
-    if (showVerse) renderVerseCard(lane);
-    else shown.verseId = null;
+    if (showVerse) {
+      renderVerseCard(lane, wasVerseVisible);
+    } else {
+      shown.verseContentKey = '';
+      shown.versePrimaryKey = '';
+      shown.verseTimer = null;
+    }
     if (showList) renderList(lane);
     else parts.list.hidden = true;
     parts.scripture.hidden = !showVerse && !showList;
-    panel.dataset.columns = showNotes && (showVerse || showList) ? 'both' : showNotes ? 'notes' : 'scripture';
-    scheduleFit();
+    const columns = showNotes && (showVerse || showList) ? 'both' : showNotes ? 'notes' : 'scripture';
+    panel.dataset.columns = columns;
+
+    // Only fit optional sermon summary notes; Bible text size is always fixed.
+    if (showNotes) {
+      const nextNotesFitKey = `${window.innerWidth}x${window.innerHeight}|${columns}|${parts.title.textContent}|${parts.summary.textContent}|${(shown.points[lane] || []).join('\n')}`;
+      if (nextNotesFitKey !== shown.notesFitKey) {
+        shown.notesFitKey = nextNotesFitKey;
+        scheduleFit();
+      }
+    } else {
+      shown.notesFitKey = '';
+      panel.style.setProperty('--notes-scale', '1');
+    }
   }
 
   // --- Two languages: a verse at the top of each half -------------------------
@@ -226,22 +326,50 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     for (const [lane, float] of Object.entries(floats)) {
       float.dataset.bibleSize = bibleSize;
       const passage = show ? (state.verse.lanes?.[lane]) : null;
+      const wasVisible = !float.hidden;
       float.hidden = !passage;
       if (!passage) {
-        shown.floatIds[lane] = null;
+        shown.floatContentKeys[lane] = '';
+        shown.floatPrimaryKeys[lane] = '';
+        shown.floatTimers[lane] = null;
         continue;
       }
       const following = Boolean(state.verse.following);
-      float.querySelector('[data-part="ref"]').textContent = followLabel(passage.label, following);
+      const refLabel = followLabel(passage.label, following);
+      const limit = following ? 1 : 0;
+      const shownVerses = (passage.verses || []).slice(0, limit || undefined);
+      const primaryKey = `${lane}|${refLabel}|${shownVerses[0]?.text || ''}`;
+      const contentKey = JSON.stringify([lane, following, refLabel, shownVerses, Boolean(passage.truncated)]);
       const text = float.querySelector('[data-part="text"]');
-      fillVerseText(text, passage, { following, limit: following ? 1 : 0 });
-      text.hidden = !passage.verses?.length;
+
+      if (contentKey !== shown.floatContentKeys[lane]) {
+        float.querySelector('[data-part="ref"]').textContent = refLabel;
+        fillVerseText(text, passage, { following, limit });
+        text.hidden = !passage.verses?.length;
+
+        if (!wasVisible) {
+          animateSmooth(float, [
+            { opacity: 0, transform: 'translateY(-4px)' },
+            { opacity: 1, transform: 'translateY(0)' }
+          ], 220);
+        } else if (primaryKey !== shown.floatPrimaryKeys[lane]) {
+          animateSmooth(text, [{ opacity: 0.72 }, { opacity: 1 }], 180);
+        }
+
+        shown.floatContentKeys[lane] = contentKey;
+        shown.floatPrimaryKeys[lane] = primaryKey;
+      }
+
       const bar = float.querySelector('[data-part="timer"]');
       bar.parentElement.hidden = following;
-      if (shown.floatIds[lane] !== `${state.verse.id}:${state.verse.remainingMs}`) {
-        if (shown.floatIds[lane]?.split(':')[0] !== String(state.verse.id)) restartAnimation(following ? text : float, following ? 'mp-advance' : 'mp-fresh');
-        if (!following) startTimer(bar, state.verse.remainingMs, state.verse.durationMs);
-        shown.floatIds[lane] = `${state.verse.id}:${state.verse.remainingMs}`;
+      if (following) {
+        shown.floatTimers[lane] = null;
+      } else {
+        const check = shouldRestartTimer(shown.floatTimers[lane], state.verse.id, state.verse.remainingMs);
+        shown.floatTimers[lane] = check.next;
+        if (check.restart) {
+          startTimer(bar, state.verse.remainingMs, state.verse.durationMs);
+        }
       }
     }
   }
@@ -272,6 +400,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
       ? ['lang1', 'lang2'].filter(lane => notesHaveContent(state?.notes, lane))
       : [laneFor(view.mode)].filter(lane => notesHaveContent(state?.notes, lane));
     const show = Boolean(state) && view.summary && !view.obs && recapActive() && lanes.length > 0;
+    const wasVisible = !recapOverlay.hidden;
     recapOverlay.hidden = !show;
     if (!show) {
       shown.recapKey = '';
@@ -281,70 +410,45 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     if (key !== shown.recapKey) {
       recapCard.replaceChildren(...lanes.map(recapColumn));
       recapCard.style.setProperty('--recap-scale', '1');
-      if (!shown.recapKey) restartAnimation(recapOverlay, 'mp-fresh');
+      if (!wasVisible) {
+        animateSmooth(recapOverlay, [{ opacity: 0 }, { opacity: 1 }], 240);
+      }
       shown.recapKey = key;
       scheduleFit();
     }
   }
 
-  // --- Fitting long notes into the space they have ---------------------------
-  // Wrapped text does not shrink in proportion, so the size is found by a
-  // binary search on an invisible copy; the real panel changes once, with no
-  // flicker. Each try waits two frames: Chrome does not always apply a size
-  // change to a synchronous read on this page.
-  function nextFrames() {
-    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  }
-
-  async function fitElement(node, property) {
-    const token = {};
-    node.fitToken = token;
-    // Phones scroll the notes instead of shrinking them.
-    if (getComputedStyle(node).overflowY === 'auto') {
-      node.style.setProperty(property, '1');
+  // --- Fitting long summary/recap notes into their box ------------------------
+  // Never touches Bible verse font size; only scales optional summary notes or
+  // the full-screen recap card when needed.
+  function fitNotesContainer(container, target, property) {
+    if (getComputedStyle(container).overflowY === 'auto') {
+      target.style.setProperty(property, '1');
       return;
     }
-    const style = getComputedStyle(node);
-    const available = style.maxHeight !== 'none' ? Number.parseFloat(style.maxHeight) : node.clientHeight;
-    const width = node.offsetWidth;
-    if (!available || !width) return;
+    const style = getComputedStyle(container);
+    const available = style.maxHeight !== 'none' ? Number.parseFloat(style.maxHeight) : container.clientHeight;
+    if (!available || !container.offsetWidth) return;
 
-    const probe = node.cloneNode(true);
-    probe.removeAttribute('id');
-    probe.removeAttribute('aria-live');
-    probe.setAttribute('aria-hidden', 'true');
-    probe.style.cssText = `${node.style.cssText};position:absolute;top:0;left:0;width:${width}px;height:auto;max-height:none;visibility:hidden;pointer-events:none;`;
-    node.parentNode.append(probe);
+    target.style.setProperty(property, '1');
+    if (container.scrollHeight <= available + 1) return;
 
-    const fitsAt = async scale => {
-      probe.style.setProperty(property, scale.toFixed(3));
-      await nextFrames();
-      return probe.offsetHeight <= available + 1;
-    };
-
-    try {
-      let best = 1;
-      if (!(await fitsAt(1))) {
-        let low = MIN_SCALE;
-        let high = 1;
-        for (let step = 0; step < 6 && node.fitToken === token; step++) {
-          const middle = (low + high) / 2;
-          if (await fitsAt(middle)) low = middle;
-          else high = middle;
-        }
-        best = low;
-      }
-      if (node.fitToken === token) node.style.setProperty(property, best.toFixed(3));
-    } finally {
-      probe.remove();
+    let low = MIN_SCALE;
+    let high = 1;
+    for (let step = 0; step < 6; step++) {
+      const middle = (low + high) / 2;
+      target.style.setProperty(property, middle.toFixed(3));
+      if (container.scrollHeight <= available + 1) low = middle;
+      else high = middle;
     }
+    target.style.setProperty(property, low.toFixed(3));
   }
 
   function scheduleFit() {
     cancelAnimationFrame(fitFrame);
     fitFrame = requestAnimationFrame(() => {
-      if (!panel.hidden) void fitElement(panel, '--mp-scale');
-      if (!recapOverlay.hidden) void fitElement(recapCard, '--recap-scale');
+      if (!panel.hidden && !parts.notes.hidden) fitNotesContainer(panel, panel, '--notes-scale');
+      if (!recapOverlay.hidden) fitNotesContainer(recapCard, recapCard, '--recap-scale');
     });
   }
 
@@ -355,12 +459,10 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     scheduleExpiry();
   }
 
-  window.addEventListener('resize', scheduleFit, { passive: true });
-  document.fonts?.ready.then(scheduleFit);
-  if (typeof ResizeObserver === 'function') {
-    const panelObserver = new ResizeObserver(() => scheduleFit());
-    panelObserver.observe(panel);
-  }
+  window.addEventListener('resize', () => {
+    shown.notesFitKey = '';
+    if ((!panel.hidden && !parts.notes.hidden) || !recapOverlay.hidden) scheduleFit();
+  }, { passive: true });
 
   return { update, setView };
 }

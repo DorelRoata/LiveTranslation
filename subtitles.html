@@ -9,8 +9,6 @@
     body {
       --subtitle-lines: 3;
       --subtitle-budget-vh: 38vh;
-      --subtitle-max-by-lines: calc(var(--subtitle-budget-vh) / (var(--subtitle-lines, 3) * 1.24));
-      --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
       --subtitle-font-family: 'Outfit', system-ui, -apple-system, sans-serif;
       --subtitle-line-height: 1.15;
       --subtitle-line-gap: 0.25rem;
@@ -43,10 +41,17 @@
     body[data-subtitle-font="serif"] {
       --subtitle-font-family: Georgia, 'Times New Roman', serif;
     }
-    body[data-subtitle-size="lg"] {
+    body,
+    .section {
+      --subtitle-max-by-lines: calc(var(--subtitle-budget-vh) / (var(--subtitle-lines, 3) * 1.24));
       --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
     }
-    body[data-subtitle-size="xl"] {
+    body[data-subtitle-size="lg"],
+    body[data-subtitle-size="lg"] .section {
+      --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
+    }
+    body[data-subtitle-size="xl"],
+    body[data-subtitle-size="xl"] .section {
       --subtitle-font-size: clamp(1.7rem, min(5.2vw, 8.6vh, var(--subtitle-max-by-lines)), 6.6rem);
     }
     .status-dot {
@@ -75,7 +80,6 @@
       box-sizing: border-box;
       gap: 0.75rem;
       justify-content: center;
-      transition: all 0.5s ease;
     }
     .section {
       flex: 1;
@@ -88,7 +92,7 @@
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.01);
       border: 1px solid rgba(255, 255, 255, 0.03);
-      transition: all 0.5s ease;
+      transition: opacity 0.25s ease;
       opacity: 1;
     }
     .section.hidden {
@@ -105,15 +109,11 @@
       flex: 0 0 50%;
     }
     body.single-language-layout:not(.obs-mode) {
-      --subtitle-budget-vh: 56vh;
+      --subtitle-budget-vh: 48vh;
     }
     body.single-language-layout:not(.obs-mode) .section {
       flex: 0 0 60%;
       justify-content: flex-start;
-    }
-    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"],
-    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"] {
-      --subtitle-budget-vh: 62vh;
     }
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"] .section,
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"] .section {
@@ -122,34 +122,24 @@
     body.single-language-layout:not(.obs-mode) .text {
       flex: 0 1 auto;
       justify-content: flex-start;
-      padding-top: clamp(2.25rem, 6vh, 4.5rem);
-      padding-bottom: clamp(0.75rem, 2vh, 1.5rem);
-    }
-    body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) {
-      --subtitle-budget-vh: 42vh;
+      padding-top: clamp(1.5rem, 4vh, 3rem);
+      padding-bottom: clamp(0.5rem, 1.5vh, 1rem);
     }
     body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .section {
-      flex: 0 0 48%;
-    }
-    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])),
-    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) {
-      --subtitle-budget-vh: 46vh;
+      flex: 0 0 46%;
     }
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])) .section,
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) .section {
-      flex: 0 0 52%;
+      flex: 0 0 50%;
     }
-    body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .text {
-      padding-top: clamp(1.25rem, 3.5vh, 2.5rem);
-      padding-bottom: clamp(0.5rem, 1.5vh, 1rem);
-    }
-    .section:has(.verse-float:not([hidden])) {
-      --subtitle-budget-vh: 25vh;
+    body:not(.single-language-layout) .section:has(.verse-float:not([hidden])) {
+      --subtitle-budget-vh: 24vh;
     }
     .section:has(.verse-float:not([hidden])) .text {
-      justify-content: flex-end;
-      padding-top: clamp(5rem, 13vh, 9.5rem);
-      padding-bottom: 0.75rem;
+      flex: 1 1 0;
+      justify-content: center;
+      padding-top: 0.25rem;
+      padding-bottom: 0.5rem;
     }
     .text {
       flex: 1 1 auto;
@@ -343,8 +333,9 @@
       position: relative;
     }
     .message-panel {
-      --mp-scale: 1;
+      --notes-scale: 1;
       --bible-scale: 1;
+      --bible-text-size: clamp(1.25rem, min(2.05vw, 3.6vh), 2.75rem);
       --scripture: #e8bd62;
       --scripture-soft: rgba(232, 189, 98, 0.32);
       flex: 1 1 0;
@@ -353,11 +344,10 @@
       grid-template-columns: minmax(0, 1fr);
       align-items: start;
       align-content: start;
-      gap: clamp(0.75rem, 1.8vh, 1.35rem);
-      padding: clamp(0.9rem, 2.4vh, 2rem) clamp(0.5rem, 5vw, 6rem) max(var(--subtitle-bottom-safe), env(safe-area-inset-bottom));
+      gap: clamp(0.65rem, 1.5vh, 1.15rem);
+      padding: clamp(0.65rem, 1.8vh, 1.4rem) clamp(0.5rem, 4vw, 4.5rem) max(0.85rem, env(safe-area-inset-bottom));
       box-sizing: border-box;
       overflow: hidden;
-      font-size: calc(min(1.48vw, 2.8vh) * var(--mp-scale));
       color: #d6dee2;
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent) top / 100% 1px no-repeat;
     }
@@ -368,7 +358,7 @@
       --bible-scale: 1;
     }
     [data-bible-size="xl"] {
-      --bible-scale: 1.18;
+      --bible-scale: 1.16;
     }
     .message-panel[hidden],
     .message-panel [hidden],
@@ -381,25 +371,26 @@
     .message-panel[data-columns="scripture"] {
       grid-template-columns: minmax(0, 1fr);
     }
+    .mp-notes {
+      min-width: 0;
+      font-size: calc(min(1.48vw, 2.8vh) * var(--notes-scale, 1));
+    }
+    .mp-scripture {
+      min-width: 0;
+      width: min(100%, 92rem);
+      justify-self: center;
+      font-size: calc(var(--bible-text-size) * var(--bible-scale, 1));
+    }
     .message-panel[data-columns="both"] .mp-scripture {
-      padding-top: 0.7em;
+      padding-top: 0.55em;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
-      font-size: calc(1.16em * var(--bible-scale, 1));
     }
     .message-panel[data-columns="scripture"] {
-      font-size: calc(min(2.35vw, 4.25vh) * var(--bible-scale, 1) * var(--mp-scale));
       justify-items: center;
       align-content: center;
     }
-    .message-panel[data-columns="scripture"] .mp-scripture {
-      width: min(100%, 78rem);
-    }
     body.qr-on .message-panel {
       padding-right: calc(148px + 3rem);
-    }
-    .mp-notes,
-    .mp-scripture {
-      min-width: 0;
     }
     .mp-title {
       margin: 0 0 0.25em;
@@ -453,27 +444,27 @@
       box-shadow: 0 0 14px rgba(240, 120, 94, 0.28);
     }
     .mp-points li.mp-new {
-      animation: mpRise 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation: mpRise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
     }
     .mp-verse {
       position: relative;
-      padding: 0.15em 0 0 1em;
+      padding: 0.1em 0 0 0.85em;
       border-left: 3px solid var(--scripture);
     }
     .mp-verse-head {
       display: flex;
       align-items: baseline;
       flex-wrap: wrap;
-      gap: 0.25em 0.75em;
+      gap: 0.2em 0.65em;
     }
     .mp-verse-ref {
-      font-size: 1.38em;
+      font-size: 1.06em;
       font-weight: 800;
       line-height: 1.15;
       color: var(--scripture);
     }
     .mp-verse-version {
-      font-size: 0.64em;
+      font-size: 0.52em;
       font-weight: 700;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -485,9 +476,24 @@
       color: #f7f2e7;
     }
     .mp-verse-text {
-      margin: 0.35em 0 0;
-      font-size: 1.28em;
-      line-height: 1.44;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 6;
+      overflow: hidden;
+      margin: 0.18em 0 0;
+      font-size: 1em;
+      line-height: 1.33;
+    }
+    .message-panel[data-bible-size="xl"] .mp-verse-text {
+      -webkit-line-clamp: 5;
+    }
+    .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text,
+    .message-panel[data-columns="both"] .mp-verse-text {
+      -webkit-line-clamp: 3;
+    }
+    .message-panel[data-bible-size="xl"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text,
+    .message-panel[data-columns="both"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text {
+      -webkit-line-clamp: 2;
     }
     .verse-num {
       margin-right: 0.18em;
@@ -499,7 +505,7 @@
     .verse-timer {
       display: block;
       height: 2px;
-      margin-top: 0.85em;
+      margin-top: 0.42em;
       overflow: hidden;
       border-radius: 2px;
       background: rgba(232, 189, 98, 0.16);
@@ -509,26 +515,24 @@
       height: 100%;
       background: var(--scripture);
       transform-origin: left center;
-    }
-    @keyframes verseTimer {
-      to { transform: scaleX(0); }
+      will-change: transform;
     }
     .mp-verse-list {
       list-style: none;
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4em 0.45em;
-      margin: 0.75em 0 0;
+      gap: 0.35em 0.4em;
+      margin: 0.55em 0 0;
       padding: 0;
     }
     .mp-verse[hidden] + .mp-verse-list {
       margin-top: 0;
     }
     .mp-verse-list li {
-      padding: 0.26em 0.76em 0.3em;
+      padding: 0.22em 0.65em 0.26em;
       border: 1px solid var(--scripture-soft);
       border-radius: 999px;
-      font-size: 0.86em;
+      font-size: 0.68em;
       font-weight: 600;
       line-height: 1.2;
       color: #cfd8dc;
@@ -540,23 +544,22 @@
       border-color: var(--scripture);
     }
 
-    /* Two languages: the verse sits in the space above each language's lines. */
+    /* Two languages: the verse sits cleanly at the top of each language's half. */
     .verse-float {
       --bible-scale: 1;
       --scripture: #e8bd62;
-      position: absolute;
-      top: clamp(0.35rem, 1.3vh, 1rem);
-      left: 50%;
-      z-index: 5;
-      width: min(90%, 84rem);
+      order: -1;
+      flex: 0 0 auto;
+      align-self: center;
+      width: min(92%, 86rem);
+      margin: 0.1rem 0 0.3rem;
       box-sizing: border-box;
-      transform: translateX(-50%);
-      padding: 0.55em 1.1em 0.6em;
+      padding: 0.45em 1em 0.5em;
       border: 1px solid rgba(232, 189, 98, 0.34);
       border-radius: 12px;
-      background: rgba(15, 19, 23, 0.9);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-      font-size: calc(min(1.82vw, 3.25vh) * var(--bible-scale, 1));
+      background: rgba(15, 19, 23, 0.92);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      font-size: calc(clamp(1rem, min(1.75vw, 3.1vh), 2.3rem) * var(--bible-scale, 1));
       color: #f7f2e7;
     }
     .vf-ref {
@@ -566,14 +569,17 @@
     }
     .vf-text {
       display: -webkit-box;
-      margin: 0.18em 0 0;
+      margin: 0.16em 0 0;
       overflow: hidden;
-      line-height: 1.34;
+      line-height: 1.32;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
     }
+    .verse-float[data-bible-size="xl"] .vf-text {
+      -webkit-line-clamp: 2;
+    }
     .verse-float .verse-timer {
-      margin-top: 0.45em;
+      margin-top: 0.4em;
     }
 
     /* Recap: the whole message over the subtitles, when the operator asks. */
@@ -615,24 +621,13 @@
     .recap-card .mp-title {
       font-size: 1.6em;
     }
+    .recap-card .mp-verse-list li {
+      font-size: 0.86em;
+    }
 
-    .mp-fresh {
-      animation: mpFade 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .verse-float.mp-fresh {
-      animation: floatIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    @keyframes mpFade {
+    @keyframes mpRise {
       from { opacity: 0; transform: translateY(0.35em); }
       to { opacity: 1; transform: none; }
-    }
-    @keyframes mpRise {
-      from { opacity: 0; transform: translateY(0.5em); }
-      to { opacity: 1; transform: none; }
-    }
-    @keyframes floatIn {
-      from { opacity: 0; transform: translate(-50%, -0.5em); }
-      to { opacity: 1; transform: translate(-50%, 0); }
     }
 
     /* The spoken language: the same look as the subtitles, newest line at the
@@ -664,28 +659,21 @@
     .verse-next {
       opacity: 0.42;
     }
-    .mp-advance {
-      animation: mpAdvance 420ms ease both;
-    }
-    @keyframes mpAdvance {
-      from { opacity: 0.35; }
-      to { opacity: 1; }
-    }
     /* The verse also in the spoken language's Bible, under the screen's own. */
     .mp-verse-spoken {
-      margin-top: 0.65em;
-      padding-top: 0.55em;
+      margin-top: 0.36em;
+      padding-top: 0.34em;
       border-top: 1px solid rgba(232, 189, 98, 0.18);
     }
     .mp-verse-spoken .mp-verse-head {
       font-size: 1em;
     }
     .mp-verse-spoken .mp-verse-ref {
-      font-size: 1.38em;
+      font-size: 1.06em;
       color: #d9b46a;
     }
     .mp-verse-spoken .mp-verse-text {
-      font-size: 1.28em;
+      font-size: 1em;
       color: #f7f2e7;
     }
 
@@ -752,18 +740,19 @@
         height: 112px;
       }
       .message-panel {
+        --bible-text-size: clamp(1.02rem, 4.3vw, 1.25rem);
         grid-template-columns: minmax(0, 1fr);
         gap: 0.9rem;
         padding: 0.8rem 0.25rem max(1rem, env(safe-area-inset-bottom));
         overflow-y: auto;
-        font-size: calc(clamp(0.86rem, 3.8vw, 1.08rem) * var(--bible-scale, 1) * var(--mp-scale));
       }
-      .message-panel[data-columns="scripture"] {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0.9rem;
-        padding: 0.8rem 0.25rem max(1rem, env(safe-area-inset-bottom));
-        overflow-y: auto;
-        font-size: calc(clamp(0.98rem, 4.3vw, 1.25rem) * var(--bible-scale, 1) * var(--mp-scale));
+      .mp-notes {
+        font-size: calc(clamp(0.86rem, 3.8vw, 1.08rem) * var(--notes-scale, 1));
+      }
+      .message-panel .mp-verse-text {
+        display: block;
+        -webkit-line-clamp: unset;
+        overflow: visible;
       }
       .message-panel .mp-scripture {
         order: -1;
@@ -790,15 +779,20 @@
     }
 
     @media (max-height: 650px) {
-      body {
+      body,
+      .section {
         --subtitle-font-size: clamp(1.3rem, min(3.4vw, var(--subtitle-max-by-lines)), 2.5rem);
+      }
+      body {
         --subtitle-bottom-safe: max(0.75rem, env(safe-area-inset-bottom));
         padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
       }
-      body[data-subtitle-size="lg"] {
+      body[data-subtitle-size="lg"],
+      body[data-subtitle-size="lg"] .section {
         --subtitle-font-size: clamp(1.3rem, min(3.4vw, var(--subtitle-max-by-lines)), 2.5rem);
       }
-      body[data-subtitle-size="xl"] {
+      body[data-subtitle-size="xl"],
+      body[data-subtitle-size="xl"] .section {
         --subtitle-font-size: clamp(1.45rem, min(4vw, var(--subtitle-max-by-lines)), 2.9rem);
       }
       .container {
@@ -879,7 +873,7 @@
       <button class="control-btn active" id="btn-verses-toggle" type="button" aria-pressed="true">Bible On</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.4</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.5</span>
   </div>
 
   <div class="container" id="subtitles-container">

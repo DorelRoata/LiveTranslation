@@ -425,6 +425,14 @@ test('a verse said again during a reading of its range is not listed twice', asy
 
 test('NKJV and ESV clean Bolls superscriptions, headings, mid-word italics, omitted NT verses, and block publisher notices', async () => {
   assert.equal(cleanBollsText('Biblica, Inc. has prohibited distribution of NIV'), '');
+  assert.equal(
+    cleanBollsText('<i>To the Chief Musician. <i>A Psalm</i> of David. To bring to remembrance.</i> <i> </i> Make</i> <i>haste</i>, O God, to deliver me!'),
+    'Make haste, O God, to deliver me!'
+  );
+  assert.equal(
+    cleanBollsText('[Some of the earliest manuscripts do not include 16:9–20.]  <b>Jesus Appears to Mary Magdalene</b>  [[Now when he rose early on the first day]]'),
+    'Now when he rose early on the first day'
+  );
 
   const cacheDir = mkdtempSync(path.join(os.tmpdir(), 'lt-bible-bolls-'));
   try {
@@ -575,4 +583,49 @@ test('default settings keep summary off and Bible on, and switching English Bibl
   await flush();
   assert.equal(run.last().verse.lanes.lang1.version, 'ESV');
   assert.equal(run.last().verse.lanes.lang1.verses[0].text, 'ESV text');
+});
+
+test('NIV normalizes backtick apostrophes, omitted critical-text verses fall back to KJV, and showing a verse broadcasts once', async t => {
+  const cacheDir = mkdtempSync(path.join(os.tmpdir(), 'lt-bible-fallback-'));
+  try {
+    const fetchImpl = async url => {
+      if (url.endsWith('/Acts.json')) {
+        const verses = [];
+        for (let v = 1; v <= 40; v++) {
+          if (v === 37) continue;
+          verses.push({ verse: String(v), text: v === 1 ? 'And Saul approved of their killing him. Don`t stop.' : `NIV Acts 8:${v}.` });
+        }
+        return { ok: true, status: 200, json: async () => ({ chapters: [{ chapter: 8, verses }] }) };
+      }
+      if (url.endsWith('/v2/kjv/44/8.json')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => chapter('Acts', 40, n => (n === 37 ? 'And Philip said, If thou believest with all thine heart, thou mayest.' : `KJV Acts 8:${n}.`))
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+
+    const bible = createBibleLibrary({ cacheDir, fetchImpl, logger: { warn() {} } });
+    const nivVerse1 = await bible.lookupPassage(parseReference('Acts 8:1'), 'en', 'niv');
+    assert.equal(nivVerse1.version, 'NIV');
+    assert.equal(nivVerse1.verses[0].text, 'And Saul approved of their killing him. Don’t stop.');
+
+    const omittedFallback = await bible.lookupPassage(parseReference('Acts 8:37'), 'en', 'niv');
+    assert.equal(omittedFallback.version, 'KJV');
+    assert.equal(omittedFallback.verses[0].text, 'And Philip said, If thou believest with all thine heart, thou mayest.');
+  } finally {
+    rmSync(cacheDir, { recursive: true, force: true });
+  }
+
+  t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  const run = createEngine(t);
+  const countBefore = run.messages.length;
+  run.engine.addSource(' Să citim Ioan 3 cu 16, spune cuvântul');
+  await flush();
+  await flush();
+  assert.equal(run.messages.length - countBefore, 1, 'list + active verse card publish together in a single broadcast');
+  assert.equal(run.last().verse.key, '43.3.16.0');
+  assert.deepEqual(run.last().verses.map(item => item.key), ['43.3.16.0']);
 });

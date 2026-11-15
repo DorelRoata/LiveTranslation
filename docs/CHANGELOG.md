@@ -2,6 +2,15 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.5 — Uniform Bible scripture sizing, NIV/ESV/NKJV text cleanup, and smooth projector transitions
+
+**Why:** On live projector screens, multi-verse or dual-language Bible passages shrank dynamically compared to single-verse passages even when the same Bible text size was selected; raw NIV/ESV/NKJV verse data contained backtick apostrophes, editorial manuscript notes, or blank omitted verses; and incoming Bible cards caused layout shifts and opacity flashes—especially with two languages on screen.
+
+**What changed:**
+- **Uniform Bible text size across all passages.** Locked projector and mobile Bible scripture typography strictly to the selected **Bible text** size (`Medium`, `Large`, `Extra Large`), removing dynamic panel scale-down so short verses, multi-verse passages, live reading-follow, and stacked spoken-language verses always render at the exact same font size.
+- **NIV, ESV, and NKJV verse cleanup + omitted-verse fallback.** Normalized NIV backtick apostrophes (`` ` `` → `’`), stripped ESV editorial manuscript brackets and NKJV empty Psalm superscription spacers (including on cached chapters), and automatically falls back to **KJV** when NIV or ESV omits one of the 16 critical-text New Testament verses (such as *Acts 8:37*, *Matthew 18:11*, or *John 5:4*) so screens never show a blank reference card.
+- **Zero-stutter projector & dual-language Bible transitions.** Removed layout-thrashing `all` transitions and forced DOM reflows, placed dual-language (`Both`) verse cards in clean top flex flow above each language's subtitles, deduplicated WebSocket verse broadcasts and countdown timers, and switched to smooth compositor-only animations without full-card opacity flashes.
+
 ## v1.5.4 — Sanctuary readability, projector fonts, NKJV/NIV/ESV Bibles, and mobile dashboard polish
 
 **Why:** Longer sanctuaries needed larger default projector subtitles, an Extra Large option with up to 5 visible lines, selectable subtitle fonts, larger scripture text, additional English Bible translations (NKJV, NIV, ESV), and Bible verse pop-ups enabled by default without AI message summaries crowding the screen unless turned on.
