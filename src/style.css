@@ -2109,6 +2109,7 @@ body.is-live .transcript-scroll {
 .transcript-grid.font-md .transcript-bubble { font-size: 0.98rem; line-height: 1.5; }
 .transcript-grid.font-lg .transcript-bubble { font-size: 1.2rem; line-height: 1.5; }
 .transcript-grid.font-xl .transcript-bubble { font-size: 1.45rem; line-height: 1.45; }
+.transcript-grid.font-2xl .transcript-bubble { font-size: 1.72rem; line-height: 1.42; }
 
 /* Status log */
 .debug-panel {

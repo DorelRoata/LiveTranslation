@@ -8,7 +8,7 @@ import { parseReference } from './bible-references.js';
 export const NOTES_MODEL = 'gemini-flash-latest';
 export const NOTES_FALLBACK_MODEL = 'gemini-2.5-flash';
 export const VERSE_SECONDS_OPTIONS = Object.freeze([30, 60, 90, 120, 180]);
-export const BIBLE_SIZE_OPTIONS = Object.freeze(['md', 'lg', 'xl']);
+export const BIBLE_SIZE_OPTIONS = Object.freeze(['sm', 'md', 'lg', 'xl', '2xl']);
 export const ENGLISH_BIBLES = Object.freeze([
   { id: 'kjv', label: 'King James Version (KJV)' },
   { id: 'nkjv', label: 'New King James Version (NKJV)' },

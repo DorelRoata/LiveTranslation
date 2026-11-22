@@ -26,8 +26,8 @@ export const LANGUAGE_NAMES = Object.freeze({
 });
 
 export const SUBTITLE_LINE_COUNTS = Object.freeze([2, 3, 4, 5]);
-export const SUBTITLE_TEXT_SIZES = Object.freeze(['lg', 'xl']);
-export const SUBTITLE_FONTS = Object.freeze(['outfit', 'hyperlegible', 'condensed', 'sans', 'serif']);
+export const SUBTITLE_TEXT_SIZES = Object.freeze(['sm', 'md', 'lg', 'xl', '2xl']);
+export const SUBTITLE_FONTS = Object.freeze(['outfit', 'arial', 'hyperlegible', 'condensed', 'sans', 'serif']);
 
 export function normalizeSubtitleLineCount(value) {
   const count = Number(value);

@@ -115,7 +115,8 @@ const notesView = createMessageNotesView({
     lang1: document.getElementById('verse-float-lang1'),
     lang2: document.getElementById('verse-float-lang2')
   },
-  recapOverlay: document.getElementById('recap-overlay')
+  recapOverlay: document.getElementById('recap-overlay'),
+  onLayoutChange: () => scheduleVisibleLaneReflow()
 });
 
 // The spoken language as captions, shown with the "Original" layout button.
@@ -471,6 +472,7 @@ function advanceSubtitleDOM(lane, word) {
     outgoingClone.style.top = `${outgoingRect.top}px`;
     outgoingClone.style.left = `${outgoingRect.left}px`;
     outgoingClone.style.width = `${outgoingRect.width}px`;
+    outgoingClone.style.fontSize = window.getComputedStyle(outgoingLine).fontSize;
     document.body.appendChild(outgoingClone);
     leavingDOMLine[lane] = outgoingClone;
   }

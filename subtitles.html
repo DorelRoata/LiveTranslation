@@ -29,6 +29,9 @@
     body[data-subtitle-font="outfit"] {
       --subtitle-font-family: 'Outfit', system-ui, -apple-system, sans-serif;
     }
+    body[data-subtitle-font="arial"] {
+      --subtitle-font-family: Arial, 'Liberation Sans', 'Helvetica Neue', Helvetica, sans-serif;
+    }
     body[data-subtitle-font="hyperlegible"] {
       --subtitle-font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
     }
@@ -45,6 +48,15 @@
     .section {
       --subtitle-max-by-lines: calc(var(--subtitle-budget-vh) / (var(--subtitle-lines, 3) * 1.24));
       --subtitle-font-size: clamp(1.5rem, min(4.2vw, 7vh, var(--subtitle-max-by-lines)), 5.3rem);
+      --subtitle-rendered-size: min(var(--subtitle-font-size), max(1rem, var(--subtitle-max-by-lines)));
+    }
+    body[data-subtitle-size="sm"],
+    body[data-subtitle-size="sm"] .section {
+      --subtitle-font-size: clamp(1.1rem, min(2.8vw, 4.8vh, var(--subtitle-max-by-lines)), 3.5rem);
+    }
+    body[data-subtitle-size="md"],
+    body[data-subtitle-size="md"] .section {
+      --subtitle-font-size: clamp(1.3rem, min(3.5vw, 5.9vh, var(--subtitle-max-by-lines)), 4.4rem);
     }
     body[data-subtitle-size="lg"],
     body[data-subtitle-size="lg"] .section {
@@ -53,6 +65,10 @@
     body[data-subtitle-size="xl"],
     body[data-subtitle-size="xl"] .section {
       --subtitle-font-size: clamp(1.7rem, min(5.2vw, 8.6vh, var(--subtitle-max-by-lines)), 6.6rem);
+    }
+    body[data-subtitle-size="2xl"],
+    body[data-subtitle-size="2xl"] .section {
+      --subtitle-font-size: clamp(1.9rem, min(6.2vw, 10.2vh, var(--subtitle-max-by-lines)), 8rem);
     }
     .status-dot {
       position: fixed;
@@ -109,7 +125,7 @@
       flex: 0 0 50%;
     }
     body.single-language-layout:not(.obs-mode) {
-      --subtitle-budget-vh: 48vh;
+      --subtitle-budget-vh: 44vh;
     }
     body.single-language-layout:not(.obs-mode) .section {
       flex: 0 0 60%;
@@ -128,12 +144,26 @@
     body.single-language-layout:not(.obs-mode):has(#message-panel:not([hidden])) .section {
       flex: 0 0 46%;
     }
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])),
+    body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) {
+      --subtitle-budget-vh: 42vh;
+    }
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="4"]:has(#message-panel:not([hidden])) .section,
     body.single-language-layout:not(.obs-mode)[data-subtitle-lines="5"]:has(#message-panel:not([hidden])) .section {
       flex: 0 0 50%;
     }
     body:not(.single-language-layout) .section:has(.verse-float:not([hidden])) {
-      --subtitle-budget-vh: 24vh;
+      --subtitle-budget-vh: 23vh;
+    }
+    body:not(.single-language-layout) .section:has(.verse-float[data-bible-size="sm"]:not([hidden])),
+    body:not(.single-language-layout) .section:has(.verse-float[data-bible-size="md"]:not([hidden])) {
+      --subtitle-budget-vh: 26vh;
+    }
+    body:not(.single-language-layout) .section:has(.verse-float[data-bible-size="xl"]:not([hidden])) {
+      --subtitle-budget-vh: 21vh;
+    }
+    body:not(.single-language-layout) .section:has(.verse-float[data-bible-size="2xl"]:not([hidden])) {
+      --subtitle-budget-vh: 19vh;
     }
     .section:has(.verse-float:not([hidden])) .text {
       flex: 1 1 0;
@@ -157,6 +187,14 @@
       color: #ffffff;
       padding: 0 10% var(--subtitle-bottom-safe);
     }
+    body[data-subtitle-size="sm"] .text {
+      padding-left: 10%;
+      padding-right: 10%;
+    }
+    body[data-subtitle-size="md"] .text {
+      padding-left: 8%;
+      padding-right: 8%;
+    }
     body[data-subtitle-size="lg"] .text {
       padding-left: 5%;
       padding-right: 5%;
@@ -165,9 +203,13 @@
       padding-left: 2%;
       padding-right: 2%;
     }
+    body[data-subtitle-size="2xl"] .text {
+      padding-left: 1%;
+      padding-right: 1%;
+    }
     .sub-line,
     .sub-line-active {
-      font-size: var(--subtitle-font-size);
+      font-size: var(--subtitle-rendered-size);
       font-weight: 800;
       color: #ffffff;
       line-height: var(--subtitle-line-height);
@@ -334,7 +376,6 @@
     }
     .message-panel {
       --notes-scale: 1;
-      --bible-scale: 1;
       --bible-text-size: clamp(1.25rem, min(2.05vw, 3.6vh), 2.75rem);
       --scripture: #e8bd62;
       --scripture-soft: rgba(232, 189, 98, 0.32);
@@ -351,14 +392,25 @@
       color: #d6dee2;
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.11), transparent) top / 100% 1px no-repeat;
     }
-    [data-bible-size="md"] {
-      --bible-scale: 0.86;
+    .message-panel[data-bible-size="sm"],
+    .verse-float[data-bible-size="sm"] {
+      --bible-scale: 0.76;
     }
-    [data-bible-size="lg"] {
+    .message-panel[data-bible-size="md"],
+    .verse-float[data-bible-size="md"] {
+      --bible-scale: 0.88;
+    }
+    .message-panel[data-bible-size="lg"],
+    .verse-float[data-bible-size="lg"] {
       --bible-scale: 1;
     }
-    [data-bible-size="xl"] {
+    .message-panel[data-bible-size="xl"],
+    .verse-float[data-bible-size="xl"] {
       --bible-scale: 1.16;
+    }
+    .message-panel[data-bible-size="2xl"],
+    .verse-float[data-bible-size="2xl"] {
+      --bible-scale: 1.32;
     }
     .message-panel[hidden],
     .message-panel [hidden],
@@ -388,6 +440,7 @@
     .message-panel[data-columns="scripture"] {
       justify-items: center;
       align-content: center;
+      align-content: safe center;
     }
     body.qr-on .message-panel {
       padding-right: calc(148px + 3rem);
@@ -484,14 +537,24 @@
       font-size: 1em;
       line-height: 1.33;
     }
+    .message-panel[data-bible-size="sm"] .mp-verse-text {
+      -webkit-line-clamp: 7;
+    }
     .message-panel[data-bible-size="xl"] .mp-verse-text {
       -webkit-line-clamp: 5;
+    }
+    .message-panel[data-bible-size="2xl"] .mp-verse-text {
+      -webkit-line-clamp: 4;
     }
     .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text,
     .message-panel[data-columns="both"] .mp-verse-text {
       -webkit-line-clamp: 3;
     }
+    .message-panel[data-bible-size="sm"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text {
+      -webkit-line-clamp: 4;
+    }
     .message-panel[data-bible-size="xl"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text,
+    .message-panel[data-bible-size="2xl"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text,
     .message-panel[data-columns="both"] .mp-verse:has(.mp-verse-spoken:not([hidden])) .mp-verse-text {
       -webkit-line-clamp: 2;
     }
@@ -546,7 +609,7 @@
 
     /* Two languages: the verse sits cleanly at the top of each language's half. */
     .verse-float {
-      --bible-scale: 1;
+      --bible-float-size: clamp(1.05rem, min(1.8vw, 3.15vh), 2.35rem);
       --scripture: #e8bd62;
       order: -1;
       flex: 0 0 auto;
@@ -559,23 +622,33 @@
       border-radius: 12px;
       background: rgba(15, 19, 23, 0.92);
       box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-      font-size: calc(clamp(1rem, min(1.75vw, 3.1vh), 2.3rem) * var(--bible-scale, 1));
+      font-size: calc(var(--bible-float-size) * var(--bible-scale, 1));
       color: #f7f2e7;
     }
     .vf-ref {
+      display: block;
+      font-size: 1.06em;
       font-weight: 800;
+      line-height: 1.15;
       color: var(--scripture);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .vf-text {
       display: -webkit-box;
       margin: 0.16em 0 0;
       overflow: hidden;
+      font-size: 1em;
       line-height: 1.32;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
     }
-    .verse-float[data-bible-size="xl"] .vf-text {
+    .verse-float[data-bible-size="sm"] .vf-text {
+      -webkit-line-clamp: 4;
+    }
+    .verse-float[data-bible-size="xl"] .vf-text,
+    .verse-float[data-bible-size="2xl"] .vf-text {
       -webkit-line-clamp: 2;
     }
     .verse-float .verse-timer {
@@ -640,7 +713,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      max-height: calc(var(--subtitle-font-size) * var(--subtitle-line-height) * var(--src-lines, 3));
+      max-height: calc(var(--subtitle-rendered-size) * var(--subtitle-line-height) * var(--src-lines, 3));
       overflow: hidden;
       /* Hides the edge of the line that just scrolled off the top. */
       -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 0.3em);
@@ -648,7 +721,7 @@
     }
     .src-lines {
       margin: 0;
-      font-size: var(--subtitle-font-size);
+      font-size: var(--subtitle-rendered-size);
       font-weight: 800;
       line-height: var(--subtitle-line-height);
       color: #ffffff;
@@ -664,6 +737,11 @@
       margin-top: 0.36em;
       padding-top: 0.34em;
       border-top: 1px solid rgba(232, 189, 98, 0.18);
+    }
+    .message-panel[data-bible-size="xl"] .mp-verse-spoken,
+    .message-panel[data-bible-size="2xl"] .mp-verse-spoken {
+      margin-top: 0.28em;
+      padding-top: 0.26em;
     }
     .mp-verse-spoken .mp-verse-head {
       font-size: 1em;
@@ -761,8 +839,8 @@
         padding-right: 0.25rem;
       }
       .verse-float {
+        --bible-float-size: clamp(0.88rem, 3.8vw, 1.08rem);
         width: calc(100% - 0.5rem);
-        font-size: calc(clamp(0.88rem, 3.8vw, 1.08rem) * var(--bible-scale, 1));
       }
       .recap-card {
         grid-auto-flow: row;
@@ -787,6 +865,14 @@
         --subtitle-bottom-safe: max(0.75rem, env(safe-area-inset-bottom));
         padding: 0 max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
       }
+      body[data-subtitle-size="sm"],
+      body[data-subtitle-size="sm"] .section {
+        --subtitle-font-size: clamp(1rem, min(2.4vw, var(--subtitle-max-by-lines)), 1.75rem);
+      }
+      body[data-subtitle-size="md"],
+      body[data-subtitle-size="md"] .section {
+        --subtitle-font-size: clamp(1.15rem, min(2.9vw, var(--subtitle-max-by-lines)), 2.1rem);
+      }
       body[data-subtitle-size="lg"],
       body[data-subtitle-size="lg"] .section {
         --subtitle-font-size: clamp(1.3rem, min(3.4vw, var(--subtitle-max-by-lines)), 2.5rem);
@@ -794,6 +880,10 @@
       body[data-subtitle-size="xl"],
       body[data-subtitle-size="xl"] .section {
         --subtitle-font-size: clamp(1.45rem, min(4vw, var(--subtitle-max-by-lines)), 2.9rem);
+      }
+      body[data-subtitle-size="2xl"],
+      body[data-subtitle-size="2xl"] .section {
+        --subtitle-font-size: clamp(1.6rem, min(4.6vw, var(--subtitle-max-by-lines)), 3.4rem);
       }
       .container {
         gap: 0.5rem;
@@ -840,11 +930,15 @@
       <button class="control-btn compact subtitle-lines-btn" type="button" data-lines="4" aria-label="Show four subtitle lines" aria-pressed="false">4</button>
       <button class="control-btn compact subtitle-lines-btn" type="button" data-lines="5" aria-label="Show five subtitle lines" aria-pressed="false">5</button>
       <span class="control-sublabel">Text</span>
+      <button class="control-btn compact subtitle-size-btn" type="button" data-size="sm" aria-label="Small subtitle text" aria-pressed="false">S</button>
+      <button class="control-btn compact subtitle-size-btn" type="button" data-size="md" aria-label="Medium subtitle text" aria-pressed="false">M</button>
       <button class="control-btn compact subtitle-size-btn active" type="button" data-size="lg" aria-label="Large subtitle text" aria-pressed="true">L</button>
       <button class="control-btn compact subtitle-size-btn" type="button" data-size="xl" aria-label="Extra large subtitle text" aria-pressed="false">XL</button>
+      <button class="control-btn compact subtitle-size-btn" type="button" data-size="2xl" aria-label="2XL subtitle text" aria-pressed="false">2XL</button>
       <span class="control-sublabel">Font</span>
       <select class="control-select" id="subtitle-font-select" aria-label="Subtitle font">
         <option value="outfit" selected>Modern</option>
+        <option value="arial">Arial</option>
         <option value="hyperlegible">Hyperlegible</option>
         <option value="condensed">Condensed</option>
         <option value="sans">Clean Sans</option>
@@ -873,7 +967,7 @@
       <button class="control-btn active" id="btn-verses-toggle" type="button" aria-pressed="true">Bible On</button>
     </div>
     <div style="width: 1px; height: 1.5rem; background: rgba(255,255,255,0.1);"></div>
-    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.5</span>
+    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 500; font-family: monospace;">v1.5.6</span>
   </div>
 
   <div class="container" id="subtitles-container">

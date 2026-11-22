@@ -46,7 +46,7 @@ const ROTATION_QUIET_MS = 1500;
 const ROTATION_DRAIN_MAX_MS = 8000;
 const TRANSCRIPT_BUBBLE_MAX_CHARS = 320;
 const OPERATOR_SETTINGS_KEY = 'live_translate_operator_settings_v1';
-const APP_VERSION = '1.5.5';
+const APP_VERSION = '1.5.6';
 const SONG_DETECTOR_WASM_ROOT = '/mediapipe/wasm';
 const SONG_DETECTOR_MODEL_URL = '/mediapipe/models/yamnet.tflite';
 const LEGACY_DEFAULT_SYSTEM_INSTRUCTION = 'You are a professional church sermon interpreter. The speaker is preaching in Romanian. Translate their sermon accurately, maintain a respectful and formal religious/church tone, and translate into the target language.';
@@ -259,8 +259,10 @@ function setSelectValue(select, value, fallback) {
   select.value = selectHasValue(select, value) ? value : fallback;
 }
 
+const TEXT_SIZE_LABELS = Object.freeze({ sm: 'S', md: 'M', lg: 'L', xl: 'XL', '2xl': '2XL' });
+
 function setTranscriptFontSize(size) {
-  const safeSize = ['sm', 'md', 'lg', 'xl'].includes(size) ? size : DEFAULT_OPERATOR_SETTINGS.transcriptFontSize;
+  const safeSize = ['sm', 'md', 'lg', 'xl', '2xl'].includes(size) ? size : DEFAULT_OPERATOR_SETTINGS.transcriptFontSize;
   document.querySelectorAll('.font-size-btn').forEach(btn => {
     const isActive = btn.dataset.size === safeSize;
     btn.classList.toggle('active', isActive);
@@ -283,7 +285,8 @@ function updateSetupSummaryPill() {
     : lang1Label;
   const activeSize = normalizeSubtitleTextSize(document.querySelector('.projector-size-btn.active')?.dataset.size);
   const activeLines = normalizeSubtitleLineCount(document.querySelector('.projector-lines-btn.active')?.dataset.lines);
-  pill.textContent = `${sourceLabel} → ${targetsLabel} · Projector ${activeSize.toUpperCase()} · ${activeLines} lines`;
+  const sizeLabel = TEXT_SIZE_LABELS[activeSize] || activeSize.toUpperCase();
+  pill.textContent = `${sourceLabel} → ${targetsLabel} · Projector ${sizeLabel} · ${activeLines} lines`;
 }
 
 function setProjectorDisplayControls(lineCount, textSize, font) {

@@ -378,4 +378,30 @@ test('release update check compares semantic versions and works without a Git wo
   assert.equal(currentStatus.updateAvailable, false);
 });
 
+test('projector display updates broadcast S-2XL text size and Arial font live and sync to late screens', async () => {
+  await withRelay(async ({ connect }) => {
+    const { socket: viewer } = await connect();
+    const { socket: dashboard } = await connect();
+
+    dashboard.send(JSON.stringify({
+      type: 'projector-display',
+      subtitleLineCount: 4,
+      subtitleTextSize: '2xl',
+      subtitleFont: 'arial'
+    }));
+    const broadcast = await nextJson(viewer);
+    assert.deepEqual(broadcast, {
+      type: 'projector-display',
+      subtitleLineCount: 4,
+      subtitleTextSize: '2xl',
+      subtitleFont: 'arial'
+    });
+
+    const { hello } = await connect();
+    assert.equal(hello.state.subtitleLineCount, 4);
+    assert.equal(hello.state.subtitleTextSize, '2xl');
+    assert.equal(hello.state.subtitleFont, 'arial');
+  });
+});
+
 

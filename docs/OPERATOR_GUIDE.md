@@ -258,11 +258,11 @@ Both modes use sentence punctuation for semantic line breaks and a 60-character 
 
 ## 13. Bible verses and message notes
 
-The **Bible & message notes** card on the dashboard sits between the audio meters and the transcripts (you can also set the projector's default **Projector Display** text size `L / XL` — defaulting to `L` — visible lines `2 / 3 / 4 / 5` — defaulting to `3` — and **Font** — `Modern`, `Hyperlegible`, `Condensed`, `Clean Sans`, or `Serif` — under **Setup → Screens & extras**). Its settings are kept on the host Mac, so the Mac and any laptop or mobile dashboard stay in sync. By default, **Bible verse pop-ups** is **on** and **Summary & points on screens** is **off**.
+The **Bible & message notes** card on the dashboard sits between the audio meters and the transcripts (you can also set the projector's default **Projector Display** text size `S / M / L / XL / 2XL` — defaulting to `L` — visible lines `2 / 3 / 4 / 5` — defaulting to `3` — and **Font** — `Modern`, `Arial`, `Hyperlegible`, `Condensed`, `Clean Sans`, or `Serif` — under **Setup → Screens & extras**). Its settings are kept on the host Mac, so the Mac and any laptop or mobile dashboard stay in sync. By default, **Bible verse pop-ups** is **on** and **Summary & points on screens** is **off**.
 
 ### Verse pop-ups
 
-When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default). Adjust **Bible text** (**Medium**, **Large** default, or **Extra Large**) to make scripture cards easier to read from the back of the sanctuary:
+When the preacher names a passage, the screens show it for the time set in **Verse stays** (one minute by default). Adjust **Bible text** (**Small (`S`)**, **Medium (`M`)**, **Large (`L`)** default, **Extra Large (`XL`)**, or **`2XL`**) to make scripture cards easier to read from the back of the sanctuary (works in both single-language and dual-language views):
 
 - With **one language** on a screen, subtitles float near the top of the screen with room to extend downward for 4–5 large lines, and any active verse card displays clearly below them with generous scripture typography; when **Summary & points** is enabled, the summary and verses stack below.
 - With **two languages**, a legible floating verse card sits at the top of each language's half without overlapping the subtitles.

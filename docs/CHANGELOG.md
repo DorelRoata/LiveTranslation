@@ -2,6 +2,15 @@
 
 This file is the operator-facing record of Live Translate releases: what changed, and why. Newest first.
 
+## v1.5.6 — Dual-language Bible sizing fix, Arial font, and expanded S–2XL text range
+
+**Why:** On dual-language (`Both`) projector and phone screens, changing the **Bible text** size on the dashboard did not resize the floating verse cards because `.verse-float` overrode `--bible-scale`; operators also asked for a true **Arial** subtitle font option and a wider **S–2XL** text range for both smaller monitors/phones and very large sanctuary screens.
+
+**What changed:**
+- **Fixed dual-language Bible sizing.** Gave `.message-panel[data-bible-size]` and `.verse-float[data-bible-size]` matching specificity and removed the conflicting `--bible-scale: 1` reset on `.verse-float`, adjusted dual-language subtitle height budgets per Bible text size, reflowed visible subtitle lanes cleanly when dual-language Bible cards appear or resize, and added `safe center` alignment so tall stacked spoken-language Bible passages never clip at the top.
+- **Added dedicated Arial font.** Added `arial` (`Arial, 'Liberation Sans', 'Helvetica Neue', Helvetica, sans-serif`) alongside `Modern`, `Hyperlegible`, `Condensed`, `Clean Sans`, and `Serif` in both the dashboard **Projector Display** picker and the projector control bar.
+- **Expanded S–2XL text range.** Expanded projector subtitle text sizes, **Bible text** sizes, and dashboard **Live Transcripts** text sizes to the full **`S / M / L / XL / 2XL`** range (keeping **Large (`L`)** as the default for projectors and Bible text, and **Medium (`M`)** for dashboard transcripts).
+
 ## v1.5.5 — Uniform Bible scripture sizing, NIV/ESV/NKJV text cleanup, and smooth projector transitions
 
 **Why:** On live projector screens, multi-verse or dual-language Bible passages shrank dynamically compared to single-verse passages even when the same Bible text size was selected; raw NIV/ESV/NKJV verse data contained backtick apostrophes, editorial manuscript notes, or blank omitted verses; and incoming Bible cards caused layout shifts and opacity flashes—especially with two languages on screen.

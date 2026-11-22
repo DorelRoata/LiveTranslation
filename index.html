@@ -271,8 +271,11 @@
                   <div class="projector-picker-row">
                     <div class="segmented-group" role="group" aria-label="Projector subtitle text size">
                       <span class="segmented-label">Text</span>
+                      <button type="button" class="segmented-btn projector-size-btn" data-size="sm" aria-pressed="false" title="Small subtitle text">S</button>
+                      <button type="button" class="segmented-btn projector-size-btn" data-size="md" aria-pressed="false" title="Medium subtitle text">M</button>
                       <button type="button" class="segmented-btn projector-size-btn active" data-size="lg" aria-pressed="true" title="Large subtitle text (Default)">L</button>
-                      <button type="button" class="segmented-btn projector-size-btn" data-size="xl" aria-pressed="false" title="Extra large subtitle text for long sanctuaries">XL</button>
+                      <button type="button" class="segmented-btn projector-size-btn" data-size="xl" aria-pressed="false" title="Extra large subtitle text">XL</button>
+                      <button type="button" class="segmented-btn projector-size-btn" data-size="2xl" aria-pressed="false" title="2XL subtitle text for long sanctuaries">2XL</button>
                     </div>
                     <div class="segmented-group" role="group" aria-label="Projector visible subtitle lines">
                       <span class="segmented-label">Lines</span>
@@ -285,14 +288,15 @@
                       <label class="segmented-label" for="projector-font-select">Font</label>
                       <select id="projector-font-select" class="projector-font-select" aria-label="Projector subtitle font">
                         <option value="outfit" selected>Modern (Outfit)</option>
+                        <option value="arial">Arial</option>
                         <option value="hyperlegible">Hyperlegible (Atkinson)</option>
                         <option value="condensed">Condensed (Barlow)</option>
-                        <option value="sans">Clean Sans (Arial)</option>
+                        <option value="sans">Clean Sans (System)</option>
                         <option value="serif">Classic Serif (Georgia)</option>
                       </select>
                     </div>
                   </div>
-                  <small class="helper-text">Updates projectors and OBS live. Use <strong>XL</strong> with <strong>4–5 lines</strong> for long sanctuaries.</small>
+                  <small class="helper-text">Updates projectors and OBS live. Use <strong>XL–2XL</strong> with <strong>4–5 lines</strong> for long sanctuaries.</small>
                 </div>
 
                 <div class="input-group">
@@ -520,9 +524,11 @@
               <div class="notes-field">
                 <label for="notes-bible-size">Bible text</label>
                 <select id="notes-bible-size">
-                  <option value="md">Medium</option>
-                  <option value="lg" selected>Large</option>
-                  <option value="xl">Extra Large</option>
+                  <option value="sm">Small (S)</option>
+                  <option value="md">Medium (M)</option>
+                  <option value="lg" selected>Large (L)</option>
+                  <option value="xl">Extra Large (XL)</option>
+                  <option value="2xl">2XL</option>
                 </select>
               </div>
               <div class="notes-field">
@@ -588,6 +594,7 @@
               <button class="font-size-btn active" data-size="md" aria-pressed="true" title="Medium Text">M</button>
               <button class="font-size-btn" data-size="lg" aria-pressed="false" title="Large Text">L</button>
               <button class="font-size-btn" data-size="xl" aria-pressed="false" title="Extra Large Text">XL</button>
+              <button class="font-size-btn" data-size="2xl" aria-pressed="false" title="2XL Text">2XL</button>
             </div>
           </div>
 
@@ -654,7 +661,7 @@
       </main>
 
       <footer class="app-footer">
-        <p>Live Translate v1.5.5 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
+        <p>Live Translate v1.5.6 <span aria-hidden="true">·</span> Google Gemini Live Translate</p>
       </footer>
     </div>
 

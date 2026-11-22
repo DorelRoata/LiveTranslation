@@ -7,6 +7,11 @@
 // passage renders at the exact same font size without dynamic shrinking.
 const MIN_SCALE = 0.56;
 const LIST_LIMIT = 8;
+const BIBLE_SIZES = new Set(['sm', 'md', 'lg', 'xl', '2xl']);
+
+function normalizeBibleSize(value) {
+  return BIBLE_SIZES.has(value) ? value : 'lg';
+}
 
 const reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -83,7 +88,7 @@ function shouldRestartTimer(previous, verseId, remainingMs) {
   return { restart: false, next: previous };
 }
 
-export function createMessageNotesView({ panel, floats, recapOverlay }) {
+export function createMessageNotesView({ panel, floats, recapOverlay, onLayoutChange = null }) {
   const parts = {
     notes: panel.querySelector('[data-part="notes"]'),
     title: panel.querySelector('[data-part="title"]'),
@@ -279,7 +284,7 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
     // "Verses read" belongs to the notes, as in the recap.
     const showList = Boolean(state && summary && state.verses?.length);
     const visible = Boolean(state) && !view.obs && single && (showNotes || showVerse || showList);
-    const bibleSize = settings.bibleSize || 'lg';
+    const bibleSize = normalizeBibleSize(settings.bibleSize);
     panel.dataset.bibleSize = bibleSize;
 
     const wasVerseVisible = !panel.hidden && !parts.verse.hidden;
@@ -322,12 +327,18 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
   // --- Two languages: a verse at the top of each half -------------------------
   function renderFloats() {
     const show = Boolean(state) && view.verses && !view.obs && view.mode === 'both' && verseActive();
-    const bibleSize = state?.settings?.bibleSize || 'lg';
+    const bibleSize = normalizeBibleSize(state?.settings?.bibleSize);
+    let layoutChanged = false;
     for (const [lane, float] of Object.entries(floats)) {
+      const prevSize = float.dataset.bibleSize || '';
+      const wasVisible = !float.hidden;
       float.dataset.bibleSize = bibleSize;
       const passage = show ? (state.verse.lanes?.[lane]) : null;
-      const wasVisible = !float.hidden;
-      float.hidden = !passage;
+      const nowVisible = Boolean(passage);
+      float.hidden = !nowVisible;
+      if (wasVisible !== nowVisible || (nowVisible && prevSize !== bibleSize)) {
+        layoutChanged = true;
+      }
       if (!passage) {
         shown.floatContentKeys[lane] = '';
         shown.floatPrimaryKeys[lane] = '';
@@ -371,6 +382,9 @@ export function createMessageNotesView({ panel, floats, recapOverlay }) {
           startTimer(bar, state.verse.remainingMs, state.verse.durationMs);
         }
       }
+    }
+    if (layoutChanged && typeof onLayoutChange === 'function') {
+      onLayoutChange();
     }
   }
 

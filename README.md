@@ -2,7 +2,7 @@
 
 Live Translate is a low-latency, real-time voice translation application powered by the Google Gemini Live Translate WebSocket API (`v1beta`). It can translate one audio source into one or two target languages, play translated speech, and distribute rolling subtitles and audio to projectors, phones, and OBS across a local network.
 
-The current application version is `v1.5.5`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
+The current application version is `v1.5.6`. See [Changelog](./docs/CHANGELOG.md) for what changed and why.
 
 ## Screenshots
 
@@ -185,7 +185,7 @@ Copy the **Projector Screen URL** from the dashboard. On the projector computer 
 
 Subtitle viewers automatically reconnect after network or server interruptions and receive the current subtitle history after reconnecting. Wake lock can keep supported phone screens awake.
 
-The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, default to **Large (`L`)** text and **3 lines** (with only **Large (`L`)** and **Extra Large (`XL`)** offered on projectors, **2–5 lines**, and selectable **Fonts** — Modern, Hyperlegible, Condensed, Clean Sans, and Serif — available on both the dashboard and the projector for long sanctuaries), scale against both width and height, and retain a bottom safe area to prevent clipping. When only one language is selected on projectors and phones, subtitles float near the top of the screen while extending further downward to fit up to 5 large lines cleanly above Bible verses and notes.
+The projector controls are a fixed overlay and hide three seconds after the last pointer, touch, or keyboard activity, even when a control still has focus. Subtitle lanes use the full viewport, default to **Large (`L`)** text and **3 lines** (with **`S`–`2XL`** text sizes, **2–5 lines**, and selectable **Fonts** — Modern, Arial, Hyperlegible, Condensed, Clean Sans, and Serif — available on both the dashboard and the projector for small monitors through long sanctuaries), scale against both width and height, and retain a bottom safe area to prevent clipping. When only one language is selected on projectors and phones, subtitles float near the top of the screen while extending further downward to fit up to 5 large lines cleanly above Bible verses and notes.
 
 ## Bible verses and message notes
 
@@ -196,7 +196,7 @@ When the preacher names a passage ("Efeseni 2 cu 16", "John 3:16"), every projec
 - Screens showing one language also show the verse in the spoken language's Bible, and projectors and phones offer the spoken language itself (**Română**) as a layout.
 - Verse text comes from the getBible API (`api.getbible.net`) for public-domain translations (KJV, WEB, ASV, Cornilescu, Synodal), `bolls.life` for NKJV and ESV, and GitHub/jsDelivr (`aruljohn/Bible-niv`) for NIV, and is cached on the host in `bible-cache` beside `config.json`.
 - When **Summary & points** is enabled, notes are written by a Gemini text model (`gemini-flash-latest`) using the saved API key, about every minute and a half while the preacher speaks. This is separate from the Live Translate connection and does not affect it.
-- The **Bible & message notes** card on the dashboard turns **Bible verse pop-ups** and **Summary & points** on or off for every screen, adjusts the **Bible text** size (**Medium**, **Large** default, **Extra Large**), sets how long a verse stays, starts notes for a new preacher, and shows any verse on demand. Each screen can also toggle **Summary** or **Bible** for itself. The OBS overlay never shows them.
+- The **Bible & message notes** card on the dashboard turns **Bible verse pop-ups** and **Summary & points** on or off for every screen, adjusts the **Bible text** size (**Small (`S`)**, **Medium (`M`)**, **Large (`L`)** default, **Extra Large (`XL`)**, **`2XL`**) for both single- and dual-language views, sets how long a verse stays, starts notes for a new preacher, and shows any verse on demand. Each screen can also toggle **Summary** or **Bible** for itself. The OBS overlay never shows them.
 
 Settings are saved on the host in `message-notes.json` beside `config.json`.
 

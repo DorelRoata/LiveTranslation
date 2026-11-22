@@ -32,7 +32,7 @@ test('settings keep only known values', () => {
     { notes: true, verses: false, follow: false, spokenVerses: false, verseSeconds: 120, englishBible: 'web', bibleSize: 'xl' }
   );
   for (const englishBible of ['kjv', 'nkjv', 'niv', 'esv', 'web', 'asv']) {
-    for (const bibleSize of ['md', 'lg', 'xl']) {
+    for (const bibleSize of ['sm', 'md', 'lg', 'xl', '2xl']) {
       const normalized = normalizeNotesSettings({ englishBible, bibleSize });
       assert.equal(normalized.englishBible, englishBible);
       assert.equal(normalized.bibleSize, bibleSize);
